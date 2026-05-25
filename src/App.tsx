@@ -376,7 +376,7 @@ export default function App() {
     setMessages([...nextMessages, initialAssistantMsg]);
 
     try {
-      const modelId = selectedModel === "kimi" ? "kimi-k2-0711-preview" : "gemini-3.5-flash";
+      const modelId = selectedModel === "kimi" ? "moonshot-v1-8k" : "gemini-3.5-flash";
       const response = await apiFetch("/api/chat/stream", {
         method: "POST",
         body: JSON.stringify({
