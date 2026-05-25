@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Send, Moon, Sun, Globe, SquarePen, Search, Folder, Terminal, Code2, BookOpen, Clock, Lightbulb, Menu, X, MessageSquare, CalendarRange, Mail, Link2, Plus, ChevronDown, ArrowUp, Mic, Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, PanelLeft } from "lucide-react";
+import { Moon, Sun, Globe, SquarePen, Search, Folder, Terminal, Code2, BookOpen, MessageSquare, CalendarRange, Mail, Copy, ThumbsUp, ThumbsDown, RotateCcw, Check, PanelLeft } from "lucide-react";
 
 // Trello-style kanban icon — two cards (left tall, right short) inside a rounded square
 const TrelloBoard = ({ className }: { className?: string }) => (
@@ -18,6 +18,7 @@ import KanbanView from "./components/KanbanView";
 import CalendarView from "./components/CalendarView";
 import EmailView from "./components/EmailView";
 import HalfsphereModal from "./components/HalfsphereModal";
+import ChatInput from "./components/ChatInput";
 
 interface ProjectItem {
   id: string;
@@ -375,7 +376,7 @@ export default function App() {
     setMessages([...nextMessages, initialAssistantMsg]);
 
     try {
-      const modelId = selectedModel === "kimi" ? "kimi-k2" : "gemini-3.5-flash";
+      const modelId = selectedModel === "kimi" ? "kimi-k2-0711-preview" : "gemini-3.5-flash";
       const response = await apiFetch("/api/chat/stream", {
         method: "POST",
         body: JSON.stringify({
@@ -867,76 +868,19 @@ export default function App() {
 
                   {/* Input box — centered in the page, same look as the footer version */}
                   <div className="w-full max-w-2xl mb-5">
-                    <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative">
-                      <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_22px_rgba(0,0,0,0.07)] border border-transparent bg-[var(--bg-input)] focus-within:border-neutral-300/80 dark:focus-within:border-neutral-600/70 focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition-all overflow-hidden">
-                        <div className="relative w-full">
-                          <textarea
-                            ref={textareaRef}
-                            rows={1}
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSend();
-                              }
-                            }}
-                            placeholder={t.inputPlaceholder}
-                            className="w-full pt-5 pb-2 px-6 text-[14px] bg-transparent text-[var(--text-input)] outline-none resize-none overflow-y-hidden max-h-52 placeholder-[var(--text-muted)]/40"
-                            style={{ fontWeight: 500, lineHeight: "1.6" }}
-                            disabled={isStreaming}
-                            id="input-text-area"
-                          />
-                        </div>
-                        <div className="flex items-center justify-between px-5 pb-3.5 pt-1.5 select-none">
-                          <div className="flex items-center gap-1.5">
-                            <button type="button" className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer" title="Add attachments">
-                              <Plus className="w-4.5 h-4.5 stroke-[2.3]" />
-                            </button>
-                            <button type="button" className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer" title={lang === "zh" ? "语音输入" : "Voice input"}>
-                              <Mic className="w-4.5 h-4.5 stroke-[2.3]" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setIsWebSearch(v => !v)}
-                              className={`flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[12px] font-medium transition-all cursor-pointer select-none ${
-                                isWebSearch
-                                  ? "bg-neutral-200/90 dark:bg-neutral-700/90 text-[var(--text-main)]"
-                                  : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60"
-                              }`}
-                              title={lang === "zh" ? "全域搜索" : "Full search"}
-                            >
-                              <Globe className="w-3.5 h-3.5" />
-                              <span>{lang === "zh" ? "全域搜索" : "Full search"}</span>
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setSelectedModel(prev => prev === "gemini" ? "kimi" : "gemini")}
-                              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer font-sans select-none active:scale-95"
-                              title={lang === "zh" ? "点击切换模型" : "Click to switch model"}
-                            >
-                              <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${selectedModel === "kimi" ? "bg-purple-500" : "bg-emerald-500"}`}></span>
-                              <span>{selectedModel === "kimi" ? t.modelKimi : t.modelGemini}</span>
-                              <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                            </button>
-                            <button
-                              type="submit"
-                              disabled={!inputValue.trim() || isStreaming}
-                              className={`w-8.5 h-8.5 flex items-center justify-center rounded-[11px] transition-all duration-200 ${
-                                inputValue.trim() && !isStreaming
-                                  ? "bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] cursor-pointer shadow-md shadow-[var(--accent-color)]/20 active:scale-90"
-                                  : "bg-[var(--bg-card)] text-[var(--text-muted)]/30 cursor-default"
-                              }`}
-                              title="Send Message"
-                            >
-                              <ArrowUp className="w-4.5 h-4.5 stroke-[2.5]" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </form>
+                    <ChatInput
+                      textareaRef={textareaRef}
+                      inputValue={inputValue}
+                      setInputValue={setInputValue}
+                      isStreaming={isStreaming}
+                      isWebSearch={isWebSearch}
+                      onToggleWebSearch={() => setIsWebSearch(v => !v)}
+                      selectedModel={selectedModel}
+                      onToggleModel={() => setSelectedModel(prev => prev === "gemini" ? "kimi" : "gemini")}
+                      onSubmit={handleSend}
+                      lang={lang}
+                      t={t}
+                    />
                   </div>
 
                   {/* Quick chips — single horizontal pill row below the input */}
@@ -1054,102 +998,20 @@ export default function App() {
               id="footer-input-bar"
             >
               <div className="max-w-3xl mx-auto px-4 md:px-6 relative pointer-events-auto">
-                <form 
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSend();
-                  }}
-                  className="relative"
-                >
-                  {/* Modern paper-style unified container — border only appears on focus */}
-                  <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_18px_rgba(0,0,0,0.06)] border border-transparent bg-[var(--bg-input)] focus-within:border-neutral-300/80 dark:focus-within:border-neutral-600/70 focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition-all overflow-hidden" id="input-container-wrapper">
-                    
-                    {/* Chat Text Input Area - spacious and top-aligned */}
-                    <div className="relative w-full">
-                      <textarea
-                        ref={textareaRef}
-                        rows={1}
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                          }
-                        }}
-                        placeholder={t.inputPlaceholder}
-                        className="w-full pt-5 pb-2 px-6 text-[14px] bg-transparent text-[var(--text-input)] outline-none resize-none overflow-y-hidden max-h-52 placeholder-[var(--text-muted)]/40"
-                        style={{ fontWeight: 500, lineHeight: "1.6" }}
-                        disabled={isStreaming}
-                        id="input-text-area"
-                      />
-                    </div>
-
-                    {/* Integrated Bottom Panel - Completely replicating Claude's styling */}
-                    <div className="flex items-center justify-between px-5 pb-3.5 pt-1.5 select-none" id="input-bottom-panel">
-                      {/* Left actions: Plus button and Ask picker indicator */}
-                      <div className="flex items-center gap-1.5 md:gap-2">
-                        <button
-                          type="button"
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer"
-                          title="Add attachments"
-                        >
-                          <Plus className="w-4.5 h-4.5 stroke-[2.3]" />
-                        </button>
-                        <button
-                          type="button"
-                          className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer"
-                          title={lang === "zh" ? "语音输入" : "Voice input"}
-                        >
-                          <Mic className="w-4.5 h-4.5 stroke-[2.3]" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setIsWebSearch(v => !v)}
-                          className={`flex items-center gap-1.5 px-2.5 py-[3px] rounded-full text-[12px] font-medium transition-all cursor-pointer select-none ${
-                            isWebSearch
-                              ? "bg-neutral-200/90 dark:bg-neutral-700/90 text-[var(--text-main)]"
-                              : "text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60"
-                          }`}
-                          title={lang === "zh" ? "全域搜索" : "Full search"}
-                        >
-                          <Globe className="w-3.5 h-3.5" />
-                          <span>{lang === "zh" ? "全域搜索" : "Full search"}</span>
-                        </button>
-                      </div>
-
-                      {/* Right actions: Model pill switcher & main Send button */}
-                      <div className="flex items-center gap-2">
-                        {/* Model selector — click to toggle between Gemini and Kimi */}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedModel(prev => prev === "gemini" ? "kimi" : "gemini")}
-                          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition cursor-pointer font-sans select-none active:scale-95"
-                          title={lang === "zh" ? "点击切换模型" : "Click to switch model"}
-                        >
-                          <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${selectedModel === "kimi" ? "bg-purple-500" : "bg-emerald-500"}`}></span>
-                          <span>{selectedModel === "kimi" ? t.modelKimi : t.modelGemini}</span>
-                          <ChevronDown className="w-3.5 h-3.5 opacity-60" />
-                        </button>
-
-                        {/* Send button (Mimicking Claude bottom-right accent action rounded-square button) */}
-                        <button
-                          type="submit"
-                          disabled={!inputValue.trim() || isStreaming}
-                          className={`w-8.5 h-8.5 flex items-center justify-center rounded-[11px] transition-all duration-200 ${
-                            inputValue.trim() && !isStreaming
-                              ? "bg-[var(--accent-color)] text-white hover:bg-[var(--accent-hover)] cursor-pointer shadow-md shadow-[var(--accent-color)]/20 active:scale-90"
-                              : "bg-[var(--bg-card)] text-[var(--text-muted)]/30 cursor-default"
-                          }`}
-                          title="Send Message"
-                          id="message-send-button"
-                        >
-                          <ArrowUp className="w-4.5 h-4.5 stroke-[2.5]" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </form>
+                <ChatInput
+                  textareaRef={textareaRef}
+                  inputValue={inputValue}
+                  setInputValue={setInputValue}
+                  isStreaming={isStreaming}
+                  isWebSearch={isWebSearch}
+                  onToggleWebSearch={() => setIsWebSearch(v => !v)}
+                  selectedModel={selectedModel}
+                  onToggleModel={() => setSelectedModel(prev => prev === "gemini" ? "kimi" : "gemini")}
+                  onSubmit={handleSend}
+                  lang={lang}
+                  t={t}
+                  shadowStyle="shadow-[0_4px_18px_rgba(0,0,0,0.06)]"
+                />
     
                 {/* Prompt micro security warning underneath the keyboard wrap */}
                 <p className="text-[11px] text-center text-[var(--text-muted)] mt-1.5 transition select-none hover:text-[var(--accent-color)]">
