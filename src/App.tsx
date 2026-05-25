@@ -92,7 +92,7 @@ const SIDEBAR_PROJECTS: ProjectItem[] = [
 
 const LOCALES = {
   zh: {
-    modelGemini: "Gemini 3.5 Flash",
+    modelGemini: "DeepSeek V3",
     modelKimi: "Kimi 2.6",
     newChat: "新建会话",
     userLabel: "用户",
@@ -115,7 +115,7 @@ const LOCALES = {
     hsUnlinked: "连接 HalfSphere 空间"
   },
   en: {
-    modelGemini: "Gemini 3.5 Flash",
+    modelGemini: "DeepSeek V3",
     modelKimi: "Kimi 2.6",
     newChat: "New Chat",
     userLabel: "User",
@@ -376,7 +376,7 @@ export default function App() {
     setMessages([...nextMessages, initialAssistantMsg]);
 
     try {
-      const modelId = selectedModel === "kimi" ? "moonshot-v1-8k" : "gemini-3.5-flash";
+      const modelId = selectedModel === "kimi" ? "kimi-k2" : "deepseek-chat";
       const response = await apiFetch("/api/chat/stream", {
         method: "POST",
         body: JSON.stringify({
