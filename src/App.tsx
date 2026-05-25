@@ -376,7 +376,7 @@ export default function App() {
     setMessages([...nextMessages, initialAssistantMsg]);
 
     try {
-      const modelId = selectedModel === "kimi" ? "kimi-k2" : "deepseek-chat";
+      const modelId = selectedModel === "kimi" ? "moonshot-v1-32k" : "deepseek-chat";
       const response = await apiFetch("/api/chat/stream", {
         method: "POST",
         body: JSON.stringify({
