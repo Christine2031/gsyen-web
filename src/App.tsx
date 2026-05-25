@@ -607,7 +607,7 @@ export default function App() {
             }}
             className={`flex-1 flex justify-center items-center py-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
               viewMode === "chat"
-                ? "text-[var(--accent-color)]"
+                ? "text-[var(--text-main)]"
                 : "text-[var(--text-sidebar-muted)] hover:text-[var(--text-sidebar)] hover:bg-[var(--bg-sidebar-hover)]"
             }`}
             title={t.navChat}
@@ -623,7 +623,7 @@ export default function App() {
             }}
             className={`flex-1 flex justify-center items-center py-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
               viewMode === "kanban"
-                ? "text-[var(--accent-color)]"
+                ? "text-[var(--text-main)]"
                 : "text-[var(--text-sidebar-muted)] hover:text-[var(--text-sidebar)] hover:bg-[var(--bg-sidebar-hover)]"
             }`}
             title={t.navKanban}
@@ -639,7 +639,7 @@ export default function App() {
             }}
             className={`flex-1 flex justify-center items-center py-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
               viewMode === "calendar"
-                ? "text-[var(--accent-color)]"
+                ? "text-[var(--text-main)]"
                 : "text-[var(--text-sidebar-muted)] hover:text-[var(--text-sidebar)] hover:bg-[var(--bg-sidebar-hover)]"
             }`}
             title={t.navCalendar}
@@ -655,7 +655,7 @@ export default function App() {
             }}
             className={`flex-1 flex justify-center items-center py-2.5 rounded-lg transition-all duration-150 cursor-pointer ${
               viewMode === "email"
-                ? "text-[var(--accent-color)]"
+                ? "text-[var(--text-main)]"
                 : "text-[var(--text-sidebar-muted)] hover:text-[var(--text-sidebar)] hover:bg-[var(--bg-sidebar-hover)]"
             }`}
             title={t.navEmail}
@@ -689,7 +689,7 @@ export default function App() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full bg-[var(--bg-sidebar-search)] border border-[var(--border-sidebar)] focus:border-[var(--accent-color)]/50 focus:bg-[var(--bg-sidebar-search-focus)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--text-sidebar)] placeholder-[var(--text-sidebar-muted)]/50 outline-none transition"
+            className="w-full bg-[var(--bg-sidebar-search)] border border-[var(--border-sidebar)] focus:border-neutral-300/60 dark:focus:border-neutral-600/60 focus:bg-[var(--bg-sidebar-search-focus)] rounded-lg py-2 pl-9 pr-3 text-xs text-[var(--text-sidebar)] placeholder-[var(--text-sidebar-muted)]/50 outline-none transition"
             id="sidebar-search-input"
           />
         </div>
@@ -728,9 +728,9 @@ export default function App() {
                   title={t.systemPromptHint}
                   id={`sidebar-project-item-${proj.id}`}
                 >
-                  <Terminal className="w-3.5 h-3.5 mt-0.5 text-[var(--accent-color)] flex-shrink-0" />
+                  <Terminal className="w-3.5 h-3.5 mt-0.5 text-[var(--text-muted)] flex-shrink-0" />
                   <div className="flex-1 min-w-0">
-                    <div className="text-[var(--text-sidebar)] text-[12px] font-medium truncate group-hover:text-[var(--accent-color)] font-sans">
+                    <div className="text-[var(--text-sidebar)] text-[12px] font-medium truncate group-hover:text-[var(--text-main)] font-sans">
                       {lang === "zh" ? proj.name.zh : proj.name.en}
                     </div>
                     <div className="text-[10px] text-[var(--text-sidebar-muted)] font-mono tracking-wider">
@@ -750,7 +750,7 @@ export default function App() {
             className={`w-full text-left p-2.5 rounded-xl border select-none transition-all duration-150 cursor-pointer ${
               isBound 
                 ? "bg-emerald-500/5 hover:bg-emerald-500/10 border-emerald-500/20 text-[var(--text-sidebar)] hover:border-emerald-500/35" 
-                : "bg-[var(--bg-sidebar-hover)] hover:bg-[var(--bg-sidebar-active)] border-[var(--border-sidebar)] text-[var(--text-sidebar)] hover:border-[var(--accent-color)]/30"
+                : "bg-[var(--bg-sidebar-hover)] hover:bg-[var(--bg-sidebar-active)] border-[var(--border-sidebar)] text-[var(--text-sidebar)] hover:border-[var(--border-sidebar)]"
             }`}
             title={isBound ? t.hsLinked : t.hsUnlinked}
           >
@@ -832,7 +832,7 @@ export default function App() {
               id="darkmode-toggle-btn"
             >
               {isDark ? (
-                <Moon className="w-4 h-4 text-[var(--accent-color)]" />
+                <Moon className="w-4 h-4 text-[var(--text-muted)]" />
               ) : (
                 <Sun className="w-4 h-4" />
               )}
@@ -868,7 +868,7 @@ export default function App() {
                   {/* Input box — centered in the page, same look as the footer version */}
                   <div className="w-full max-w-2xl mb-5">
                     <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative">
-                      <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_22px_rgba(0,0,0,0.07)] border border-transparent bg-[var(--bg-input)] focus-within:border-[var(--accent-color)] focus-within:shadow-[0_6px_28px_var(--accent-glow)] transition-all overflow-hidden">
+                      <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_22px_rgba(0,0,0,0.07)] border border-transparent bg-[var(--bg-input)] focus-within:border-neutral-300/80 dark:focus-within:border-neutral-600/70 focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition-all overflow-hidden">
                         <div className="relative w-full">
                           <textarea
                             ref={textareaRef}
@@ -951,7 +951,7 @@ export default function App() {
                             setInputValue(chip.prompt);
                             setTimeout(() => textareaRef.current?.focus(), 10);
                           }}
-                          className="flex items-center gap-2 px-3.5 py-[4px] rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-input)] hover:border-[var(--accent-color)]/50 hover:text-[var(--text-main)] text-[var(--text-muted)] transition-all cursor-pointer text-[13px] font-medium leading-none"
+                          className="flex items-center gap-2 px-3.5 py-[4px] rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] hover:bg-[var(--bg-input)] hover:border-[var(--border-color)] hover:text-[var(--text-main)] text-[var(--text-muted)] transition-all cursor-pointer text-[13px] font-medium leading-none"
                         >
                           <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{chip.label}</span>
@@ -1062,7 +1062,7 @@ export default function App() {
                   className="relative"
                 >
                   {/* Modern paper-style unified container — border only appears on focus */}
-                  <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_18px_rgba(0,0,0,0.06)] border border-transparent bg-[var(--bg-input)] focus-within:border-[var(--accent-color)] focus-within:shadow-[0_6px_24px_var(--accent-glow)] transition-all overflow-hidden" id="input-container-wrapper">
+                  <div className="flex flex-col w-full rounded-[24px] shadow-[0_4px_18px_rgba(0,0,0,0.06)] border border-transparent bg-[var(--bg-input)] focus-within:border-neutral-300/80 dark:focus-within:border-neutral-600/70 focus-within:shadow-[0_6px_24px_rgba(0,0,0,0.07)] transition-all overflow-hidden" id="input-container-wrapper">
                     
                     {/* Chat Text Input Area - spacious and top-aligned */}
                     <div className="relative w-full">
