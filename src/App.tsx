@@ -375,6 +375,7 @@ export default function App() {
     const nextMessages = [...messages, userMsg];
     setMessages([...nextMessages, initialAssistantMsg]);
 
+    let typewriterIntervalRef: any = null;
     try {
       const modelId = selectedModel === "kimi" ? "moonshot-v1-32k" : "deepseek-chat";
       const response = await apiFetch("/api/chat/stream", {
@@ -392,102 +393,64 @@ export default function App() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder("utf-8");
-      let textChunkBuffer = "";
-      let finished = false;
+      let receivedText = "";
+      let displayedLength = 0;
+      let streamDone = false;
       let leftOverText = "";
 
-      let lastUpdateTime = 0;
-      let throttleTimeout: any = null;
-
-      const updateUIState = (force = false) => {
-        const now = Date.now();
-        if (force || now - lastUpdateTime >= 8) {
-          if (throttleTimeout) {
-            clearTimeout(throttleTimeout);
-            throttleTimeout = null;
-          }
-          lastUpdateTime = now;
-          setMessages(prev => prev.map(m => {
-            if (m.id === assistantMsgId) {
-              return { ...m, content: textChunkBuffer };
-            }
-            return m;
-          }));
-        } else if (!throttleTimeout) {
-          const delay = Math.max(0, 8 - (now - lastUpdateTime));
-          throttleTimeout = setTimeout(() => {
-            lastUpdateTime = Date.now();
-            setMessages(prev => prev.map(m => {
-              if (m.id === assistantMsgId) {
-                return { ...m, content: textChunkBuffer };
-              }
-              return m;
-            }));
-            throttleTimeout = null;
-          }, delay);
+      typewriterIntervalRef = setInterval(() => {
+        if (displayedLength < receivedText.length) {
+          const queued = receivedText.length - displayedLength;
+          const step = Math.max(1, Math.floor(queued / 8));
+          displayedLength = Math.min(receivedText.length, displayedLength + step);
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMsgId ? { ...m, content: receivedText.slice(0, displayedLength) } : m
+          ));
+        } else if (streamDone) {
+          clearInterval(typewriterIntervalRef);
+          typewriterIntervalRef = null;
+          setMessages(prev => prev.map(m =>
+            m.id === assistantMsgId ? { ...m, content: receivedText, isStreaming: false } : m
+          ));
+          setIsStreaming(false);
         }
-      };
+      }, 16);
 
       try {
-        while (!finished) {
+        while (true) {
           const { value, done } = await reader.read();
-          if (done) {
-            finished = true;
-            // Stream ended — guarantee streaming flag is cleared even if "done" event was missed
-            setMessages(prev => prev.map(m =>
-              m.id === assistantMsgId ? { ...m, isStreaming: false } : m
-            ));
-            setIsStreaming(false);
-            break;
-          }
+          if (done) break;
 
           const decodedChunk = decoder.decode(value, { stream: true });
           const lines = (leftOverText + decodedChunk).split("\n\n");
           leftOverText = lines.pop() || "";
 
           for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const cleanJson = line.substring(6).trim();
-                if (!cleanJson) continue;
-                const payload = JSON.parse(cleanJson);
-
-                if (payload.type === "text") {
-                  textChunkBuffer += payload.text;
-                  updateUIState(false);
-                } else if (payload.type === "error") {
-                  textChunkBuffer += `\n\n[Error]: ${payload.message}`;
-                  updateUIState(true);
-                  setMessages(prev => prev.map(m => {
-                    if (m.id === assistantMsgId) {
-                      return { ...m, isStreaming: false };
-                    }
-                    return m;
-                  }));
-                } else if (payload.type === "done") {
-                  updateUIState(true);
-                  setMessages(prev => prev.map(m => {
-                    if (m.id === assistantMsgId) {
-                      return { ...m, isStreaming: false };
-                    }
-                    return m;
-                  }));
-                  setIsStreaming(false);
-                }
-              } catch (jsError) {
-                // Fragmentary lines skipped
+            if (!line.startsWith("data: ")) continue;
+            const cleanJson = line.substring(6).trim();
+            if (!cleanJson) continue;
+            try {
+              const payload = JSON.parse(cleanJson);
+              if (payload.type === "text") {
+                receivedText += payload.text;
+              } else if (payload.type === "error") {
+                receivedText += `\n\n[Error]: ${payload.message}`;
+                streamDone = true;
+              } else if (payload.type === "done") {
+                streamDone = true;
               }
-            }
+            } catch { /* skip malformed */ }
           }
         }
-        // Final flush just to be certain
-        updateUIState(true);
+        streamDone = true;
       } finally {
-        if (throttleTimeout) {
-          clearTimeout(throttleTimeout);
-        }
+        streamDone = true;
       }
     } catch (err: any) {
+      if (typewriterIntervalRef) {
+        clearInterval(typewriterIntervalRef);
+        typewriterIntervalRef = null;
+      }
       setMessages(prev => prev.map(m => {
         if (m.id === assistantMsgId) {
           return {
