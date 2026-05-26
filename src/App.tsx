@@ -68,6 +68,7 @@ import PasswordModule from './components/PasswordModule';
 import MailModule from './components/MailModule';
 import ChatModule from './components/ChatModule';
 import VintageCar from './components/VintageCar';
+import LandingHero from './components/LandingHero';
 
 // Map symbol ids to Lucide components
 const iconMap: Record<string, ComponentType<any>> = {
@@ -356,6 +357,7 @@ const trackingClassMap: Record<TrackingType, string> = {
 
 export default function App() {
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
+  const [showLanding, setShowLanding] = useState(true);
   const t = translations[lang];
 
   // App primary state
@@ -546,6 +548,11 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F8F6] overflow-x-hidden" id="logo-designer-root">
+      <AnimatePresence>
+        {showLanding && (
+          <LandingHero lang={lang} onEnter={() => setShowLanding(false)} />
+        )}
+      </AnimatePresence>
       
       {/* Upper Navigation Bar */}
       <header className="border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-center justify-between" id="app-header">
