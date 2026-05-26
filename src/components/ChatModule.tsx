@@ -6,23 +6,24 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Sparkles, 
-  Send, 
-  Trash2, 
-  Copy, 
-  Check, 
-  Download, 
-  Terminal, 
-  Cpu, 
-  Zap, 
-  MessageSquare, 
-  User, 
-  Compass, 
-  Bookmark, 
+import {
+  Sparkles,
+  Send,
+  Trash2,
+  Copy,
+  Check,
+  Download,
+  Terminal,
+  Cpu,
+  Zap,
+  MessageSquare,
+  User,
+  Compass,
+  Bookmark,
   Minimize2,
   RefreshCw,
-  PanelLeft
+  PanelLeft,
+  Plus
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -131,6 +132,11 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handleNewChat = () => {
+    setMessages([]);
+    localStorage.removeItem('atelier_ai_chat');
+  };
 
   const handleClearHistory = () => {
     if (window.confirm(lang === 'zh' ? '确定要抹除所有与 AI 的思绪记录吗？' : 'Are you sure you want to dismiss your session memory?')) {
@@ -351,6 +357,14 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           >
             <PanelLeft className="w-3.5 h-3.5" />
           </button>
+          <button
+            onClick={handleNewChat}
+            className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70 text-[9px] font-mono font-bold tracking-widest uppercase"
+            title={lang === 'zh' ? '新建对话' : 'New Chat'}
+          >
+            <Plus className="w-3 h-3" />
+            <span>NEW</span>
+          </button>
           <div className="flex items-center gap-2">
             <MessageSquare className="w-3.5 h-3.5 text-[#1A1A1A]" />
             <span>{lang === 'zh' ? '疆域灵阁创意阁度' : 'GSYEN Muse Creative Workspace'}</span>
@@ -456,6 +470,61 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         <div className="flex-1 flex flex-col min-h-0 bg-[#F9F8F6]">
           {/* Messages Flow Area */}
           <div className="flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
+
+            {/* ── Empty state: centered new-chat welcome screen ── */}
+            {messages.length === 0 && !isLoading && (
+              <motion.div
+                key="empty-state"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className="h-full flex items-center justify-center"
+              >
+                <div className="flex flex-col items-center gap-6 max-w-lg w-full px-4 text-center">
+
+                  {/* Icon */}
+                  <div className="w-14 h-14 flex items-center justify-center border border-[#1A1A1A]/15 bg-white shadow-[1px_1px_0px_rgba(26,26,26,0.06)]">
+                    <Sparkles className="w-6 h-6 text-amber-500" />
+                  </div>
+
+                  {/* Brand heading */}
+                  <div className="space-y-1.5">
+                    <h2 className="font-serif-sc text-2xl font-black tracking-[0.12em] text-[#111111] leading-none">
+                      {lang === 'zh' ? '疆域灵阁' : 'GSYEN Muse'}
+                    </h2>
+                    <p className="font-cinzel text-[11px] tracking-[0.22em] text-[#1A1A1A]/50 uppercase">
+                      ATELIER INTELLIGENCE STUDIO
+                    </p>
+                    <p className="font-mono text-[9px] tracking-widest uppercase text-[#1A1A1A]/35 mt-2">
+                      {lang === 'zh' ? '向我询问品牌策划、视觉创意、日程安排...' : 'Ask anything about brand, design, or schedule...'}
+                    </p>
+                  </div>
+
+                  {/* Preset chips 2×2 */}
+                  <div className="grid grid-cols-2 gap-2.5 w-full mt-2">
+                    {PRESET_QUERIES.map((q, idx) => {
+                      const text = lang === 'zh' ? q.zh : q.en;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => handleSendMessage(text)}
+                          className="text-left p-3.5 border border-[#1A1A1A]/10 bg-white/60 hover:bg-white hover:border-[#1A1A1A]/25 hover:shadow-sm transition-all rounded-none group"
+                        >
+                          <div className="flex gap-2 items-start">
+                            <Sparkles className="w-3 h-3 text-amber-500/70 shrink-0 mt-0.5 group-hover:text-amber-500 transition-colors" />
+                            <span className="font-sans text-[10px] text-[#1A1A1A]/65 group-hover:text-[#1A1A1A] leading-snug transition-colors line-clamp-2">
+                              {text}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                </div>
+              </motion.div>
+            )}
+
             <AnimatePresence initial={false}>
               {messages.map((msg) => {
                 const isAI = msg.role === 'model';
