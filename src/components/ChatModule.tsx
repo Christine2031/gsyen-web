@@ -164,8 +164,8 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         id: `err-${Date.now()}`,
         role: 'model',
         content: lang === 'zh'
-          ? '⚠️ **通讯失败**：无法访问后端的智脑网关。请确保运行在 full-stack Express 环境下且存在有效的 `GEMINI_API_KEY` 密钥。'
-          : '⚠️ **Intel Network Failure**: Could not synchronize variables with the server-side proxy. Confirm full-stack Express is responsive and your `GEMINI_API_KEY` is loaded.',
+          ? '⚠️ **通讯失败**：无法访问后端的智脑网关。请确保运行在 full-stack Express 环境下且存在有效的 `MOONSHOT_API_KEY` 密钥。'
+          : '⚠️ **Intel Network Failure**: Could not synchronize variables with the server-side proxy. Confirm full-stack Express is responsive and your `MOONSHOT_API_KEY` is loaded.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       saveChat([...updatedMsgs, errorMsg]);
@@ -325,7 +325,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         </div>
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-1.5 text-neutral-500">
-            MODEL: <span className="text-[#1A1A1A] font-bold">GEMINI-3.5-FLASH</span>
+            MODEL: <span className="text-[#1A1A1A] font-bold">KIMI-K2.5</span>
           </span>
           <span className="flex items-center gap-1">
             <span className={`w-1.5 h-1.5 rounded-full ${serverOnline ? 'bg-emerald-600 animate-pulse' : 'bg-red-500'}`} />
