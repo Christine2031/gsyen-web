@@ -15,16 +15,12 @@ import {
   Check,
   Download,
   Terminal,
-  Cpu,
-  Zap,
   MessageSquare,
   User,
-  Compass,
-  Bookmark,
-  Minimize2,
-  RefreshCw,
   PanelLeft,
-  Plus
+  Plus,
+  Clock,
+  X
 } from 'lucide-react';
 
 interface ChatMessage {
@@ -32,6 +28,14 @@ interface ChatMessage {
   role: 'user' | 'model';
   content: string;
   timestamp: string;
+}
+
+interface StoredSession {
+  id: string;
+  title: string;
+  model: string;
+  messages: ChatMessage[];
+  updatedAt: string;
 }
 
 interface ChatModuleProps {
@@ -65,6 +69,8 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [serverOnline, setServerOnline] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek'>('kimi');
+  const [sessions, setSessions] = useState<StoredSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const modelScrollRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
@@ -88,6 +94,39 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     isDragging.current = false;
     if (modelScrollRef.current) modelScrollRef.current.style.cursor = 'grab';
   };
+
+  const SESSIONS_KEY = 'gsyen_chat_sessions_v1';
+
+  const loadSessions = (): StoredSession[] => {
+    try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]'); } catch { return []; }
+  };
+
+  const persistSessions = (list: StoredSession[]) => {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(list));
+    setSessions(list);
+  };
+
+  const upsertSession = (id: string, msgs: ChatMessage[], model: string) => {
+    const firstUser = msgs.find(m => m.role === 'user');
+    const title = firstUser ? firstUser.content.slice(0, 36) + (firstUser.content.length > 36 ? '…' : '') : (lang === 'zh' ? '新对话' : 'New chat');
+    const existing = loadSessions();
+    const idx = existing.findIndex(s => s.id === id);
+    const updated: StoredSession = { id, title, model, messages: msgs, updatedAt: new Date().toISOString() };
+    if (idx >= 0) existing[idx] = updated; else existing.unshift(updated);
+    persistSessions(existing.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)));
+  };
+
+  const deleteSession = (id: string) => {
+    const updated = loadSessions().filter(s => s.id !== id);
+    persistSessions(updated);
+    if (currentSessionId === id) {
+      setCurrentSessionId(null);
+      setMessages([]);
+      localStorage.removeItem('atelier_ai_chat');
+    }
+  };
+
+  useEffect(() => { setSessions(loadSessions()); }, []);
 
   const MODELS: { id: string; label: string; disabled?: boolean }[] = [
     { id: 'kimi',     label: 'KIMI-K2.5' },
@@ -120,10 +159,14 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     }
   }, [lang]);
 
-  // Sync messages with localStroage
   const saveChat = (msgs: ChatMessage[]) => {
     setMessages(msgs);
     localStorage.setItem('atelier_ai_chat', JSON.stringify(msgs));
+    if (msgs.some(m => m.role === 'user')) {
+      const sid = currentSessionId || `session-${Date.now()}`;
+      if (!currentSessionId) setCurrentSessionId(sid);
+      upsertSession(sid, msgs, selectedModel);
+    }
   };
 
   const scrollToBottom = () => {
@@ -135,6 +178,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   }, [messages, isLoading]);
 
   const handleNewChat = () => {
+    setCurrentSessionId(null);
     setMessages([]);
     localStorage.removeItem('atelier_ai_chat');
   };
@@ -419,49 +463,75 @@ export default function ChatModule({ lang }: ChatModuleProps) {
               : 'w-0 md:w-0 p-0 border-r-0 opacity-0 pointer-events-none'
           }`}
         >
-          <div className="space-y-6 flex flex-col justify-between h-full min-w-[272px]">
-            <div className="space-y-4">
-              <div className="space-y-1">
-                <h2 className="text-xs font-serif font-bold italic text-[#1A1A1A]">
-                  {lang === 'zh' ? '设计创意灵感命题' : 'Curated Creative Prompts'}
-                </h2>
-                <p className="text-[9.5px] font-mono text-neutral-400 uppercase tracking-widest leading-relaxed">
-                  {lang === 'zh' ? '点击下方命题，一键递交 ChatGPT 智脑进行全盘策划与美学推演。' : 'Click a preset prompt below to trigger the intelligent brand curatorial process.'}
-                </p>
-              </div>
+          <div className="flex flex-col h-full min-w-[272px] gap-4">
 
-              <div className="space-y-2.5">
-                {PRESET_QUERIES.map((q, idx) => {
-                  const text = lang === 'zh' ? q.zh : q.en;
-                  return (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        setInputVal(text);
-                        handleSendMessage(text);
-                      }}
-                      disabled={isLoading}
-                      className="w-full text-left p-3.5 border border-[#1A1A1A]/10 bg-white/40 hover:bg-white hover:shadow-sm transition-all focus:outline-none rounded-none text-xs text-[#2F2F2F] leading-snug font-sans group relative"
-                    >
-                      <div className="flex gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
-                        <span className="font-sans line-clamp-3">{text}</span>
-                      </div>
-                    </button>
-                  );
-                })}
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-[#1A1A1A]/60" />
+                <h2 className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
+                  {lang === 'zh' ? '历史记录' : 'HISTORY'}
+                </h2>
               </div>
+              <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase tracking-wider">
+                {sessions.length} {lang === 'zh' ? '条' : 'sessions'}
+              </span>
             </div>
 
-            <div className="space-y-3 bg-white p-4 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 leading-relaxed shadow-xs">
-              <div className="font-serif italic font-bold text-xs text-[#1A1A1A] capitalize mb-1 inline-flex items-center gap-1.5 uppercase font-bold tracking-normal">
-                <Terminal className="w-3.5 h-3.5 text-[#1A1A1A]" />
-                {lang === 'zh' ? '特调参数反馈' : 'Feedback Loop'}
+            {/* Session list */}
+            <div className="flex-1 overflow-y-auto space-y-1.5 pr-0.5">
+              {sessions.length === 0 ? (
+                <div className="py-10 text-center space-y-2">
+                  <MessageSquare className="w-6 h-6 text-[#1A1A1A]/15 mx-auto" />
+                  <p className="text-[9px] font-mono text-[#1A1A1A]/30 uppercase tracking-widest">
+                    {lang === 'zh' ? '暂无记录' : 'No history yet'}
+                  </p>
+                </div>
+              ) : sessions.map(s => (
+                <div
+                  key={s.id}
+                  className={`group relative flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${
+                    currentSessionId === s.id
+                      ? 'border-[#1A1A1A]/30 bg-white shadow-xs'
+                      : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'
+                  }`}
+                  onClick={() => {
+                    setCurrentSessionId(s.id);
+                    setMessages(s.messages);
+                    localStorage.setItem('atelier_ai_chat', JSON.stringify(s.messages));
+                  }}
+                >
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">
+                      {s.title}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase tracking-wider">
+                        {new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}
+                      </span>
+                      <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase tracking-wider">
+                        {s.model}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }}
+                    className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 hover:text-red-500 text-[#1A1A1A]/30 transition-all"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Footer info */}
+            <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 leading-relaxed shadow-xs shrink-0">
+              <div className="inline-flex items-center gap-1.5 text-[#1A1A1A]/60 font-bold">
+                <Terminal className="w-3 h-3" />
+                {lang === 'zh' ? '本地存储 · Supabase 就绪' : 'LOCAL · SUPABASE READY'}
               </div>
-              <p className="text-[8.5px] text-[#1A1A1A]/60 leading-normal">
-                {lang === 'zh'
-                  ? 'AI 助手完全适配本套艺术工坊的主题配色、古典字体配置及排布几何规范。'
-                  : 'The smart core is primed to respect Ateliers bespoke metadata, including fonts and geometric badges.'}
+              <p className="text-[8px] text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
+                {lang === 'zh' ? '记录保存于本设备。配置 Supabase 后自动云同步。' : 'Sessions stored locally. Cloud sync activates once Supabase is configured.'}
               </p>
             </div>
           </div>
