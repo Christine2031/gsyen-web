@@ -1,12 +1,176 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+/* ============================================================
+   GSYEN ATELIER — DESIGN SYSTEM TOKENS
+   唯一权威来源。所有颜色、字体、间距均在此定义。
+   ============================================================ */
+
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-display: "Outfit", sans-serif;
-  --font-space: "Space Grotesk", sans-serif;
-  --font-serif: "Playfair Display", "Noto Serif SC", serif;
-  --font-cinzel: "Cinzel", serif;
-  --font-serif-sc: "Noto Serif SC", serif;
+
+  /* ----------------------------------------------------------
+     TYPOGRAPHY — 字体族
+     ----------------------------------------------------------
+     font-sans     Inter          通用 UI / 正文
+     font-mono     JetBrains Mono 标签 / 代码 / 元数据
+     font-display  Outfit         现代展示标题
+     font-space    Space Grotesk  前卫科技感标题
+     font-serif    Playfair + Noto Serif SC  优雅衬线 / 中文正文
+     font-cinzel   Cinzel         品牌名 GSYEN — 碑文刻字风格
+     font-serif-sc Noto Serif SC  中文品牌名 疆域 — 宋体权威感
+     ---------------------------------------------------------- */
+  --font-sans:     "Inter",            ui-sans-serif,  system-ui, sans-serif;
+  --font-mono:     "JetBrains Mono",   ui-monospace,   SFMono-Regular, monospace;
+  --font-display:  "Outfit",           sans-serif;
+  --font-space:    "Space Grotesk",    sans-serif;
+  --font-serif:    "Playfair Display", "Noto Serif SC", serif;
+  --font-cinzel:   "Cinzel",           serif;
+  --font-serif-sc: "Noto Serif SC",    serif;
+
+  /* ----------------------------------------------------------
+     COLOR — 色彩系统
+     ----------------------------------------------------------
+     双色调极简主义：羊皮纸底 + 墨水黑
+     Parchment（羊皮纸）系 — 背景
+     Ink（墨水）系         — 前景、文字、边框、动作
+     ---------------------------------------------------------- */
+
+  /* 背景色 */
+  --color-parchment:       #F9F8F6;   /* 主背景 — 暖白，非纯白 */
+  --color-parchment-muted: #F4F2EE;   /* 次级背景 — 侧边栏、次级面板 */
+  --color-white:           #FFFFFF;   /* 卡片 / 输入框底色 */
+
+  /* 前景色 */
+  --color-ink:             #1A1A1A;   /* 主文字 / 边框 / 交互元素 */
+  --color-ink-deep:        #111111;   /* 品牌文字最深色（疆域、GSYEN） */
+
+  /* 透明度叠加（基于 ink） */
+  /* 使用方式：bg-ink/5  text-ink/60  border-ink/10 等 */
+  /* ink/5   = rgba(26,26,26,0.05)  — 极淡背景底色 */
+  /* ink/10  = rgba(26,26,26,0.10)  — 标准边框 */
+  /* ink/15  = rgba(26,26,26,0.15)  — 次级边框 */
+  /* ink/20  = rgba(26,26,26,0.20)  — 输入框边框 */
+  /* ink/40  = rgba(26,26,26,0.40)  — 次级文字（极静） */
+  /* ink/45  = rgba(26,26,26,0.45)  — 次级标签文字 */
+  /* ink/50  = rgba(26,26,26,0.50)  — 禁用/占位符 */
+  /* ink/60  = rgba(26,26,26,0.60)  — 标准次级文字 */
+  /* ink/70  = rgba(26,26,26,0.70)  — 较深次级文字 */
+  /* ink/75  = rgba(26,26,26,0.75)  — 状态栏文字 */
+  /* ink/85  = rgba(26,26,26,0.85)  — 近主色文字 */
+  /* ink/90  = rgba(26,26,26,0.90)  — 头部深色层 */
+  /* ink/95  = rgba(26,26,26,0.95)  — 最接近主色 */
+
+  /* 功能色 — 仅用于状态指示，不用于品牌 */
+  --color-status-critical:  #EF4444;  /* 红 red-500   — 高危/错误 */
+  --color-status-warn:      #FB923C;  /* 橙 orange-400 — 警告 */
+  --color-status-caution:   #FBBF24;  /* 琥珀 amber-400 — 注意 / Sparkles 金 */
+  --color-status-safe:      #10B981;  /* 翠绿 emerald-500 — 成功 */
+  --color-status-secure:    #0D9488;  /* 蓝绿 teal-600 — 最高安全 */
+
+  /* ----------------------------------------------------------
+     BORDER RADIUS — 圆角
+     ----------------------------------------------------------
+     设计语言：硬朗、工业感、无圆角。
+     全局: rounded-none (0px)
+     唯一例外：圆形指示器 rounded-full（状态点、色板圆点）
+     ---------------------------------------------------------- */
+  --radius-none: 0px;
+
+  /* ----------------------------------------------------------
+     SHADOWS — 阴影
+     ----------------------------------------------------------
+     设计语言：偏移平面阴影，非高斯模糊阴影。
+     ---------------------------------------------------------- */
+  /* shadow-offset: 1px 1px 0px — 印章/压印感 */
+  /* shadow-sm 仅用于卡片层次区分 */
+
+  /* ----------------------------------------------------------
+     FONT SIZES — 字号体系（微型排版系统）
+     ----------------------------------------------------------
+     该设计采用极小字号，强调密度与精致感。
+     ---------------------------------------------------------- */
+  --text-2xs:  7.5px;   /* 页眉副标题、极小标注 */
+  --text-xs:   10px;    /* 导航标签、章节标题、按钮文字 */
+  --text-2xs-label: 8px; /* 最小标签文字 */
+  --text-label: 9px;    /* 标准标签、元数据 */
+  --text-11:   11px;    /* 卡片正文 */
+  --text-sm:   12px;    /* 标准正文 (text-xs in Tailwind) */
+
+  /* ----------------------------------------------------------
+     LETTER SPACING — 字间距体系
+     ----------------------------------------------------------
+     该设计大量使用超宽字间距，营造奢华排版感。
+     ---------------------------------------------------------- */
+  /* tracking-[0.12em]  — 品牌中文（疆域） */
+  /* tracking-[0.15em]  — 输入框标签 */
+  /* tracking-[0.2em]   — 章节标题 */
+  /* tracking-[0.22em]  — GSYEN 品牌英文 / 副标题 */
+  /* tracking-widest    — 所有 UI 按钮、导航 */
+
+  /* ----------------------------------------------------------
+     ANIMATION — 动效标准
+     ----------------------------------------------------------
+     极简过渡，不做炫技。
+     transition-all + duration-300 — 所有交互
+     animate-pulse               — 在线状态点、活跃图标
+     backdrop-blur-md            — 吸顶导航栏
+     motion/react: opacity 0→1 / y 10→0 / duration 0.2s — 页面切换
+     ---------------------------------------------------------- */
+
+}
+
+/* ----------------------------------------------------------
+   GLOBAL BASE STYLES
+   ---------------------------------------------------------- */
+
+/* 文字选中效果：墨水底 + 羊皮纸字 */
+::selection {
+  background-color: #1A1A1A;
+  color: #F9F8F6;
+}
+
+/* 滚动条极简化 */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(26, 26, 26, 0.15);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(26, 26, 26, 0.30);
+}
+
+/* Range input 统一样式（密钥库强度滑块） */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: rgba(26, 26, 26, 0.10);
+  cursor: pointer;
+  border-radius: 0;
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #1A1A1A;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #F9F8F6;
+  box-shadow: 0 0 0 1px #1A1A1A;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #1A1A1A;
+  cursor: pointer;
+  border-radius: 50%;
+  border: 2px solid #F9F8F6;
+  box-shadow: 0 0 0 1px #1A1A1A;
 }
