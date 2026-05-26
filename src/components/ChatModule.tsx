@@ -63,6 +63,29 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [serverOnline, setServerOnline] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek'>('kimi');
+  const modelScrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const dragScrollLeft = useRef(0);
+
+  const onDragStart = (e: React.MouseEvent) => {
+    const el = modelScrollRef.current;
+    if (!el) return;
+    isDragging.current = true;
+    dragStartX.current = e.pageX - el.offsetLeft;
+    dragScrollLeft.current = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+  };
+  const onDragMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !modelScrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - modelScrollRef.current.offsetLeft;
+    modelScrollRef.current.scrollLeft = dragScrollLeft.current - (x - dragStartX.current);
+  };
+  const onDragEnd = () => {
+    isDragging.current = false;
+    if (modelScrollRef.current) modelScrollRef.current.style.cursor = 'grab';
+  };
 
   const MODELS: { id: string; label: string; disabled?: boolean }[] = [
     { id: 'kimi',     label: 'KIMI-K2.5' },
@@ -336,13 +359,21 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5">
             <span className="text-neutral-400">MODEL:</span>
-            <div className="flex bg-[#1A1A1A]/5 p-0.5 border border-[#1A1A1A]/10">
+            <div
+              ref={modelScrollRef}
+              onMouseDown={onDragStart}
+              onMouseMove={onDragMove}
+              onMouseUp={onDragEnd}
+              onMouseLeave={onDragEnd}
+              className="flex bg-[#1A1A1A]/5 p-0.5 border border-[#1A1A1A]/10 overflow-x-scroll select-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{ maxWidth: '224px', cursor: 'grab' }}
+            >
               {MODELS.map(m => (
                 <button
                   key={m.id}
                   onClick={() => !m.disabled && setSelectedModel(m.id as 'kimi' | 'deepseek')}
                   disabled={m.disabled}
-                  className={`px-2 py-0.5 text-[9px] font-mono font-bold tracking-widest uppercase transition-all rounded-none ${
+                  className={`px-2 py-0.5 text-[9px] font-mono font-bold tracking-widest uppercase transition-all rounded-none shrink-0 ${
                     m.disabled
                       ? 'text-[#1A1A1A]/20 cursor-not-allowed'
                       : selectedModel === m.id
