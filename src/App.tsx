@@ -578,8 +578,26 @@ export default function App() {
           </div>
         </div>
 
-        {/* View Selection Tabs */}
-        <div className="flex bg-[#1A1A1A]/5 p-1 rounded-none border border-[#1A1A1A]/10 flex-wrap gap-1">
+        {/* Mobile: native picker — shows one tab, tap to spin */}
+        <div className="flex md:hidden items-center border border-[#1A1A1A]/15 bg-[#F4F2EE] relative">
+          <select
+            value={activeSpace}
+            onChange={e => setActiveSpace(e.target.value as typeof activeSpace)}
+            className="appearance-none bg-transparent pl-3.5 pr-8 py-2 text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A] font-mono outline-none cursor-pointer w-full"
+          >
+            <option value="chat">{lang === 'zh' ? '疆域灵阁' : 'GSYEN MUSE'}</option>
+            <option value="mail">{lang === 'zh' ? '工作邮件' : 'MAILBOX'}</option>
+            <option value="schedule">{lang === 'zh' ? '项目看板' : 'KANBAN'}</option>
+            <option value="calendar">{lang === 'zh' ? '日程日历' : 'CALENDAR'}</option>
+            <option value="finance">{lang === 'zh' ? '复式财务账簿' : 'LEDGER'}</option>
+            <option value="password">{lang === 'zh' ? '军事级密钥库' : 'CITADEL KEY'}</option>
+            <option value="brand">{lang === 'zh' ? '品牌实验室' : 'BRAND LAB'}</option>
+          </select>
+          <span className="pointer-events-none absolute right-2.5 text-[#1A1A1A]/40 text-[10px]">▾</span>
+        </div>
+
+        {/* Desktop: full tab bar */}
+        <div className="hidden md:flex bg-[#1A1A1A]/5 p-1 rounded-none border border-[#1A1A1A]/10 gap-1">
           <button
             onClick={() => setActiveSpace('chat')}
             className={`px-3.5 py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 ${
