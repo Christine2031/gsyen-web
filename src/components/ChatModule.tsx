@@ -62,6 +62,12 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [isCopiedId, setIsCopiedId] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek'>('kimi');
+
+  const MODEL_LABELS: Record<'kimi' | 'deepseek', string> = {
+    kimi:     'KIMI-K2.5',
+    deepseek: 'DEEPSEEK',
+  };
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Initialize with introductory greeting message
@@ -136,6 +142,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          model: selectedModel,
           messages: updatedMsgs.map(m => ({
             role: m.role,
             content: m.content
@@ -324,9 +331,24 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-neutral-500">
-            MODEL: <span className="text-[#1A1A1A] font-bold">KIMI-K2.5</span>
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-neutral-400">MODEL:</span>
+            <div className="flex bg-[#1A1A1A]/5 p-0.5 border border-[#1A1A1A]/10">
+              {(Object.keys(MODEL_LABELS) as Array<'kimi' | 'deepseek'>).map(m => (
+                <button
+                  key={m}
+                  onClick={() => setSelectedModel(m)}
+                  className={`px-2 py-0.5 text-[9px] font-mono font-bold tracking-widest uppercase transition-all rounded-none ${
+                    selectedModel === m
+                      ? 'bg-[#1A1A1A] text-[#F9F8F6]'
+                      : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
+                  }`}
+                >
+                  {MODEL_LABELS[m]}
+                </button>
+              ))}
+            </div>
+          </div>
           <span className="flex items-center gap-1">
             <span className={`w-1.5 h-1.5 rounded-full ${serverOnline ? 'bg-emerald-600 animate-pulse' : 'bg-red-500'}`} />
             {serverOnline ? 'SYSTEM GATEWAY IS ALIVE' : 'GATEWAY STATUS UNSTABLE'}
