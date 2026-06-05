@@ -578,7 +578,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         </aside>
 
         {/* Chat log visual streams (Right panel) */}
-        <div className="flex-1 flex flex-col min-h-0 bg-[#F9F8F6]">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F9F8F6]">
           {/* Messages Flow Area */}
           <div
             ref={chatContainerRef}
@@ -774,7 +774,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           </div>
 
           {/* Interactive input bar — hidden on empty state */}
-          <div className={`sticky bottom-0 p-4 border-t border-[#1A1A1A]/10 bg-white z-10 ${messages.length === 0 ? 'hidden' : ''}`}>
+          <div className={`shrink-0 p-4 border-t border-[#1A1A1A]/10 bg-white ${messages.length === 0 ? 'hidden' : ''}`}>
             <form
               onSubmit={(e) => {
                 e.preventDefault();
