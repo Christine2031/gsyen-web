@@ -28,6 +28,12 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
     envKey:  'GEMINI_API_KEY',
     modelId: 'gemini-2.0-flash',
   },
+  // 本地私有模型：开发用 Tailscale，生产用 Cloudflare Tunnel
+  ethan: {
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://100.117.152.101:11434'}/v1/chat/completions`,
+    envKey:  'OLLAMA_BASE_URL',
+    modelId: 'deepseek-ethan:latest',
+  },
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

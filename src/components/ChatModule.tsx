@@ -68,7 +68,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [isCopiedId, setIsCopiedId] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek'>('kimi');
+  const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek' | 'claude' | 'chatgpt' | 'gemini' | 'ethan'>('kimi');
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [recentsOpen, setRecentsOpen] = useState(true);
@@ -135,6 +135,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     { id: 'claude',   label: 'CLAUDE',   disabled: true },
     { id: 'chatgpt',  label: 'CHATGPT',  disabled: true },
     { id: 'gemini',   label: 'GEMINI',   disabled: true },
+    { id: 'ethan',    label: 'ETHAN-8B' },
   ];
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -198,6 +199,23 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     }
   };
 
+  // 本地预测专家(老陈备货 / 顾客流失)。命中返回答案,否则返回 null 交给通用大模型。
+  const PREDICT_API = (import.meta as any).env?.VITE_PREDICT_API || 'http://127.0.0.1:8000';
+  const askPredictionExpert = async (text: string): Promise<string | null> => {
+    try {
+      const r = await fetch(`${PREDICT_API}/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: text })
+      });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d['专家'] && d['专家'] !== '无' ? d.answer : null;
+    } catch {
+      return null; // 本地服务没开就静默放行,走原来的网关
+    }
+  };
+
   const handleSendMessage = async (textToSend: string) => {
     if (!textToSend.trim() || isLoading) return;
 
@@ -214,6 +232,19 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     setIsLoading(true);
 
     try {
+      // —— 调度员:预测类问题(备货/流失)先问本地模型,命中就直接回答 ——
+      const expertReply = await askPredictionExpert(textToSend);
+      if (expertReply) {
+        const aiMsg: ChatMessage = {
+          id: `ai-${Date.now()}`,
+          role: 'model',
+          content: expertReply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        saveChat([...updatedMsgs, aiMsg]);
+        return; // finally 里会把 isLoading 关掉
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {

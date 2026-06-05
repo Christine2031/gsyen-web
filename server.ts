@@ -42,6 +42,14 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
     envKey:  'GEMINI_API_KEY',
     modelId: 'gemini-2.0-flash',
   },
+  // ── 本地私有模型 ──────────────────────────────────────────────────────
+  // 开发/内网：OLLAMA_BASE_URL=http://100.117.152.101:11434  (Tailscale)
+  // 生产/公网：OLLAMA_BASE_URL=https://llm.gsyen.com         (Cloudflare Tunnel)
+  ethan: {
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://100.117.152.101:11434'}/v1/chat/completions`,
+    envKey:  'OLLAMA_BASE_URL',   // 有值就代表本地模型可用
+    modelId: 'deepseek-ethan:latest',
+  },
 };
 // ────────────────────────────────────────────────────────────────────────
 
