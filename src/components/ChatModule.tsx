@@ -135,7 +135,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     { id: 'claude',   label: 'CLAUDE',   disabled: true },
     { id: 'chatgpt',  label: 'CHATGPT',  disabled: true },
     { id: 'gemini',   label: 'GEMINI',   disabled: true },
-    { id: 'ethan',    label: 'ETHAN-8B' },
+    { id: 'ethan',    label: 'GSYEN-DP8B' },
   ];
   const chatEndRef = useRef<HTMLDivElement>(null);
 
