@@ -236,38 +236,65 @@ export default function ChatModule({ lang }: ChatModuleProps) {
     setIsLoading(true);
 
     try {
-      // 调度员暂时关闭，等 laochen-demo 联调完再开
-      // const expertReply = await askPredictionExpert(textToSend);
-
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: selectedModel,
-          messages: updatedMsgs.map(m => ({
-            role: m.role,
-            content: m.content
-          }))
+          messages: updatedMsgs.map(m => ({ role: m.role, content: m.content }))
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Connection error');
+      if (!response.ok) throw new Error('Connection error');
+
+      const contentType = response.headers.get('content-type') || '';
+
+      if (contentType.includes('text/event-stream')) {
+        // ── 流式输出：打字机效果 ──────────────────────────
+        const aiMsgId = `ai-${Date.now()}`;
+        const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setMessages([...updatedMsgs, { id: aiMsgId, role: 'model', content: '▍', timestamp }]);
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let fullText = '';
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const raw = line.slice(6).trim();
+            if (raw === '[DONE]') continue;
+            try {
+              const delta = JSON.parse(raw).choices?.[0]?.delta?.content || '';
+              if (delta) {
+                fullText += delta;
+                setMessages(prev => prev.map(m =>
+                  m.id === aiMsgId ? { ...m, content: fullText + '▍' } : m
+                ));
+              }
+            } catch {}
+          }
+        }
+        // 流结束，去掉光标，持久化
+        const finalMsg: ChatMessage = { id: aiMsgId, role: 'model', content: fullText || '…', timestamp };
+        saveChat([...updatedMsgs, finalMsg]);
+
+      } else {
+        // ── 非流式（兜底）────────────────────────────────
+        const data = await response.json();
+        const aiReply = data.text || (lang === 'zh' ? '抱歉，未返回有效回复。' : 'Empty response.');
+        saveChat([...updatedMsgs, {
+          id: `ai-${Date.now()}`, role: 'model', content: aiReply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }]);
       }
 
-      const data = await response.json();
-      const aiReply = data.text || (lang === 'zh' ? '抱歉，本地服务器未返回有效回复。' : 'Pardon me, the local node returned an empty response.');
-
-      const aiMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'model',
-        content: aiReply,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-
-      saveChat([...updatedMsgs, aiMsg]);
     } catch (err) {
       console.error("AI Communication error:", err);
       const errorMsg: ChatMessage = {

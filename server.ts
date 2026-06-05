@@ -98,6 +98,11 @@ async function startServer() {
         })),
       ];
 
+      // ── 流式透传（SSE）──────────────────────────────────
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('X-Accel-Buffering', 'no');
+
       const upstream = await fetch(route.url, {
         method: 'POST',
         headers: {
@@ -107,17 +112,25 @@ async function startServer() {
         body: JSON.stringify({
           model: route.modelId,
           messages: payload,
-          ...(model === 'ethan' ? { think: false } : {}),
+          stream: true,
+          ...(['ethan', 'fast'].includes(model) ? { think: false } : {}),
         }),
       });
 
       if (!upstream.ok) {
         const err = await upstream.text().catch(() => upstream.statusText);
-        throw new Error(`${model} API error: ${err}`);
+        res.end(`data: ${JSON.stringify({ error: `${model} API error: ${err}` })}\n\n`);
+        return;
       }
 
-      const data: any = await upstream.json();
-      res.json({ text: data.choices?.[0]?.message?.content || '' });
+      const reader = (upstream.body as any).getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+      return;
     } catch (err: any) {
       console.error('Chat API error:', err);
       res.status(500).json({ error: err.message || 'Gateway error' });
