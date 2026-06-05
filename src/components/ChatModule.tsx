@@ -783,16 +783,15 @@ export default function ChatModule({ lang }: ChatModuleProps) {
               <input
                 id="ai-thought-input"
                 type="text"
-                disabled={isLoading}
                 placeholder={lang === 'zh' ? '向 Atelier AI 咨询任何品牌策划、符号创意、日程安排吧...' : 'Ask Atelier AI anything about your luxurious brand, design patterns, or schedules...'}
                 value={inputVal}
                 onChange={(e) => setInputVal(e.target.value)}
-                className="flex-grow p-3 bg-[#F9F8F6] border border-[#1A1A1A]/15 focus:border-[#1A1A1A] focus:bg-white rounded-none outline-none font-sans text-xs text-[#1A1A1A] disabled:opacity-50"
+                className="flex-grow p-3 bg-[#F9F8F6] border border-[#1A1A1A]/15 focus:border-[#1A1A1A] focus:bg-white rounded-none outline-none font-sans text-xs text-[#1A1A1A]"
               />
 
               <button
                 type="submit"
-                disabled={isLoading || !inputVal.trim()}
+                disabled={!inputVal.trim()}
                 className="p-3 bg-[#1A1A1A] text-white hover:bg-[#1A1A1A]/95 disabled:bg-[#1A1A1A]/10 disabled:text-neutral-300 transition-colors rounded-none focus:outline-none shrink-0 border border-[#1A1A1A]"
               >
                 <Send className="w-4 h-4" />
