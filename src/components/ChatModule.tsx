@@ -130,8 +130,8 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   useEffect(() => { setSessions(loadSessions()); }, []);
 
   const MODELS: { id: string; label: string; disabled?: boolean }[] = [
-    { id: 'fast',     label: 'GSYEN-DP3B' },
-    { id: 'ethan',    label: 'GSYEN-DP8B' },
+    { id: 'fast',     label: '缈缈·轻' },
+    { id: 'ethan',    label: '缈缈·深' },
     { id: 'kimi',     label: 'KIMI-K2.5' },
     { id: 'deepseek', label: 'DEEPSEEK' },
     { id: 'claude',   label: 'CLAUDE',   disabled: true },
