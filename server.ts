@@ -46,9 +46,14 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
   // 开发/内网：OLLAMA_BASE_URL=http://100.117.152.101:11434  (Tailscale)
   // 生产/公网：OLLAMA_BASE_URL=https://llm.gsyen.com         (Cloudflare Tunnel)
   ethan: {
-    url:     `${process.env.OLLAMA_BASE_URL || 'http://100.117.152.101:11434'}/v1/chat/completions`,
-    envKey:  'OLLAMA_BASE_URL',   // 有值就代表本地模型可用
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
+    envKey:  'OLLAMA_BASE_URL',
     modelId: 'deepseek-ethan:latest',
+  },
+  fast: {
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
+    envKey:  'OLLAMA_BASE_URL',
+    modelId: 'qwen2.5:3b',
   },
 };
 // ────────────────────────────────────────────────────────────────────────

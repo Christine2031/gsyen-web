@@ -68,7 +68,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [isCopiedId, setIsCopiedId] = useState<string | null>(null);
   const [serverOnline, setServerOnline] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek' | 'claude' | 'chatgpt' | 'gemini' | 'ethan'>('ethan');
+  const [selectedModel, setSelectedModel] = useState<'kimi' | 'deepseek' | 'claude' | 'chatgpt' | 'gemini' | 'ethan' | 'fast'>('fast');
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [recentsOpen, setRecentsOpen] = useState(true);
@@ -130,6 +130,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   useEffect(() => { setSessions(loadSessions()); }, []);
 
   const MODELS: { id: string; label: string; disabled?: boolean }[] = [
+    { id: 'fast',     label: 'GSYEN-DP3B' },
     { id: 'ethan',    label: 'GSYEN-DP8B' },
     { id: 'kimi',     label: 'KIMI-K2.5' },
     { id: 'deepseek', label: 'DEEPSEEK' },

@@ -30,9 +30,14 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
   },
   // 本地私有模型：开发用 Tailscale，生产用 Cloudflare Tunnel
   ethan: {
-    url:     `${process.env.OLLAMA_BASE_URL || 'http://100.117.152.101:11434'}/v1/chat/completions`,
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
     modelId: 'deepseek-ethan:latest',
+  },
+  fast: {
+    url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
+    envKey:  'OLLAMA_BASE_URL',
+    modelId: 'qwen2.5:3b',
   },
 };
 
