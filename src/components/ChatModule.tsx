@@ -273,10 +273,27 @@ export default function ChatModule({ lang }: ChatModuleProps) {
             try {
               const delta = JSON.parse(raw).choices?.[0]?.delta?.content || '';
               if (delta) {
-                fullText += delta;
-                setMessages(prev => prev.map(m =>
-                  m.id === aiMsgId ? { ...m, content: fullText + '▍' } : m
-                ));
+                // 打字机节奏：逐字渲染，模拟机械敲击感
+                for (const char of delta) {
+                  fullText += char;
+                  setMessages(prev => prev.map(m =>
+                    m.id === aiMsgId ? { ...m, content: fullText + '▍' } : m
+                  ));
+                  // 不同字符的停顿节奏
+                  let delay: number;
+                  if ('。！？…'.includes(char)) {
+                    delay = 180 + Math.random() * 180; // 句末：180-360ms
+                  } else if ('，、；：'.includes(char)) {
+                    delay = 60 + Math.random() * 80;  // 句中标点：60-140ms
+                  } else if (char === '\n') {
+                    delay = 120 + Math.random() * 150; // 换行：120-270ms
+                  } else if (Math.random() < 0.04) {
+                    delay = 80 + Math.random() * 120;  // 偶发停顿（4%概率）：80-200ms
+                  } else {
+                    delay = 12 + Math.random() * 18;   // 正常敲击：12-30ms
+                  }
+                  await new Promise(r => setTimeout(r, delay));
+                }
               }
             } catch {}
           }
