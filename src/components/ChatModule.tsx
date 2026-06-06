@@ -251,6 +251,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
 
       if (contentType.includes('text/event-stream')) {
         // ── 流式输出：打字机效果 ──────────────────────────
+        setIsLoading(false); // 流开始，关掉"融汇思绪"loading 泡
         const aiMsgId = `ai-${Date.now()}`;
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         setMessages([...updatedMsgs, { id: aiMsgId, role: 'model', content: '▍', timestamp }]);
@@ -279,18 +280,18 @@ export default function ChatModule({ lang }: ChatModuleProps) {
                   setMessages(prev => prev.map(m =>
                     m.id === aiMsgId ? { ...m, content: fullText + '▍' } : m
                   ));
-                  // 不同字符的停顿节奏
+                  // 不同字符的停顿节奏（优雅版）
                   let delay: number;
                   if ('。！？…'.includes(char)) {
-                    delay = 180 + Math.random() * 180; // 句末：180-360ms
+                    delay = 300 + Math.random() * 250; // 句末沉默：300-550ms
                   } else if ('，、；：'.includes(char)) {
-                    delay = 60 + Math.random() * 80;  // 句中标点：60-140ms
+                    delay = 120 + Math.random() * 100; // 句中停顿：120-220ms
                   } else if (char === '\n') {
-                    delay = 120 + Math.random() * 150; // 换行：120-270ms
-                  } else if (Math.random() < 0.04) {
-                    delay = 80 + Math.random() * 120;  // 偶发停顿（4%概率）：80-200ms
+                    delay = 200 + Math.random() * 200; // 换行思考：200-400ms
+                  } else if (Math.random() < 0.05) {
+                    delay = 100 + Math.random() * 150; // 偶发卡顿（5%）：100-250ms
                   } else {
-                    delay = 12 + Math.random() * 18;   // 正常敲击：12-30ms
+                    delay = 30 + Math.random() * 25;   // 正常敲击：30-55ms
                   }
                   await new Promise(r => setTimeout(r, delay));
                 }
