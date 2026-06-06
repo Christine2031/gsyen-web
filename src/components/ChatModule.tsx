@@ -247,11 +247,12 @@ export default function ChatModule({ lang }: ChatModuleProps) {
 
       if (!response.ok) throw new Error('Connection error');
 
+      setIsLoading(false); // 收到响应立刻关掉 loading，无论何种 content-type
+
       const contentType = response.headers.get('content-type') || '';
 
       if (contentType.includes('text/event-stream')) {
         // ── 流式输出：打字机效果 ──────────────────────────
-        setIsLoading(false); // 流开始，关掉"融汇思绪"loading 泡
         const aiMsgId = `ai-${Date.now()}`;
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         setMessages([...updatedMsgs, { id: aiMsgId, role: 'model', content: '▍', timestamp }]);
