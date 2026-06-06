@@ -37,7 +37,7 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
   fast: {
     url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
-    modelId: 'qwen2.5:3b',
+    modelId: 'gsyen-fast',
   },
 };
 
