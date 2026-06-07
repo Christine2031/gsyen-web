@@ -320,7 +320,7 @@ export default async function handler(req: Request): Promise<Response> {
           model: route.modelId,
           messages: ollamaPayload,
           stream: false,
-          format: CHRONOS_SCHEMA,
+          format: 'json',
         }),
       });
       if (!ollamaRes.ok) {
