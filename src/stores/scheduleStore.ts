@@ -135,9 +135,17 @@ const ADD_KEYWORDS = [
   // 今天要做 / 工作计划
   '今天要做', '今天我要', '今天打算', '今天需要', '今天准备',
   '安排今天', '今天工作', '今天任务',
+  // 被动陈述句 — "下午有个会" "明天有一个发布会" 等
+  '今天有', '今天下午有', '今天上午有', '今天晚上有',
+  '明天有', '明天下午有', '明天上午有',
+  '下午有', '上午有', '晚上有', '早上有',
+  '有个会', '有一个会', '有个活动', '有一个活动',
+  '有个发布', '有一个发布', '有个产品', '有一个产品',
+  '要参加', '要去', '要看一个', '要开会',
   // English
   'add schedule', 'add event', 'create event', 'schedule a', 'remind me',
   'put it on', 'block time', 'plan to',
+  'have a meeting', 'have a call', 'have an event',
 ];
 
 export type ScheduleIntent = 'query' | 'add' | null;

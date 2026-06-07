@@ -83,11 +83,19 @@ export function useChatStream(): UseChatStreamReturn {
       }
 
       // 2. Detect schedule intent and enrich message.
-      //    Structured-output models (gemini/ethan/fast) handle everything via
-      //    responseSchema + system-prompt suffix — no keyword detection needed.
+      //    SSE models: full enrichment (schedule block instructions).
+      //    Structured models (gemini/ethan/fast): still detect intent; if 'add',
+      //    append a short hint so the model reliably sets shouldCreateEvent:true.
       const isStructured = STRUCTURED_MODELS.has(model);
-      const intent = isStructured ? null : detectScheduleIntent(text);
-      const enrichedText = intent ? enrichMessageForSchedule(text, intent, lang) : text;
+      const intent = detectScheduleIntent(text);
+      let enrichedText: string;
+      if (isStructured && intent === 'add') {
+        enrichedText = text + '\n[系统提示：上面这句话包含日程安排意图，请务必将 shouldCreateEvent 置为 true 并填写 event 字段。]';
+      } else if (!isStructured && intent) {
+        enrichedText = enrichMessageForSchedule(text, intent, lang);
+      } else {
+        enrichedText = text;
+      }
 
       // 3. Build message history for API
       const userMsg: ChatMessage = {
