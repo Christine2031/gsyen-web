@@ -50,6 +50,10 @@ type ColumnId = 'todo' | 'progress' | 'review' | 'done';
 export default function ScheduleModule({ lang, defaultView = 'kanban' }: ScheduleModuleProps) {
   const LOCAL_STORAGE_KEY = 'identity_lab_schedule';
 
+  // Compute today's date string once (YYYY-MM-DD) — never hardcode a date
+  const todayDate = new Date();
+  const todayString = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}-${String(todayDate.getDate()).padStart(2, '0')}`;
+
   // Master State
   const [events, setEvents] = useState<EventItem[]>([]);
   const [viewMode, setViewMode] = useState<ViewMode>(defaultView === 'calendar' ? 'month' : 'kanban');
@@ -58,7 +62,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Primary calendar selected date focus
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date('2026-05-26')); // Align with context 2026-05-26
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   
   // Category toggles in Google Calendar style sidebar (My Calendars)
   const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({
@@ -77,8 +81,8 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
   const [newTitle, setNewTitle] = useState('');
   const [newSubtitle, setNewSubtitle] = useState('');
   const [newTime, setNewTime] = useState('10:00');
-  const [newDate, setNewDate] = useState('2026-05-26');
-  const [newEndDate, setNewEndDate] = useState('2026-05-26');
+  const [newDate, setNewDate] = useState(todayString);
+  const [newEndDate, setNewEndDate] = useState(todayString);
   const [newCategory, setNewCategory] = useState<'creative' | 'finance' | 'secure' | 'strategy'>('creative');
   const [newLocation, setNewLocation] = useState('');
   const [newStatus, setNewStatus] = useState<ColumnId>('todo');
@@ -227,8 +231,8 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
       title: newTitle,
       subtitle: newSubtitle || (lang === 'zh' ? '自主拟定日程项目' : 'Self-defined agenda block'),
       time: newTime || '12:00',
-      date: newDate || '2026-05-26',
-      endDate: newEndDate || newDate || '2026-05-26',
+      date: newDate || todayString,
+      endDate: newEndDate || newDate || todayString,
       category: newCategory,
       location: newLocation || (lang === 'zh' ? '总部工作坊' : 'Atelier Headquarters'),
       status: newStatus,
@@ -564,8 +568,8 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
 
   // Navigation Logic
   const handleNavigateToday = () => {
-    setSelectedDate(new Date('2026-05-26'));
-    triggerNotification(lang === 'zh' ? '已转跳回中心基准点 2026-05-26' : 'Centered calendar back to reference Anchor');
+    setSelectedDate(new Date());
+    triggerNotification(lang === 'zh' ? `已转跳回今天 ${todayString}` : `Centered calendar back to today ${todayString}`);
   };
 
   const handleNavigateDiff = (amount: number) => {
@@ -605,7 +609,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         dayNum: dayVal,
         dateString: `${prY}-${prM}-${prD}`,
         isCurrentMonth: false,
-        isToday: `${prY}-${prM}-${prD}` === '2026-05-26'
+        isToday: `${prY}-${prM}-${prD}` === todayString
       });
     }
 
@@ -617,7 +621,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         dayNum: i,
         dateString: `${year}-${curMIndex}-${curDIndex}`,
         isCurrentMonth: true,
-        isToday: `${year}-${curMIndex}-${curDIndex}` === '2026-05-26'
+        isToday: `${year}-${curMIndex}-${curDIndex}` === todayString
       });
     }
 
@@ -635,7 +639,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         dayNum: i,
         dateString: `${nxtY}-${nxtM}-${nxtD}`,
         isCurrentMonth: false,
-        isToday: `${nxtY}-${nxtM}-${nxtD}` === '2026-05-26'
+        isToday: `${nxtY}-${nxtM}-${nxtD}` === todayString
       });
     }
 
@@ -664,7 +668,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         dayNum: day,
         dateString: dateStringStr,
         isCurrentMonth: false,
-        isToday: dateStringStr === '2026-05-26',
+        isToday: dateStringStr === todayString,
         hasEvents: events.some(e => isEventOnDate(e, dateStringStr))
       });
     }
@@ -677,7 +681,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         dayNum: i,
         dateString: dateStringStr,
         isCurrentMonth: true,
-        isToday: dateStringStr === '2026-05-26',
+        isToday: dateStringStr === todayString,
         hasEvents: events.some(e => isEventOnDate(e, dateStringStr))
       });
     }
@@ -688,12 +692,12 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
       const nextMonth = month + 1 > 11 ? 0 : month + 1;
       const nextYear = month + 1 > 11 ? year + 1 : year;
       const dateStringStr = `${nextYear}-${String(nextMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      
+
       daysList.push({
         dayNum: i,
         dateString: dateStringStr,
         isCurrentMonth: false,
-        isToday: dateStringStr === '2026-05-26',
+        isToday: dateStringStr === todayString,
         hasEvents: events.some(e => isEventOnDate(e, dateStringStr))
       });
     }
@@ -720,7 +724,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
         label: loopDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'short' }),
         dayNum: loopDate.getDate(),
         dateString: dateStr,
-        isToday: dateStr === '2026-05-26'
+        isToday: dateStr === todayString
       });
     }
     return result;
@@ -1185,7 +1189,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
                     onClick={handleNavigateToday}
                     className="px-3.5 py-1 bg-white border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition text-[10px] font-bold tracking-widest uppercase rounded-none"
                   >
-                    {lang === 'zh' ? '今天 26日' : 'REF TODAY'}
+                    {lang === 'zh' ? `今天 ${todayDate.getDate()}日` : `TODAY ${todayDate.getDate()}`}
                   </button>
                   <div className="flex items-center border border-[#1A1A1A]/15 bg-white">
                     <button onClick={() => handleNavigateDiff(-1)} className="p-1 px-2.5 hover:bg-neutral-100 border-r border-[#1A1A1A]/10">
@@ -1222,7 +1226,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
                       onDragOver={(e) => handleDragOverDate(e, cell.dateString)}
                       onDrop={(e) => handleDropDate(e, cell.dateString)}
                       className={`border-r border-b border-[#1A1A1A]/10 p-2 min-h-[100px] transition-all flex flex-col justify-between ${
-                        cell.isCurrentMonth ? 'bg-white' : 'bg-neutral-50/60 text-neutral-400'
+                        cell.isCurrentMonth ? 'bg-white' : 'bg-neutral-100 text-neutral-300'
                       } ${dragOverDate === cell.dateString ? 'bg-amber-500/15 ring-2 ring-[#1A1A1A] ring-inset' : ''}`}
                     >
                       {/* Day Header index number & trigger quick-add popover */}
@@ -1240,9 +1244,11 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
                         </button>
                         
                         <span className={`text-xs font-mono font-bold p-1 px-2 ${
-                          cell.isToday 
-                            ? 'bg-[#1A1A1A] text-[#F9F8F6] font-extrabold' 
-                            : 'text-[#1A1A1A]'
+                          cell.isToday
+                            ? 'bg-[#1A1A1A] text-[#F9F8F6] font-extrabold'
+                            : cell.isCurrentMonth
+                              ? 'text-[#1A1A1A]'
+                              : 'text-neutral-300'
                         }`}>
                           {cell.dayNum}
                         </span>
@@ -1461,7 +1467,7 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
                       CHRONOS REGISTRY HOUR LOGS
                     </p>
                   </div>
-                  {selectedDate.toISOString().split('T')[0] === '2026-05-26' && (
+                  {selectedDate.toISOString().split('T')[0] === todayString && (
                     <span className="bg-red-800 text-[#F9F8F6] px-2.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest animate-pulse">
                       TODAY
                     </span>
