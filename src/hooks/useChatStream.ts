@@ -197,7 +197,6 @@ export function useChatStream(): UseChatStreamReturn {
         const reply  = data.text   ?? (lang === 'zh' ? '抱歉，未返回有效回复。' : 'Empty response.');
         const action = data.action ?? 'none';
         const ev     = data.event;
-        console.log('[神机百炼]', { action, ev, reply });
 
         if (action === 'create' && ev?.title) {
           const item = buildEventItem(ev);
