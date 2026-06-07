@@ -2,8 +2,11 @@ export const config = { runtime: 'edge' };
 
 // ── 神机百炼 · Chronos 模块 ────────────────────────────────────────────────
 function todayDateStr(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  // 明确指定北京时间，避免 Vercel Edge 运行在 UTC
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date()); // en-CA 格式本身就是 YYYY-MM-DD
 }
 
 const CHRONOS_SCHEMA = {
