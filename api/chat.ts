@@ -340,10 +340,19 @@ export default async function handler(req: Request): Promise<Response> {
         const action = (modelAction === 'none' && parsed.event?.title)
           ? 'create'   // ev 有数据但 action 填错了 → 推断为 create
           : modelAction;
+        // 日期兜底：小模型容易乱猜日期，若偏离 clientDate 超过 3 天则强制修正
+        const ev = parsed.event?.title ? parsed.event : null;
+        if (ev && clientDate) {
+          const evMs = new Date(ev.date || '').getTime();
+          const refMs = new Date(clientDate).getTime();
+          if (!evMs || Math.abs(refMs - evMs) > 3 * 86400_000) {
+            ev.date = clientDate;
+          }
+        }
         return new Response(JSON.stringify({
           text:   parsed.reply  ?? rawContent,
           action,
-          event:  parsed.event?.title ? parsed.event : null,
+          event:  ev,
         }), { headers: { 'Content-Type': 'application/json' } });
       } catch {
         return new Response(JSON.stringify({ text: rawContent, event: null }), {
