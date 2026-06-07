@@ -251,9 +251,11 @@ async function startServer() {
         }
       }
 
-      // ── Ollama JSON mode (ethan / fast, structured output) ────────────
+      // ── Ollama JSON mode (ethan / fast) — 原生 /api/chat 接口 ──────────
+      // OpenAI兼容层不可靠，原生接口的 format:"json" 强制返回合法 JSON
       if (model === 'ethan' || model === 'fast') {
         const today = todayDateStr();
+        const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
         const ollamaPayload = [
           { role: 'system', content: SYSTEM_PROMPT + scheduleSystemSuffix(today) },
           ...messages.map((m: any) => ({
@@ -261,17 +263,14 @@ async function startServer() {
             content: m.content,
           })),
         ];
-        const ollamaRes = await fetch(route.url, {
+        const ollamaRes = await fetch(`${ollamaBaseUrl}/api/chat`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             model: route.modelId,
             messages: ollamaPayload,
             stream: false,
-            response_format: { type: 'json_object' },
+            format: 'json',
           }),
         });
         if (!ollamaRes.ok) {
@@ -279,7 +278,8 @@ async function startServer() {
           return res.status(502).json({ error: `${model} API error: ${err}` });
         }
         const ollamaData = await ollamaRes.json();
-        const rawContent = ollamaData.choices?.[0]?.message?.content ?? '{}';
+        // 原生 Ollama 响应：{ message: { role, content } }
+        const rawContent = ollamaData.message?.content ?? '{}';
         try {
           const parsed = JSON.parse(rawContent);
           return res.json({
