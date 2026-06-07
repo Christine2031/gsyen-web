@@ -7,6 +7,8 @@ const PREDICT_API =
  * (caller should fall through to the general AI gateway).
  */
 export async function askPredictionExpert(text: string): Promise<string | null> {
+  // 未显式配置 VITE_PREDICT_API 时跳过，避免生产环境控制台报错
+  if (!(import.meta as any).env?.VITE_PREDICT_API) return null;
   try {
     const res = await fetch(`${PREDICT_API}/ask`, {
       method: 'POST',
