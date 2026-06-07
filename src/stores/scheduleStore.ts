@@ -73,6 +73,11 @@ export const scheduleStore = {
     return updated;
   },
 
+  /** Wipe all events */
+  clearAll(): void {
+    localStorage.removeItem(STORAGE_KEY);
+  },
+
   // ─── Chat ↔ Calendar bridge ─────────────────────────────────────────────
 
   /**

@@ -14,6 +14,7 @@ import {
 import { EventItem, ColumnId } from '../types/schedule';
 import { DEFAULT_EVENTS }       from '../config/scheduleConfig';
 import { useScheduleEvents }    from '../hooks/useScheduleEvents';
+import { scheduleStore }        from '../stores/scheduleStore';
 import { useDragDrop }          from '../hooks/useDragDrop';
 import { useMiniCalendarDays, useMainCalendarDays, useWeekDays } from '../hooks/useCalendarDays';
 
@@ -101,6 +102,14 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
     removeEvent(id);
     if (selectedEventForView?.id === id) setSelectedEventForView(null);
     notify(lang === 'zh' ? `丢弃卡片: ${item?.title}` : `Incident card purged from database`);
+  };
+
+  const handleClearAll = () => {
+    if (!window.confirm(lang === 'zh' ? '清空全部日程？此操作不可撤销。' : 'Clear all events? This cannot be undone.')) return;
+    scheduleStore.clearAll();
+    window.dispatchEvent(new CustomEvent('schedule-updated'));
+    setSelectedEventForView(null);
+    notify(lang === 'zh' ? '已清空全部日程' : 'All events cleared');
   };
 
   const handleSaveEvent = (id: string, changes: Partial<EventItem>) => {
@@ -215,6 +224,10 @@ export default function ScheduleModule({ lang, defaultView = 'kanban' }: Schedul
               </button>
             ))}
           </div>
+          <button onClick={handleClearAll}
+            className="px-3 py-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all rounded-none">
+            {lang === 'zh' ? '清空' : 'CLEAR ALL'}
+          </button>
           <button onClick={() => setShowAddForm(o => !o)}
             className={`px-4 py-1.5 font-bold text-[10px] font-mono tracking-widest uppercase transition-all flex items-center gap-2 rounded-none ${showAddForm ? 'bg-red-800 text-white hover:bg-red-900' : 'bg-[#1A1A1A] text-white'}`}>
             {showAddForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
