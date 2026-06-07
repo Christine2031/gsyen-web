@@ -93,6 +93,7 @@ export function useChatStream(): UseChatStreamReturn {
           const event = scheduleStore.parseFromAIResponse(fullText);
           if (event) {
             scheduleStore.add(event);
+            window.dispatchEvent(new CustomEvent('schedule-updated'));
             onScheduleAdded?.(event.title);
           }
         }
@@ -105,6 +106,7 @@ export function useChatStream(): UseChatStreamReturn {
           const event = scheduleStore.parseFromAIResponse(reply);
           if (event) {
             scheduleStore.add(event);
+            window.dispatchEvent(new CustomEvent('schedule-updated'));
             onScheduleAdded?.(event.title);
           }
         }

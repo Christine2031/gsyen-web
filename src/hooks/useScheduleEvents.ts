@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { EventItem, ColumnId } from '../types/schedule';
 import { scheduleStore } from '../stores/scheduleStore';
 
@@ -55,6 +55,13 @@ export function useScheduleEvents(defaults: EventItem[]): UseScheduleEventsRetur
 
   const reload = useCallback(() => {
     setEvents(scheduleStore.getAll());
+  }, []);
+
+  // Listen for cross-module updates (e.g. ChatModule adding an event via the bridge)
+  useEffect(() => {
+    const handler = () => setEvents(scheduleStore.getAll());
+    window.addEventListener('schedule-updated', handler);
+    return () => window.removeEventListener('schedule-updated', handler);
   }, []);
 
   return { events, addEvent, updateEvent, removeEvent, moveEvent, changeStatus, reload };

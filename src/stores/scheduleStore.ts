@@ -129,8 +129,15 @@ const QUERY_KEYWORDS = [
   "today's schedule", "today plan", "what's scheduled",
 ];
 const ADD_KEYWORDS = [
-  '添加日程', '加入日历', '安排一个', '新建日程', '帮我记录',
-  'add schedule', 'add event', 'create event',
+  // 明确添加意图
+  '添加日程', '加入日历', '新建日程', '帮我记录', '帮我安排',
+  '安排一个', '加一个', '记一下', '记录一下', '新增', '建一个',
+  // 今天要做 / 工作计划
+  '今天要做', '今天我要', '今天打算', '今天需要', '今天准备',
+  '安排今天', '今天工作', '今天任务',
+  // English
+  'add schedule', 'add event', 'create event', 'schedule a', 'remind me',
+  'put it on', 'block time', 'plan to',
 ];
 
 export type ScheduleIntent = 'query' | 'add' | null;
@@ -159,9 +166,10 @@ export function enrichMessageForSchedule(
       : `[Schedule Context]\n${ctx}\n\n[User Question]\n${text}`;
   }
   if (intent === 'add') {
+    const today = todayStr();
     const instruction = lang === 'zh'
-      ? '\n\n请在回复末尾附上以下格式的结构化数据，系统将自动创建日程：\n```schedule\n{"title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"strategy","location":"...","subtitle":"..."}\n```'
-      : '\n\nPlease append this structured block at the end so the system can auto-create the event:\n```schedule\n{"title":"...","date":"YYYY-MM-DD","time":"HH:MM","category":"strategy","location":"...","subtitle":"..."}\n```';
+      ? `\n\n[系统指令] 今天是 ${today}。请在回复末尾附上如下格式的日程数据，系统将自动写入日历（仅需一个 \`\`\`schedule\`\`\` 块，日期若未指定请默认今天）：\n\`\`\`schedule\n{"title":"事件名称","date":"${today}","time":"09:00","category":"creative","location":"","subtitle":"简短说明"}\n\`\`\``
+      : `\n\n[System] Today is ${today}. Please append one \`\`\`schedule\`\`\` block at the end of your reply so the system can auto-create the calendar event (use today's date if not specified):\n\`\`\`schedule\n{"title":"Event title","date":"${today}","time":"09:00","category":"creative","location":"","subtitle":"Brief note"}\n\`\`\``;
     return text + instruction;
   }
   return text;
