@@ -342,13 +342,13 @@ async function startServer() {
           const action = (modelAction === 'none' && parsed.event?.title)
             ? 'create'
             : modelAction;
-          // 司辰：校验模型日期，偏离 clientDate 超过 3 天 → 拒绝执行
+          // 司辰：模型日期偏离 clientDate 超过 3 天 → 静默修正为今天
           const ev = parsed.event?.title ? parsed.event : null;
           if (ev && clientDate) {
             const evMs = new Date(ev.date || '').getTime();
             const refMs = new Date(clientDate).getTime();
             if (!evMs || Math.abs(refMs - evMs) > 3 * 86400_000) {
-              return res.json({ text: '时辰不对。', action: 'none', event: null });
+              ev.date = clientDate;
             }
           }
           return res.json({
