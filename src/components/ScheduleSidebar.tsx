@@ -38,7 +38,7 @@ export default function ScheduleSidebar({
 
       {/* A. Speed Dial "+ Create Event" */}
       <button
-        onClick={() => onOpenAddForm(selectedDate.toISOString().split('T')[0])}
+        onClick={() => onOpenAddForm(`${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`)}
         className="w-full py-2 bg-[#1A1A1A] text-white font-mono text-center hover:bg-[#2A2A2A] transition-all uppercase tracking-widest font-bold text-[10px] flex items-center justify-center gap-2 rounded-none"
       >
         <Plus className="w-3.5 h-3.5 text-amber-500" />
@@ -74,7 +74,7 @@ export default function ScheduleSidebar({
         {/* Day cells */}
         <div className="grid grid-cols-7 gap-1">
           {miniCalendarDays.map((cell, idx) => {
-            const isSelected = selectedDate.toISOString().split('T')[0] === cell.dateString;
+            const isSelected = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}` === cell.dateString;
             return (
               <button
                 key={idx}

@@ -4,7 +4,8 @@ import { ChatMessage } from '../types/chat';
 export async function sendToGateway(
   model: string,
   messages: ChatMessage[],
-  events?: Array<{ id: string; title: string; date: string; time: string }>
+  events?: Array<{ id: string; title: string; date: string; time: string }>,
+  scheduleIntent?: string | null
 ): Promise<Response> {
   // 传客户端本地日期，避免 Vercel UTC 和中国时区差8小时
   const d = new Date();
@@ -18,6 +19,7 @@ export async function sendToGateway(
       messages: messages.map(m => ({ role: m.role, content: m.content })),
       events: events ?? [],
       clientDate,
+      scheduleIntent: scheduleIntent ?? null,
     }),
   });
   if (!res.ok) throw new Error(`Gateway error: ${res.status}`);

@@ -118,19 +118,18 @@ export function useChatStream(): UseChatStreamReturn {
 
       const isStructured = STRUCTURED_MODELS.has(model);
 
-      // 3. SSE 模型消息增强（首个命中意图的 handler 生效）
+      // 3. 意图探测（所有模型都做：结构化模型用它决定是否注入域 system 后缀，
+      //    SSE 模型额外用它来增强消息文本）
       let enrichedText = text;
       let streamHandler: DomainHandler | null = null;
       let streamIntent: string | null = null;
-      if (!isStructured) {
-        for (const handler of domainHandlers) {
-          const intent = handler.detectIntent(text);
-          if (intent) {
-            enrichedText = handler.enrichMessage(text, intent, lang);
-            streamHandler = handler;
-            streamIntent = intent;
-            break;
-          }
+      for (const handler of domainHandlers) {
+        const intent = handler.detectIntent(text);
+        if (intent) {
+          streamHandler = handler;
+          streamIntent = intent;
+          if (!isStructured) enrichedText = handler.enrichMessage(text, intent, lang);
+          break;
         }
       }
 
@@ -148,7 +147,7 @@ export function useChatStream(): UseChatStreamReturn {
         ? domainHandlers.map(h => h.buildContext()).find((ctx): ctx is NonNullable<typeof ctx> => ctx != null)
         : undefined;
 
-      const response = await sendToGateway(model, apiMessages, eventsCtx);
+      const response = await sendToGateway(model, apiMessages, eventsCtx, streamIntent);
       setIsLoading(false);
 
       const contentType = response.headers.get('content-type') ?? '';
@@ -178,8 +177,7 @@ export function useChatStream(): UseChatStreamReturn {
         // 司辰 · 防幻觉守卫：结构化模型(尤其本地小模型)即便判定 action!=='none'，
         // 也可能对寒暄等无关消息幻觉出 event。只有用户原话本身命中某个领域的
         // 意图关键词时，才信任模型给出的 action，否则一律按 'none' 处理。
-        const userIntentDetected = domainHandlers.some(h => h.detectIntent(text));
-        if (action !== 'none' && userIntentDetected) {
+        if (action !== 'none' && streamIntent) {
           for (const handler of domainHandlers) {
             const result = handler.handleAction(action, ev, lang);
             if (result) {

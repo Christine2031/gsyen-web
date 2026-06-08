@@ -167,6 +167,18 @@ action 枚举：
 create/confirm 时 event 填完整字段：date 默认 ${today}，time 默认 09:00，category 默认 strategy。${eventsCtx}`
 }
 
+/**
+ * 当用户消息未命中日程意图关键词时使用的极简后缀 —— 不附带 action 枚举规则与
+ * 当前日程列表，避免小模型把"请输出 JSON"误读成"本条也要判定日程动作"，
+ * 从而对寒暄等无关消息幻觉出 create/update。
+ */
+function noScheduleSystemSuffix(): string {
+  return `
+
+【输出格式】必须输出严格 JSON：{"reply":"回复内容","action":"none","event":null}
+本条消息与日程无关，action 必须固定为 "none"，event 固定为 null，只在 reply 中正常对话。`;
+}
+
 // Gemini responseSchema — enforced at API level (uppercase type names required by Gemini)
 const GEMINI_RESPONSE_SCHEMA = {
   type: 'OBJECT',
@@ -250,7 +262,7 @@ async function startServer() {
   // Chat proxy — model-agnostic
   app.post('/api/chat', async (req, res) => {
     try {
-      const { messages, model = 'kimi', events = [], clientDate } = req.body;
+      const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null } = req.body;
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Missing or invalid messages array' });
       }
@@ -280,7 +292,7 @@ async function startServer() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: geminiMessages,
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT + scheduleSystemSuffix(today) }] },
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT + (scheduleIntent ? scheduleSystemSuffix(today) : noScheduleSystemSuffix()) }] },
             generationConfig: {
               responseMimeType: 'application/json',
               responseSchema: GEMINI_RESPONSE_SCHEMA,
@@ -311,7 +323,7 @@ async function startServer() {
         const today = clientDate || todayDateStr();
         const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
         const ollamaPayload = [
-          { role: 'system', content: SYSTEM_PROMPT + scheduleSystemSuffix(today, events) },
+          { role: 'system', content: SYSTEM_PROMPT + (scheduleIntent ? scheduleSystemSuffix(today, events) : noScheduleSystemSuffix()) },
           ...messages.map((m: any) => ({
             role: m.role === 'model' ? 'assistant' : 'user',
             content: m.content,
