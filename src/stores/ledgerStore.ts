@@ -13,6 +13,9 @@ export interface Transaction {
   category: 'royalty' | 'commission' | 'material' | 'server' | 'marketing' | 'consultancy';
   date: string;
   notes?: string;
+  // 个人 / 团队——未手动设置时按内容语义算法判定（见 ActionCardView 的 isShared 算法），
+  // 一旦用户在卡片里手动选择过，scope 即被持久化，永久优先于算法判断。
+  scope?: 'self' | 'shared';
 }
 
 // ─── Persistence ─────────────────────────────────────────────────────────────
@@ -77,6 +80,11 @@ export const ledgerStore = {
   },
   remove(id: string): void {
     const updated = readRaw().filter(t => t.id !== id);
+    writeRaw(updated);
+    syncRegistry(updated);
+  },
+  update(id: string, changes: Partial<Omit<Transaction, 'id'>>): void {
+    const updated = readRaw().map(t => t.id === id ? { ...t, ...changes } : t);
     writeRaw(updated);
     syncRegistry(updated);
   },

@@ -43,6 +43,7 @@ function buildCard(action: ActionCard['action'], item: Transaction, usdToCny: nu
     action,
     title:  item.description,
     meta:   [amountStr, convertedStr, item.date, item.category].filter(Boolean),
+    id:     item.id,
   };
 }
 
