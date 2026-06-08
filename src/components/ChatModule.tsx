@@ -50,20 +50,28 @@ function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 'en' })
     : ACTION_LABEL_EN[card.action] ?? '';
 
   const meta = card.meta.filter(Boolean);
+  const isLedger = card.module === 'LEDGER';
 
-  // 真实卡片的 meta[0] 形如 "2026-06-08 · 15:00" — 转换为定稿格式：焦点区只显示 12 小时制时间，
-  // 日期挪到副标签，与已敲定的样卡（focus: '03:00 PM' / focusSub: '06-09 · ...'）保持一致
+  // LEDGER: meta[0]=金额(±N), meta[1]=日期, meta[2]=category — focus列只显示金额，其余全进右侧标签
+  // CHRONOS: meta[0]="2026-06-08 · 15:00" — 转换 12h 制时间作 focusText，日期作 focusSub
   let focusText = meta[0] ?? card.title;
   let focusSub  = meta[1] ?? '';
   let tags      = meta.slice(2);
-  const dtMatch = (meta[0] ?? '').match(/(\d{4}-)?(\d{2}-\d{2})\s*[·•]\s*(\d{1,2}):(\d{2})/);
-  if (dtMatch) {
-    const [, , md, hh, mm] = dtMatch;
-    const h = parseInt(hh, 10);
-    const h12 = ((h + 11) % 12) + 1;
-    focusText = `${String(h12).padStart(2, '0')}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
-    focusSub  = meta[1] ? `${md} · ${meta[1]}` : md;
-    tags      = meta.slice(2);
+
+  if (isLedger) {
+    focusText = meta[0] ?? '';   // ±金额
+    focusSub  = '';              // 不在 focus 列显示日期
+    tags      = meta.slice(1);  // 日期 + category 进右侧小标签
+  } else {
+    const dtMatch = (meta[0] ?? '').match(/(\d{4}-)?(\d{2}-\d{2})\s*[·•]\s*(\d{1,2}):(\d{2})/);
+    if (dtMatch) {
+      const [, , md, hh, mm] = dtMatch;
+      const h = parseInt(hh, 10);
+      const h12 = ((h + 11) % 12) + 1;
+      focusText = `${String(h12).padStart(2, '0')}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
+      focusSub  = meta[1] ? `${md} · ${meta[1]}` : md;
+      tags      = meta.slice(2);
+    }
   }
 
   // scope 由内容语义判定（含团队/客户/对方等"涉及他人"关键词 → shared，否则 self）
@@ -83,7 +91,11 @@ function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 'en' })
         className={`rounded-xl border border-white/[0.05] ${COLOR.body} overflow-hidden flex transition ${isMail ? 'cursor-pointer hover:brightness-110' : ''}`}
       >
         <div className={`flex flex-col items-center justify-center ${COLOR.focus} shrink-0 overflow-hidden px-3 py-3 w-[148px]`}>
-          <span className="font-mono font-bold text-amber-400/90 leading-none tracking-tight truncate text-center w-full text-[14px]">{focusText}</span>
+          <span className={`font-mono font-bold leading-none tracking-tight truncate text-center w-full text-[14px] ${
+            isLedger
+              ? focusText.startsWith('+') ? 'text-teal-400' : 'text-rose-400'
+              : 'text-amber-400/90'
+          }`}>{focusText}</span>
           {focusSub && <span className="font-mono text-[8px] text-white/30 mt-1.5 tracking-wide truncate text-center w-full">{focusSub}</span>}
         </div>
         <div className="flex-1 min-w-0 px-3.5 py-2.5 space-y-1">

@@ -26,12 +26,13 @@ function buildTransactionItem(data: any): Transaction {
 
 function buildCard(action: ActionCard['action'], item: Transaction): ActionCard {
   const sign = item.type === 'income' ? '+' : '-';
+  // meta[0] = 金额（focus 列大字），meta[1] = 日期，meta[2] = category（右侧小标签）
   const amountStr = `${sign}${item.amount.toLocaleString()}`;
   return {
     module: 'LEDGER',
     action,
     title:  item.description,
-    meta:   [item.date, item.category, amountStr].filter(Boolean),
+    meta:   [amountStr, item.date, item.category].filter(Boolean),
   };
 }
 
