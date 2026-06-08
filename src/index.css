@@ -115,8 +115,22 @@
      animate-pulse               — 在线状态点、活跃图标
      backdrop-blur-md            — 吸顶导航栏
      motion/react: opacity 0→1 / y 10→0 / duration 0.2s — 页面切换
-     ---------------------------------------------------------- */
 
+     animate-fadeIn / animate-scaleUp — 详情弹窗"丝滑放大"开启动效
+     （日程详情、聊天卡片详情共用：遮罩淡入 + 卡片由 0.94 缩放到 1，
+     用 ease-out 曲线让收尾更柔和，时长刻意控制在 ~200ms 内不拖沓）
+     ---------------------------------------------------------- */
+  --animate-fadeIn:  fadeIn 0.18s ease-out both;
+  --animate-scaleUp: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes scaleUp {
+  from { opacity: 0; transform: scale(0.94) translateY(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
 }
 
 /* ----------------------------------------------------------

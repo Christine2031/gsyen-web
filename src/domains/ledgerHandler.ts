@@ -7,15 +7,20 @@ import {
 } from '../stores/ledgerStore';
 import { DomainHandler, DomainActionResult } from './types';
 import { localDateStr } from '../utils/date';
+import { Currency, detectCurrency, convertAmount, formatAmount, getCachedUsdToCnyRate, getUsdToCnyRate } from '../utils/exchangeRate';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
-function buildTransactionItem(data: any): Transaction {
+function buildTransactionItem(data: any, rawText?: string): Transaction {
   const todayStr = localDateStr(new Date());
+  const currency: Currency = data.currency === 'USD' || data.currency === 'CNY'
+    ? data.currency
+    : detectCurrency(rawText || data.description || '');
   return {
     id:          `ai-${Date.now()}`,
     description: data.description || data.title || '未命名记录',
     amount:      Number(data.amount) || 0,
+    currency,
     type:        data.type === 'income' ? 'income' : 'expense',
     category:    (['royalty', 'commission', 'material', 'server', 'marketing', 'consultancy'] as const)
                    .includes(data.category) ? data.category : 'material',
@@ -24,15 +29,20 @@ function buildTransactionItem(data: any): Transaction {
   };
 }
 
-function buildCard(action: ActionCard['action'], item: Transaction): ActionCard {
+// meta[0] = 原始金额（focus 列大字，带币种符号）
+// meta[1] = 汇率换算后的另一币种参考值（focus 列小字，"≈ $13.9" 这种）— 联动实时汇率
+// meta[2] = 日期，meta[3] = category（右侧小标签）
+function buildCard(action: ActionCard['action'], item: Transaction, usdToCny: number): ActionCard {
   const sign = item.type === 'income' ? '+' : '-';
-  // meta[0] = 金额（focus 列大字），meta[1] = 日期，meta[2] = category（右侧小标签）
-  const amountStr = `${sign}${item.amount.toLocaleString()}`;
+  const amountStr = `${sign}${formatAmount(item.amount, item.currency)}`;
+  const other: Currency = item.currency === 'CNY' ? 'USD' : 'CNY';
+  const converted = convertAmount(item.amount, item.currency, other, usdToCny);
+  const convertedStr = `≈ ${formatAmount(converted, other)}`;
   return {
     module: 'LEDGER',
     action,
     title:  item.description,
-    meta:   [amountStr, item.date, item.category].filter(Boolean),
+    meta:   [amountStr, convertedStr, item.date, item.category].filter(Boolean),
   };
 }
 
@@ -49,6 +59,14 @@ function parseFromAIResponse(fullText: string): Transaction | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * 卡片渲染用同步的缓存汇率（即时返回，不阻塞 UI），同时在后台触发一次
+ * 实时汇率刷新——下一笔记录就能用上最新值。两者都走同一个 6 小时缓存。
+ */
+function refreshRateInBackground(): void {
+  void getUsdToCnyRate();
 }
 
 // ─── handler ─────────────────────────────────────────────────────────────────
@@ -84,8 +102,9 @@ export const ledgerHandler: DomainHandler = {
     if (action === 'create') {
       const item = buildTransactionItem(ev);
       commit(item);
+      refreshRateInBackground();
       return {
-        card:   buildCard('create', item),
+        card:   buildCard('create', item, getCachedUsdToCnyRate()),
         notify: { action: 'create', title: item.description },
       };
     }
@@ -101,8 +120,9 @@ export const ledgerHandler: DomainHandler = {
     const item = parseFromAIResponse(fullText);
     if (!item) return null;
     commit(item);
+    refreshRateInBackground();
     return {
-      card:   buildCard('create', item),
+      card:   buildCard('create', item, getCachedUsdToCnyRate()),
       notify: { action: 'create', title: item.description },
     };
   },

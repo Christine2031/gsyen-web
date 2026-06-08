@@ -204,11 +204,15 @@ function ledgerSystemSuffix(today: string): string {
 
 【神机百炼 · Ledger — 必须输出 JSON】
 每次回复必须是严格 JSON，格式：
-{"reply":"回复内容","action":"create","event":{"description":"记录描述","amount":100,"type":"expense","category":"material","date":"YYYY-MM-DD","notes":"备注"}}
+{"reply":"回复内容","action":"create","event":{"description":"记录描述","amount":100,"currency":"CNY","type":"expense","category":"material","date":"YYYY-MM-DD","notes":"备注"}}
 
 action 枚举：
 - "create" → 记录一笔账务（用户说了消费/收入金额）
 - "none"   → 仅对话，不记账
+
+currency 枚举（必须二选一，按用户原话的币种判断）：
+- "CNY" → 用户说"元/块/¥/人民币"
+- "USD" → 用户说"美元/美金/刀/$/USD"
 
 type 枚举（必须二选一）：
 - "income"  → 收入、到账、回款

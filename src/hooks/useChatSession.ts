@@ -7,7 +7,7 @@ interface UseChatSessionReturn {
   messages: ChatMessage[];
   sessions: StoredSession[];
   currentSessionId: string | null;
-  setMessages: (msgs: ChatMessage[]) => void;
+  setMessages: (msgs: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
   saveChat: (msgs: ChatMessage[], model: ModelId) => void;
   loadSession: (session: StoredSession) => void;
   deleteSession: (id: string) => void;
@@ -35,7 +35,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
-  const setMessages = useCallback((msgs: ChatMessage[]) => {
+  const setMessages = useCallback((msgs: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
     setMessagesState(msgs);
   }, []);
 

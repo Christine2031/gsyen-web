@@ -1,4 +1,6 @@
-const VintageCar = (props: { size?: number; strokeWidth?: number; className?: string; style?: React.CSSProperties }) => (
+import type { CSSProperties } from 'react';
+
+const VintageCar = (props: { size?: number; strokeWidth?: number; className?: string; style?: CSSProperties }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"

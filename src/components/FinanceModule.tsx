@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, TrendingUp, TrendingDown, Plus, Trash2, Calendar, FileText, ArrowUpRight, BarChart3, Receipt, Eye, Sparkles } from 'lucide-react';
 import { localDateStr } from '../utils/date';
+import { Currency, getCachedUsdToCnyRate, getUsdToCnyRate, convertAmount } from '../utils/exchangeRate';
+import { useDisplayCurrency } from '../hooks/useDisplayCurrency';
 
 interface Transaction {
   id: string;
   description: string;
   amount: number;
+  currency: Currency;          // 'CNY' | 'USD' —— 记录原始币种，汇总/展示时按实时汇率统一换算
   type: 'income' | 'expense';
   category: 'royalty' | 'commission' | 'material' | 'server' | 'marketing' | 'consultancy';
   date: string;
   notes?: string;
+}
+
+/** 旧记录没有 currency 字段——按本模块历史惯例（账面一律按 USD 存储）兜底，向后兼容 */
+function sanitizeTransactions(raw: any[]): Transaction[] {
+  return raw.map(item => ({ ...item, currency: item.currency === 'CNY' ? 'CNY' : 'USD' }));
 }
 
 interface FinanceModuleProps {
@@ -25,17 +33,67 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
   // Forms
   const [newDesc, setNewDesc] = useState('');
   const [newAmount, setNewAmount] = useState('');
+  // 录入金额的原始币种——之前固定按 USD 入账，但用户实际收付往往是人民币
+  // （比如"我收到了500元备用金"），不该被强行当作美元记一笔。默认选 CNY
+  // 更贴近本地工作室的真实场景，用户也可以按需切到 USD。
+  const [newCurrency, setNewCurrency] = useState<Currency>('CNY');
   const [newType, setNewType] = useState<'income' | 'expense'>('income');
   const [newCategory, setNewCategory] = useState<'royalty' | 'commission' | 'material' | 'server' | 'marketing' | 'consultancy'>('commission');
   const [newDate, setNewDate] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [showForm, setShowForm] = useState(false);
 
+  /**
+   * 点击任意金额可在 $ / ¥ 之间切换——按实时汇率换算（与聊天卡片同款联动汇率）。
+   *
+   * 注意：这里特意不用一个全局开关统一切换所有金额——之前 showCNY 是单一布尔值，
+   * 导致点击任意一处都会把页面里全部金额同时翻转，体验上跟"点哪个换哪个"的直觉
+   * 不符（聊天 LEDGER 卡片就是各自独立切换的）。改成"每个数字各自记自己的状态"：
+   * 三张汇总卡片各自一个布尔位，列表里每一行用 id 集合记录"已切换"的条目。
+   * 这样点谁、谁变，互不影响——和聊天卡片的体验完全一致。
+   */
+  // 全局联动开关——和聊天 LEDGER/PAYMENT 卡片共用同一个状态（见 useDisplayCurrency）。
+  // 产品里只留两个可点入口：聊天里任意一张带货币的卡片 + 这里左上角"累计主营业务收入"，
+  // 点其中任何一个，全站所有金额一起切换 ¥ / $，并跨刷新/会话/标签页持久同步。
+  const [displayCurrency, toggleDisplayCurrency] = useDisplayCurrency();
+  const showCny = displayCurrency === 'CNY';
+
+  const [usdToCny, setUsdToCny] = useState(getCachedUsdToCnyRate());
+  useEffect(() => {
+    void getUsdToCnyRate().then(setUsdToCny);
+  }, []);
+  /**
+   * 账面金额一律按 USD 存储；展示时按需换算并加上对应符号。
+   * 这里符号放在数字左侧（"${'$'} 1,000"）——大号衬线展示数字时，符号居左
+   * 是财务报表的传统排法，视觉上比居右更稳重大方；聊天 LEDGER 卡片是
+   * 小尺寸标签式排版，符号居右更紧凑——两处场景不同，各自取最好看的写法。
+   * 数字与符号之间用窄不换行空格(U+202F)隔开，清楚分开又不破行。
+   *
+   * @param showCny 是否把这一笔按人民币显示——由调用方传入"这一处自己的"切换状态，
+   *                而不是读取某个全局开关，从根源上避免互相耦合。
+   */
+  const fmtAmount = (usd: number, showCny: boolean, opts?: { decimals?: number }): string => {
+    const decimals = opts?.decimals ?? 0;
+    if (showCny) {
+      const cny = convertAmount(usd, 'USD', 'CNY', usdToCny);
+      return `¥ ${cny.toLocaleString(undefined, { maximumFractionDigits: decimals || 1 })}`;
+    }
+    return `${'$'} ${usd.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  };
+
+  /**
+   * 把"按交易原始币种记录的金额"统一换算成 USD 基准——
+   * 汇总（累计收入/支出/利润/分类占比）和单条展示都先转成 USD 再喂给 fmtAmount，
+   * 这样无论用户当时录入的是 ¥ 还是 $，报表口径都一致，不会因为币种没对齐而算错。
+   */
+  const toUsd = (amount: number, currency: Currency): number =>
+    currency === 'USD' ? amount : convertAmount(amount, 'CNY', 'USD', usdToCny);
+
   useEffect(() => {
     const saved = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (saved) {
       try {
-        setTransactions(JSON.parse(saved));
+        setTransactions(sanitizeTransactions(JSON.parse(saved)));
       } catch (e) {
         console.error(e);
       }
@@ -46,6 +104,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
           id: 't1',
           description: lang === 'zh' ? '皇家加冕珠宝商 (Royal Crown Jewelers) 矢量图标授权税收' : 'Royalty Licensing - Royal Crown Jewelers SVG',
           amount: 4500,
+          currency: 'USD',
           type: 'income',
           category: 'royalty',
           date: '2026-05-20',
@@ -55,6 +114,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
           id: 't2',
           description: lang === 'zh' ? '高科技半导体 Neural Processor 项目定制设顾问费完成' : 'Consultancy Commission: Neural Processor custom UI suite',
           amount: 18500,
+          currency: 'USD',
           type: 'income',
           category: 'commission',
           date: '2026-05-24',
@@ -64,6 +124,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
           id: 't3',
           description: lang === 'zh' ? '德国高纬哑光原棉纸与高纯度墨水测试介质采购' : 'Premium German Matte Cotton Card Stock Material Procurement',
           amount: 1250,
+          currency: 'USD',
           type: 'expense',
           category: 'material',
           date: '2026-05-25',
@@ -73,6 +134,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
           id: 't4',
           description: lang === 'zh' ? '机密军事级安全沙河服务器及分布式 K8s 节点安全代管' : 'Citadel SSL Security Vault Node & Cloud Managed VM Node',
           amount: 450,
+          currency: 'USD',
           type: 'expense',
           category: 'server',
           date: '2026-05-25',
@@ -101,6 +163,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
       id: Date.now().toString(),
       description: newDesc,
       amount: amountNum,
+      currency: newCurrency,        // 按用户实际选择的币种入账——不再被强行当作美元记一笔
       type: newType,
       category: newCategory,
       date: newDate || localDateStr(new Date()),
@@ -112,6 +175,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
 
     setNewDesc('');
     setNewAmount('');
+    setNewCurrency('CNY');
     setNewNotes('');
     setShowForm(false);
   };
@@ -121,9 +185,9 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
     saveTransactions(updated);
   };
 
-  // Math logic
-  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  // Math logic —— 各自按原始币种换算到 USD 基准后再求和，避免 ¥/$ 混算出错
+  const totalIncome = transactions.filter(t => t.type === 'income').reduce((sum, t) => sum + toUsd(t.amount, t.currency), 0);
+  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + toUsd(t.amount, t.currency), 0);
   const netMargin = totalIncome - totalExpense;
 
   // Custom localized Category labels
@@ -140,7 +204,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
   const categorySummary = transactions.reduce((acc, current) => {
     const cat = current.category;
     if (!acc[cat]) acc[cat] = 0;
-    acc[cat] += current.amount;
+    acc[cat] += toUsd(current.amount, current.currency);  // 同样换算到 USD 基准再累加，口径统一
     return acc;
   }, {} as Record<string, number>);
 
@@ -166,7 +230,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
             <TrendingUp className="w-12 h-12 text-white" />
           </div>
           <p className="text-[9px] font-mono tracking-widest uppercase text-white/50">{lang === 'zh' ? '累计主营业务收入' : 'GROSS INCOME RECEIVED'}</p>
-          <p className="text-2xl font-serif font-bold tracking-tight text-[#E5C158]">${totalIncome.toLocaleString()}</p>
+          <p onClick={toggleDisplayCurrency} className="text-2xl font-serif font-bold tracking-tight text-[#E5C158] cursor-pointer hover:opacity-80 transition w-fit" title={lang === 'zh' ? '点击切换全站货币显示 ¥ / $' : 'Click to toggle currency display sitewide'}>{fmtAmount(totalIncome, showCny)}</p>
           <div className="flex items-center gap-1.5 text-[9px] font-mono text-emerald-400 uppercase pt-2">
             <ArrowUpRight className="w-3 h-3" />
             <span>{transactions.filter(t => t.type === 'income').length} {lang === 'zh' ? '笔已入账' : 'approved transactions'}</span>
@@ -179,7 +243,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
             <TrendingDown className="w-12 h-12 text-[#1A1A1A]" />
           </div>
           <p className="text-[9px] font-mono tracking-widest uppercase text-[#1A1A1A]/50">{lang === 'zh' ? '运营性费用支出' : 'OPERATIONAL DEBITS'}</p>
-          <p className="text-2xl font-serif font-bold tracking-tight text-[#1A1A1A]">${totalExpense.toLocaleString()}</p>
+          <p className="text-2xl font-serif font-bold tracking-tight text-[#1A1A1A] w-fit">{fmtAmount(totalExpense, showCny)}</p>
           <div className="flex items-center gap-1.5 text-[9px] font-mono text-amber-700 uppercase pt-2">
             <TrendingDown className="w-3 h-3" />
             <span>{transactions.filter(t => t.type === 'expense').length} {lang === 'zh' ? '笔待报销/完成' : 'payments finalized'}</span>
@@ -189,8 +253,8 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
         {/* Metric 3 */}
         <div className="bg-[#F4F2EE] p-5 rounded-none border border-[#1A1A1A]/10 space-y-1 relative overflow-hidden">
           <p className="text-[9px] font-mono tracking-widest uppercase text-[#1A1A1A]/50">{lang === 'zh' ? '工作室税后纯利润' : 'NET OPERATIONAL MARGIN'}</p>
-          <p className={`text-2xl font-serif font-bold tracking-tight ${netMargin >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
-            ${netMargin.toLocaleString()}
+          <p className={`text-2xl font-serif font-bold tracking-tight w-fit ${netMargin >= 0 ? 'text-emerald-800' : 'text-red-800'}`}>
+            {fmtAmount(netMargin, showCny)}
           </p>
           <div className="text-[9px] font-mono text-[#1A1A1A]/60 uppercase pt-2 flex items-center justify-between">
             <span>{lang === 'zh' ? '盈利率:' : 'PROFIT RATIO:'}</span>
@@ -270,18 +334,31 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
                 <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
-                      {lang === 'zh' ? '款项金额 (美元)' : 'AMOUNT VALUE ($)'}
+                      {lang === 'zh' ? '款项金额 · 币种' : 'AMOUNT · CURRENCY'}
                     </label>
-                    <input
-                      type="number"
-                      required
-                      min="0.1"
-                      step="0.01"
-                      value={newAmount}
-                      onChange={(e) => setNewAmount(e.target.value)}
-                      placeholder="e.g. 500"
-                      className="w-full px-3 py-1.5 text-xs border border-[#1A1A1A]/15 bg-white rounded-none text-[#1A1A1A]"
-                    />
+                    {/* 金额与币种选择并排——按用户实际收付的真实币种入账，
+                        不再固定假设是美元（避免"收到500元人民币"被错记成 $500 这类错账） */}
+                    <div className="flex gap-1.5">
+                      <input
+                        type="number"
+                        required
+                        min="0.1"
+                        step="0.01"
+                        value={newAmount}
+                        onChange={(e) => setNewAmount(e.target.value)}
+                        placeholder="e.g. 500"
+                        className="flex-1 min-w-0 px-3 py-1.5 text-xs border border-[#1A1A1A]/15 bg-white rounded-none text-[#1A1A1A]"
+                      />
+                      <select
+                        value={newCurrency}
+                        onChange={(e) => setNewCurrency(e.target.value as Currency)}
+                        title={lang === 'zh' ? '该笔款项实际收付的币种' : 'Currency this amount was actually paid/received in'}
+                        className="w-[72px] shrink-0 px-1.5 py-1.5 text-xs border border-[#1A1A1A]/15 bg-white rounded-none text-[#1A1A1A]"
+                      >
+                        <option value="CNY">{lang === 'zh' ? '¥ 人民币' : 'CNY ¥'}</option>
+                        <option value="USD">{lang === 'zh' ? '$ 美元' : 'USD $'}</option>
+                      </select>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
@@ -415,12 +492,14 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
                           </div>
 
                           <div className="flex items-center gap-3">
-                            <span className={`text-xs font-serif font-bold tracking-tight ${
-                              item.type === 'income' 
-                                ? 'text-emerald-800' 
-                                : 'text-[#1A1A1A]'
-                            }`}>
-                              {item.type === 'income' ? '+' : '-'}${item.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                            <span
+                              className={`text-xs font-serif font-bold tracking-tight ${
+                                item.type === 'income'
+                                  ? 'text-emerald-800'
+                                  : 'text-[#1A1A1A]'
+                              }`}
+                            >
+                              {item.type === 'income' ? '+' : '-'}{fmtAmount(toUsd(item.amount, item.currency), showCny, { decimals: 2 })}
                             </span>
                             <button
                               onClick={() => handleDelete(item.id)}

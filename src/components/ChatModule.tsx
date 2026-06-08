@@ -1,150 +1,34 @@
 /**
- * ChatModule — UI shell only (~200 lines).
- * All business logic lives in:
+ * ChatModule — UI shell only (~300 lines).
+ * All business logic and large sub-views live in:
  *   hooks/useChatSession   — session persistence
  *   hooks/useChatStream    — streaming + schedule bridge
  *   utils/renderMessage    — markdown rendering
  *   utils/exportCard       — HTML card download
  *   config/models          — model list
  *   config/presets         — preset queries
+ *   ActionCardView         — 神机百炼操作卡片渲染
+ *   ChatSidebar            — 往来会话列表侧栏
+ *   ChatEmptyState         — 空会话欢迎屏
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import VintageCar from './VintageCar';
-import MailCardExpand from './MailCardExpand';
 import {
   Sparkles, Send, Trash2, Copy, Check,
-  Download, Terminal, MessageSquare, User,
-  PanelLeft, Plus, X,
+  Download, MessageSquare, User,
+  PanelLeft, Plus,
 } from 'lucide-react';
 
 import { ChatMessage, ActionCard } from '../types/chat';
 import { ModelId, MODELS } from '../config/models';
-import { PRESET_QUERIES, PRESET_SHORT_LABELS } from '../config/presets';
 import { useChatSession } from '../hooks/useChatSession';
 import { useChatStream } from '../hooks/useChatStream';
 import { renderMessageContent } from '../utils/renderMessage';
 import { exportQuoteCard } from '../utils/exportCard';
-
-// ── 神机百炼 · 操作卡片 ────────────────────────────────────────────────────────
-// 深色基调，呼应用户气泡（bg-[#1A1A1A]）与 `>` 引用块的暗色细节语言
-const MODULE_COLOR: Record<string, string> = {
-  CHRONOS: 'text-amber-400',
-  LEDGER:  'text-teal-400',
-  MAIL:    'text-sky-400',
-  VAULT:   'text-rose-400',
-  CANVAS:  'text-emerald-400',
-};
-const ACTION_LABEL_ZH: Record<string, string> = {
-  create: '已建立', update: '已更新', delete: '已删除', query: '今日日程',
-};
-const ACTION_LABEL_EN: Record<string, string> = {
-  create: 'CREATED', update: 'UPDATED', delete: 'DELETED', query: 'TODAY',
-};
-
-function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 'en' }) {
-  const isDeleted = card.action === 'delete';
-  const statusLabel = lang === 'zh'
-    ? ACTION_LABEL_ZH[card.action] ?? ''
-    : ACTION_LABEL_EN[card.action] ?? '';
-
-  const meta = card.meta.filter(Boolean);
-  const isLedger = card.module === 'LEDGER';
-
-  // LEDGER: meta[0]=金额(±N), meta[1]=日期, meta[2]=category — focus列只显示金额，其余全进右侧标签
-  // CHRONOS: meta[0]="2026-06-08 · 15:00" — 转换 12h 制时间作 focusText，日期作 focusSub
-  let focusText = meta[0] ?? card.title;
-  let focusSub  = meta[1] ?? '';
-  let tags      = meta.slice(2);
-
-  if (isLedger) {
-    focusText = meta[0] ?? '';   // ±金额
-    focusSub  = '';              // 不在 focus 列显示日期
-    tags      = meta.slice(1);  // 日期 + category 进右侧小标签
-  } else {
-    const dtMatch = (meta[0] ?? '').match(/(\d{4}-)?(\d{2}-\d{2})\s*[·•]\s*(\d{1,2}):(\d{2})/);
-    if (dtMatch) {
-      const [, , md, hh, mm] = dtMatch;
-      const h = parseInt(hh, 10);
-      const h12 = ((h + 11) % 12) + 1;
-      focusText = `${String(h12).padStart(2, '0')}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
-      focusSub  = meta[1] ? `${md} · ${meta[1]}` : md;
-      tags      = meta.slice(2);
-    }
-  }
-
-  // scope 由内容语义判定（含团队/客户/对方等"涉及他人"关键词 → shared，否则 self）
-  // 对内(self)  = PANTONE 10101 C 浅冷灰，文字翻深色
-  // 对外(shared)= 暗紫灰 #6B5673，文字保持白色
-  const isShared = /团队|客户|经理|对方|共享|协作|分成|开会|对外/.test(card.title + meta.join(''));
-  const COLOR = isShared
-    ? {
-        focus:      'bg-[#6B5673]',
-        body:       'bg-[#564459]',
-        border:     'border-white/[0.05]',
-        focusSub:   'text-white/30',
-        label:      'text-white/30',
-        title:      'text-white/90',
-        titleDel:   'text-white/40',
-        tag:        'text-white/35 bg-white/[0.04]',
-      }
-    : {
-        // PANTONE 10101 C ≈ #C8C9C7（对内·冷灰）
-        focus:      'bg-[#B8B9B7]',
-        body:       'bg-[#C8C9C7]',
-        border:     'border-[#1A1A1A]/[0.08]',
-        focusSub:   'text-[#1A1A1A]/40',
-        label:      'text-[#1A1A1A]/35',
-        title:      'text-[#1A1A1A]/85',
-        titleDel:   'text-[#1A1A1A]/30',
-        tag:        'text-[#1A1A1A]/50 bg-[#1A1A1A]/[0.07]',
-      };
-
-  const isMail = card.module === 'MAIL';
-  const [mailOpen, setMailOpen] = useState(false);
-
-  return (
-    <div className="mt-3 select-none">
-      <div
-        onClick={() => isMail && setMailOpen(o => !o)}
-        className={`rounded-xl border ${COLOR.border} ${COLOR.body} overflow-hidden flex transition ${isMail ? 'cursor-pointer hover:brightness-110' : ''}`}
-      >
-        <div className={`flex flex-col items-center justify-center ${COLOR.focus} shrink-0 overflow-hidden px-3 py-3 w-[148px]`}>
-          <span className={`font-mono font-bold leading-none tracking-tight truncate text-center w-full text-[14px] ${
-            isLedger
-              ? focusText.startsWith('+') ? 'text-teal-500' : 'text-rose-500'
-              : isShared ? 'text-amber-400/90' : 'text-[#1A1A1A]/70'
-          }`}>{focusText}</span>
-          {focusSub && <span className={`font-mono text-[8px] mt-1.5 tracking-wide truncate text-center w-full ${COLOR.focusSub}`}>{focusSub}</span>}
-        </div>
-        <div className="flex-1 min-w-0 px-3.5 py-2.5 space-y-1">
-          <div className="flex items-center justify-between gap-2">
-            <span className={`font-mono text-[8px] tracking-[0.18em] font-bold uppercase truncate ${MODULE_COLOR[card.module] ?? (isShared ? 'text-white/50' : 'text-[#1A1A1A]/50')}`}>{card.module}</span>
-            <span className={`font-mono text-[8px] tracking-widest uppercase shrink-0 ${COLOR.label}`}>{statusLabel}</span>
-          </div>
-          <p className={`font-sans font-semibold leading-snug truncate text-[13px] ${isDeleted ? COLOR.titleDel + ' line-through' : COLOR.title}`}>{card.title}</p>
-          {tags.length > 0 && (
-            <div className="flex items-center gap-2 pt-0.5">
-              {tags.map((tag, i) => (
-                <span key={i} className={`font-mono text-[9px] px-1.5 py-0.5 rounded truncate ${COLOR.tag}`}>{tag}</span>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {isMail && mailOpen && (
-        <MailCardExpand
-          recipient={focusText !== card.title ? focusText : ''}
-          subject={card.title}
-          onClose={() => setMailOpen(false)}
-        />
-      )}
-    </div>
-  );
-}
-// ──────────────────────────────────────────────────────────────────────────────
+import { ActionCardView } from './ActionCardView';
+import { ChatSidebar } from './ChatSidebar';
+import { ChatEmptyState } from './ChatEmptyState';
 
 interface ChatModuleProps { lang: 'zh' | 'en' }
 
@@ -322,52 +206,16 @@ export default function ChatModule({ lang }: ChatModuleProps) {
       <div className="flex-grow flex flex-col md:flex-row min-h-0">
 
         {/* Sidebar */}
-        <aside className={`bg-[#F4F2EE] border-[#1A1A1A]/10 flex flex-col justify-between transition-all duration-300 overflow-hidden shrink-0 ${sidebarOpen ? 'w-full md:w-[320px] p-6 border-r opacity-100' : 'w-0 p-0 border-r-0 opacity-0 pointer-events-none'}`}>
-          <div className="flex flex-col h-full min-w-[272px] gap-4">
-            <button onClick={() => setRecentsOpen(o => !o)} className="flex items-center justify-between w-full group">
-              <h2 className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 group-hover:text-[#1A1A1A] transition-colors">
-                {lang === 'zh' ? '往来' : 'Recents'}
-              </h2>
-              <div className="flex items-center gap-2">
-                <span className="text-[8px] font-mono text-[#1A1A1A]/25">{sessions.length}</span>
-                <span className={`text-[#1A1A1A]/30 text-[10px] transition-transform duration-200 ${recentsOpen ? 'rotate-90' : ''}`}>›</span>
-              </div>
-            </button>
-
-            <div className={`overflow-y-auto space-y-1.5 pr-0.5 transition-all duration-200 ${recentsOpen ? 'flex-1' : 'hidden'}`}>
-              {sessions.length === 0 ? (
-                <div className="py-10 text-center space-y-2">
-                  <MessageSquare className="w-6 h-6 text-[#1A1A1A]/15 mx-auto" />
-                  <p className="text-[9px] font-mono text-[#1A1A1A]/30 uppercase tracking-widest">{lang === 'zh' ? '暂无记录' : 'No history yet'}</p>
-                </div>
-              ) : sessions.map(s => (
-                <div key={s.id} onClick={() => loadSession(s)}
-                  className={`group relative flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${currentSessionId === s.id ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">{s.title}</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
-                      <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">{s.model}</span>
-                    </div>
-                  </div>
-                  <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }} className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 hover:text-red-500 text-[#1A1A1A]/30 transition-all">
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 shadow-xs shrink-0">
-              <div className="inline-flex items-center gap-1.5 text-[#1A1A1A]/60 font-bold">
-                <Terminal className="w-3 h-3" />
-                {lang === 'zh' ? '本地存储 · Supabase 就绪' : 'LOCAL · SUPABASE READY'}
-              </div>
-              <p className="text-[8px] text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
-                {lang === 'zh' ? '记录保存于本设备。配置 Supabase 后自动云同步。' : 'Sessions stored locally. Cloud sync activates once Supabase is configured.'}
-              </p>
-            </div>
-          </div>
-        </aside>
+        <ChatSidebar
+          lang={lang}
+          open={sidebarOpen}
+          recentsOpen={recentsOpen}
+          setRecentsOpen={setRecentsOpen}
+          sessions={sessions}
+          currentSessionId={currentSessionId}
+          loadSession={loadSession}
+          deleteSession={deleteSession}
+        />
 
         {/* Chat panel */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-[#F9F8F6]">
@@ -378,43 +226,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
 
             {/* Empty state */}
             {messages.length === 0 && !isLoading && (
-              <motion.div key="empty" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
-                className="h-full flex items-center justify-center px-6">
-                <div className="flex flex-col items-center gap-7 w-full max-w-2xl">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2.5 border border-[#1A1A1A]/15 bg-white shadow-sm shrink-0">
-                      <VintageCar size={36} strokeWidth={1.5} className="text-[#1A1A1A]/90" />
-                    </div>
-                    <div className="text-left space-y-1">
-                      <h2 className="font-serif-sc text-2xl font-black tracking-[0.12em] text-[#111111] leading-none">{lang === 'zh' ? '疆域灵阁' : 'GSYEN Muse'}</h2>
-                      <p className="font-cinzel text-[10px] tracking-[0.22em] text-[#1A1A1A]/45 uppercase">{lang === 'zh' ? '星瀚矢量工作坊' : 'SIRIUS VECTOR ATELIER'}</p>
-                    </div>
-                  </div>
-                  <form onSubmit={(e) => { e.preventDefault(); handleSend(inputVal); }} className="w-full border border-[#1A1A1A]/20 bg-white focus-within:border-[#1A1A1A]/50 transition-colors">
-                    <textarea autoFocus rows={4} value={inputVal} onChange={e => setInputVal(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(inputVal); } }}
-                      placeholder={lang === 'zh' ? '向 Atelier AI 咨询任何品牌策划、视觉创意、符号设计...' : 'Ask Atelier AI anything about brand, design, or strategy...'}
-                      className="w-full px-5 pt-5 pb-3 bg-transparent resize-none outline-none font-sans text-sm text-[#1A1A1A] placeholder:text-[#1A1A1A]/30 leading-relaxed" />
-                    <div className="px-4 pb-3 flex items-center justify-between">
-                      <span className="font-mono text-[8px] tracking-widest uppercase text-[#1A1A1A]/25">{lang === 'zh' ? 'ENTER 发送 · SHIFT+ENTER 换行' : 'ENTER TO SEND · SHIFT+ENTER FOR NEW LINE'}</span>
-                      <button type="submit" disabled={!inputVal.trim()} className="p-2 bg-[#1A1A1A] text-[#F9F8F6] disabled:bg-[#1A1A1A]/10 disabled:text-[#1A1A1A]/30 transition-colors rounded-none border border-[#1A1A1A] disabled:border-[#1A1A1A]/10">
-                        <Send className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </form>
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {PRESET_QUERIES.map((q, idx) => (
-                      <button key={idx} onClick={() => handleSend(lang === 'zh' ? q.zh : q.en)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 border border-[#1A1A1A]/12 bg-white/70 hover:bg-white hover:border-[#1A1A1A]/25 transition-all rounded-none group">
-                        <Sparkles className="w-2.5 h-2.5 text-amber-500/60 group-hover:text-amber-500 shrink-0" />
-                        <span className="font-mono text-[9px] tracking-widest uppercase text-[#1A1A1A]/55 group-hover:text-[#1A1A1A]">
-                          {lang === 'zh' ? PRESET_SHORT_LABELS[idx].zh : PRESET_SHORT_LABELS[idx].en}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
+              <ChatEmptyState lang={lang} inputVal={inputVal} setInputVal={setInputVal} onSend={handleSend} />
             )}
 
             {/* Message stream */}

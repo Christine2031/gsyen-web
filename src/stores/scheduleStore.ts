@@ -1,4 +1,44 @@
 import { EventItem, ColumnId } from '../types/schedule';
+import { cardRegistry } from './cardRegistry';
+import { CardRecord } from '../types/card';
+
+// 卡片集信封的主题色——延续 categoryMap 的色相语言（看板上本来就用这套配色
+// 标识分类),"原地原色放大"时复用同一套,不会出现"切到另一个东西"的割裂感。
+const CATEGORY_ACCENT: Record<EventItem['category'], string> = {
+  creative: '#10B981',
+  finance:  '#F59E0B',
+  secure:   '#6366F1',
+  strategy: '#14B8A6',
+};
+
+/** EventItem → 卡片集信封。payload 只存引用，不拷贝业务数据。 */
+function toCardRecord(event: EventItem): CardRecord {
+  return {
+    id:         `chronos-${event.id}`,
+    module:     'CHRONOS',
+    kind:       event.category,
+    title:      event.title,
+    subtitle:   event.subtitle,
+    color:      CATEGORY_ACCENT[event.category] ?? '#4F77AC',
+    timestamp:  `${event.date}T${event.time}`,
+    status:     event.status,
+    searchText: [event.title, event.subtitle, event.location, event.category].filter(Boolean).join(' '),
+    payload:    event,
+  };
+}
+
+/**
+ * 把一份完整事件列表与卡片集对账——增/改的条目登记/刷新，消失的条目移除。
+ * 之所以在这里做"对账"而不是逐条 register/unregister，是因为 mutate() 之后
+ * 拿到的是结果列表，而不是哪条变了——对账最稳妥，不会漏登记/漏注销。
+ */
+let knownIds = new Set<string>();
+function syncRegistry(events: EventItem[]): void {
+  const nextIds = new Set(events.map(e => `chronos-${e.id}`));
+  for (const event of events) cardRegistry.register(toCardRecord(event));
+  for (const id of knownIds) if (!nextIds.has(id)) cardRegistry.unregister(id);
+  knownIds = nextIds;
+}
 
 const STORAGE_KEY = 'identity_lab_schedule';
 
@@ -40,6 +80,10 @@ function readRaw(): EventItem[] {
 function mutate(fn: (events: EventItem[]) => EventItem[]): EventItem[] {
   const updated = sortByDateTime(fn(readRaw()));
   localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  // 登记点落在 store 层——无论这条记录是 chat 生成的，还是用户在看板上
+  // 手动建/改/删的，都在这里被同一处逻辑收编进卡片集，不会出现
+  // "只有 chat 生的卡片才进集合"的单向投递问题。
+  syncRegistry(updated);
   return updated;
 }
 
@@ -51,9 +95,10 @@ export const scheduleStore = {
     return readRaw();
   },
 
-  /** Persist all events */
+  /** Persist all events (bulk replace — e.g. drag/drop reorder on the board) */
   save(events: EventItem[]): void {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    syncRegistry(events);
   },
 
   /** Events that fall on today */
@@ -90,6 +135,7 @@ export const scheduleStore = {
   /** Wipe all events */
   clearAll(): void {
     localStorage.removeItem(STORAGE_KEY);
+    syncRegistry([]);
   },
 
   // ─── Chat ↔ Calendar bridge ─────────────────────────────────────────────
@@ -140,6 +186,10 @@ export const scheduleStore = {
     }
   },
 };
+
+// 启动即对账一次——把刷新前已经存在的记录也收编进卡片集
+// （否则只有"启动后新增/修改"的记录才会被登记，旧数据会被卡片集"看不见"）。
+syncRegistry(readRaw());
 
 // ─── Intent detection ────────────────────────────────────────────────────────
 

@@ -35,7 +35,12 @@ function buildCard(
   }
   if ('category' in item && item.category) meta.push(item.category);
   if ('location' in item && item.location) meta.push(item.location);
-  return { module: 'CHRONOS', action, title: item.title, meta: meta.filter(Boolean) };
+  // 带上真实记录的 id——这样卡片就不再只是文字快照，而是能点开看详情、
+  // 且与"日程日历"看板里那条真实记录联动（同一个 scheduleStore 数据源）。
+  // 只有 create/update（背后是真正的 EventItem）才有稳定 id；delete 之后记录已不存在，
+  // 仍带上 id 方便用户点开看"这条记录曾经的样子"，但操作按钮会被禁用。
+  const id = 'id' in item ? item.id : undefined;
+  return { module: 'CHRONOS', action, title: item.title, meta: meta.filter(Boolean), id };
 }
 
 function commit(item: EventItem): void {
