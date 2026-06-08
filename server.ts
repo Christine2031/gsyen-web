@@ -116,6 +116,14 @@ function todayDateStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+// 把 "今天" 字符串转换为相对天数对应的日期字符串 —— 小模型不擅长日期算术，
+// 直接把"明天/后天"换算好的具体日期喂给它，避免它把"明天"算成"今天"
+function offsetDateStr(todayStr: string, days: number): string {
+  const d = new Date(`${todayStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
  * 神机百炼 Chronos JSON Schema — 强制 Ollama 结构化输出
  * 等价于 Gemini responseSchema，在推理层约束字段类型与枚举
@@ -150,6 +158,9 @@ function scheduleSystemSuffix(
   const eventsCtx = events.length > 0
     ? `\n当前已有日程（update/delete 时按 title 匹配）：\n${events.map(e => `  [${e.date} ${e.time}] ${e.title}`).join('\n')}`
     : '';
+  const yesterday  = offsetDateStr(today, -1);
+  const tomorrow   = offsetDateStr(today, 1);
+  const dayAfter   = offsetDateStr(today, 2);
   return `
 
 【神机百炼 · Chronos — 必须输出 JSON】
@@ -163,6 +174,13 @@ action 枚举：
 - "update"  → 修改已有日程，event.title 填原标题
 - "delete"  → 删除/取消日程，event.title 填要删除的标题
 - "query"   → 用户询问今天/某天安排，reply 里直接列出
+
+【日期换算 — 直接照抄，不要自己计算】
+今天 = ${today}
+昨天 = ${yesterday}
+明天 = ${tomorrow}
+后天 = ${dayAfter}
+用户说"今天"就填 ${today}，说"明天"就填 ${tomorrow}，说"后天"就填 ${dayAfter}，说"昨天"就填 ${yesterday}——直接照抄上面对应的日期字符串，禁止自行推算，否则极易算错。
 
 create/confirm 时 event 填完整字段：date 默认 ${today}，time 默认 09:00，category 默认 strategy。${eventsCtx}`
 }

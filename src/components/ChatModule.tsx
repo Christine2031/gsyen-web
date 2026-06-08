@@ -12,6 +12,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import VintageCar from './VintageCar';
+import MailCardExpand from './MailCardExpand';
 import {
   Sparkles, Send, Trash2, Copy, Check,
   Download, Terminal, MessageSquare, User,
@@ -47,28 +48,66 @@ function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 'en' })
     ? ACTION_LABEL_ZH[card.action] ?? ''
     : ACTION_LABEL_EN[card.action] ?? '';
 
+  const meta = card.meta.filter(Boolean);
+
+  // 真实卡片的 meta[0] 形如 "2026-06-08 · 15:00" — 转换为定稿格式：焦点区只显示 12 小时制时间，
+  // 日期挪到副标签，与已敲定的样卡（focus: '03:00 PM' / focusSub: '06-09 · ...'）保持一致
+  let focusText = meta[0] ?? card.title;
+  let focusSub  = meta[1] ?? '';
+  let tags      = meta.slice(2);
+  const dtMatch = (meta[0] ?? '').match(/(\d{4}-)?(\d{2}-\d{2})\s*[·•]\s*(\d{1,2}):(\d{2})/);
+  if (dtMatch) {
+    const [, , md, hh, mm] = dtMatch;
+    const h = parseInt(hh, 10);
+    const h12 = ((h + 11) % 12) + 1;
+    focusText = `${String(h12).padStart(2, '0')}:${mm} ${h >= 12 ? 'PM' : 'AM'}`;
+    focusSub  = meta[1] ? `${md} · ${meta[1]}` : md;
+    tags      = meta.slice(2);
+  }
+
+  // scope 由内容语义判定（含团队/客户/对方等"涉及他人"关键词 → shared，否则 self）
+  // 全局仅用两色，不分类目：仅自己=暗橄榄绿 #4C5236，涉及他人=暗紫灰 #6B5673
+  const isShared = /团队|客户|经理|对方|共享|协作|分成|开会|对外/.test(card.title + meta.join(''));
+  const COLOR = isShared
+    ? { focus: 'bg-[#6B5673]', body: 'bg-[#564459]' }
+    : { focus: 'bg-[#4C5236]', body: 'bg-[#3A3F29]' };
+
+  const isMail = card.module === 'MAIL';
+  const [mailOpen, setMailOpen] = useState(false);
+
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-[#1A1A1A] overflow-hidden select-none">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/10">
-        <span className={`font-mono text-[8px] tracking-[0.22em] font-bold ${MODULE_COLOR[card.module] ?? 'text-white/60'}`}>
-          {card.module}
-        </span>
-        <span className="font-mono text-[8px] tracking-widest text-white/35 uppercase">
-          {statusLabel}
-        </span>
+    <div className="mt-3 select-none">
+      <div
+        onClick={() => isMail && setMailOpen(o => !o)}
+        className={`rounded-xl border border-white/[0.05] ${COLOR.body} overflow-hidden flex transition ${isMail ? 'cursor-pointer hover:brightness-110' : ''}`}
+      >
+        <div className={`flex flex-col items-center justify-center ${COLOR.focus} shrink-0 overflow-hidden px-3 py-3 w-[148px]`}>
+          <span className="font-mono font-bold text-amber-400/90 leading-none tracking-tight truncate text-center w-full text-[14px]">{focusText}</span>
+          {focusSub && <span className="font-mono text-[8px] text-white/30 mt-1.5 tracking-wide truncate text-center w-full">{focusSub}</span>}
+        </div>
+        <div className="flex-1 min-w-0 px-3.5 py-2.5 space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <span className={`font-mono text-[8px] tracking-[0.18em] font-bold uppercase truncate ${MODULE_COLOR[card.module] ?? 'text-white/50'}`}>{card.module}</span>
+            <span className="font-mono text-[8px] tracking-widest text-white/30 uppercase shrink-0">{statusLabel}</span>
+          </div>
+          <p className={`font-sans font-semibold leading-snug truncate text-[13px] ${isDeleted ? 'text-white/40 line-through' : 'text-white/90'}`}>{card.title}</p>
+          {tags.length > 0 && (
+            <div className="flex items-center gap-2 pt-0.5">
+              {tags.map((tag, i) => (
+                <span key={i} className="font-mono text-[9px] text-white/35 px-1.5 py-0.5 rounded bg-white/[0.04] truncate">{tag}</span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-      {/* Body */}
-      <div className="px-3 py-2.5 space-y-1">
-        <p className={`font-sans text-[13px] font-semibold text-white leading-snug tracking-tight ${isDeleted ? 'line-through opacity-30' : ''}`}>
-          {card.title}
-        </p>
-        {card.meta.filter(Boolean).map((m, i) => (
-          <p key={i} className="font-mono text-[10px] text-white/45 tracking-wide leading-relaxed">
-            {m}
-          </p>
-        ))}
-      </div>
+
+      {isMail && mailOpen && (
+        <MailCardExpand
+          recipient={focusText !== card.title ? focusText : ''}
+          subject={card.title}
+          onClose={() => setMailOpen(false)}
+        />
+      )}
     </div>
   );
 }
