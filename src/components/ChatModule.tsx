@@ -31,6 +31,7 @@ import { exportQuoteCard } from '../utils/exportCard';
 // 深色基调，呼应用户气泡（bg-[#1A1A1A]）与 `>` 引用块的暗色细节语言
 const MODULE_COLOR: Record<string, string> = {
   CHRONOS: 'text-amber-400',
+  LEDGER:  'text-teal-400',
   MAIL:    'text-sky-400',
   VAULT:   'text-rose-400',
   CANVAS:  'text-emerald-400',

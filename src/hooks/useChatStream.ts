@@ -147,7 +147,7 @@ export function useChatStream(): UseChatStreamReturn {
         ? domainHandlers.map(h => h.buildContext()).find((ctx): ctx is NonNullable<typeof ctx> => ctx != null)
         : undefined;
 
-      const response = await sendToGateway(model, apiMessages, eventsCtx, streamIntent);
+      const response = await sendToGateway(model, apiMessages, eventsCtx, streamIntent, streamHandler?.module ?? null);
       setIsLoading(false);
 
       const contentType = response.headers.get('content-type') ?? '';

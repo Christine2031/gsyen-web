@@ -1,4 +1,4 @@
-export type ActionModule = 'CHRONOS' | 'MAIL' | 'VAULT' | 'CANVAS';
+export type ActionModule = 'CHRONOS' | 'LEDGER' | 'MAIL' | 'VAULT' | 'CANVAS';
 export type ActionCardAction = 'create' | 'update' | 'delete' | 'query';
 
 export interface ActionCard {

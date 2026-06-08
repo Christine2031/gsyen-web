@@ -186,15 +186,44 @@ create/confirm 时 event 填完整字段：date 默认 ${today}，time 默认 09
 }
 
 /**
- * 当用户消息未命中日程意图关键词时使用的极简后缀 —— 不附带 action 枚举规则与
- * 当前日程列表，避免小模型把"请输出 JSON"误读成"本条也要判定日程动作"，
- * 从而对寒暄等无关消息幻觉出 create/update。
+ * 当用户消息未命中任何领域意图关键词时使用的极简后缀 —— 只允许 action:"none"，
+ * 避免小模型对寒暄等无关消息幻觉出 create/update。
  */
 function noScheduleSystemSuffix(): string {
   return `
 
 【输出格式】必须输出严格 JSON：{"reply":"回复内容","action":"none","event":null}
-本条消息与日程无关，action 必须固定为 "none"，event 固定为 null，只在 reply 中正常对话。`;
+本条消息与日程/账务无关，action 必须固定为 "none"，event 固定为 null，只在 reply 中正常对话。`;
+}
+
+/**
+ * 神机百炼 · Ledger 系统后缀 — 账务记录模块
+ */
+function ledgerSystemSuffix(today: string): string {
+  return `
+
+【神机百炼 · Ledger — 必须输出 JSON】
+每次回复必须是严格 JSON，格式：
+{"reply":"回复内容","action":"create","event":{"description":"记录描述","amount":100,"type":"expense","category":"material","date":"YYYY-MM-DD","notes":"备注"}}
+
+action 枚举：
+- "create" → 记录一笔账务（用户说了消费/收入金额）
+- "none"   → 仅对话，不记账
+
+type 枚举（必须二选一）：
+- "income"  → 收入、到账、回款
+- "expense" → 支出、消费、花费、付款
+
+category 枚举（根据描述判断）：
+- "royalty"      → 授权税收、版税
+- "commission"   → 佣金、定制费、顾问费
+- "material"     → 物料、采购、耗材
+- "server"       → 服务器、云服务、订阅
+- "marketing"    → 推广、营销、广告
+- "consultancy"  → 咨询、顾问、培训
+
+【日期】今天 = ${today}。用户不说日期则默认 ${today}。
+amount 必须是纯数字（不含单位），"100美金" → 100，"500元" → 500。`;
 }
 
 // Gemini responseSchema — enforced at API level (uppercase type names required by Gemini)
@@ -280,7 +309,7 @@ async function startServer() {
   // Chat proxy — model-agnostic
   app.post('/api/chat', async (req, res) => {
     try {
-      const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null } = req.body;
+      const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null } = req.body;
       if (!messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Missing or invalid messages array' });
       }
@@ -310,7 +339,7 @@ async function startServer() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: geminiMessages,
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT + (scheduleIntent ? scheduleSystemSuffix(today) : noScheduleSystemSuffix()) }] },
+            systemInstruction: { parts: [{ text: SYSTEM_PROMPT + (domain === 'LEDGER' ? ledgerSystemSuffix(today) : scheduleIntent ? scheduleSystemSuffix(today) : noScheduleSystemSuffix()) }] },
             generationConfig: {
               responseMimeType: 'application/json',
               responseSchema: GEMINI_RESPONSE_SCHEMA,
@@ -341,7 +370,7 @@ async function startServer() {
         const today = clientDate || todayDateStr();
         const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
         const ollamaPayload = [
-          { role: 'system', content: SYSTEM_PROMPT + (scheduleIntent ? scheduleSystemSuffix(today, events) : noScheduleSystemSuffix()) },
+          { role: 'system', content: SYSTEM_PROMPT + (domain === 'LEDGER' ? ledgerSystemSuffix(today) : scheduleIntent ? scheduleSystemSuffix(today, events) : noScheduleSystemSuffix()) },
           ...messages.map((m: any) => ({
             role: m.role === 'model' ? 'assistant' : 'user',
             content: m.content,
@@ -370,12 +399,12 @@ async function startServer() {
           // （v5 模型即便正确判定 action:"none"，也会习惯性把 event 字段填满，
           //   event.title 非空是模型的 schema 填充惯性，不是用户的真实意图信号）
           const action = parsed.action ?? (parsed.shouldCreateEvent ? 'create' : 'none');
-          const ev = (action !== 'none' && parsed.event?.title) ? parsed.event : null;
+          // LEDGER event uses description+amount; CHRONOS uses title+time
+          const hasPayload = parsed.event?.title || parsed.event?.description || parsed.event?.amount !== undefined;
+          const ev = (action !== 'none' && hasPayload) ? parsed.event : null;
 
-          // 司辰 · 语义校验式日期纠正：
-          // 只有用户原话里出现明确的日期/时间指代词，才信任模型给的 event.date；
-          // 否则一律视为模型幻觉，强制采用 clientDate（今天）。
-          if (ev) {
+          // 司辰 · 语义校验式日期纠正（仅对 CHRONOS；LEDGER 账务日期误差影响小）
+          if (ev && domain !== 'LEDGER') {
             const lastUserMsg = [...messages].reverse().find((m: any) => m.role !== 'model')?.content ?? '';
             const hasExplicitDateRef = /明天|后天|大后天|下周|下个月|\d{1,2}[月\/-]\d{1,2}|星期[一二三四五六日天]|周[一二三四五六日天]/.test(lastUserMsg);
             const refMs = new Date(clientDate || todayDateStr()).getTime();
