@@ -165,15 +165,16 @@ function scheduleSystemSuffix(
 
 【神机百炼 · Chronos — 必须输出 JSON】
 每次回复必须是严格 JSON，格式：
-{"reply":"回复内容","action":"none","event":{"title":"","date":"","time":"","category":"","location":"","subtitle":""}}
+{"reply":"回复内容","action":"<按下方枚举选择>","event":{"title":"","date":"","time":"","category":"","location":"","subtitle":""}}
 
-action 枚举：
-- "none"    → 普通对话，不涉及日程
-- "create"  → 意图明确的安排（今天下午有会/明天要开会/下午3点产品发布会）→ 直接新建
+action 字段必须按用户真实意图选择，绝不能无脑填默认值：
+- "create"  → 意图明确的安排（今天下午有会/明天要开会/下午3点产品发布会/接人/吃饭）→ 必须用 create，禁止用 none
 - "confirm" → 意图模糊或不确定（"我想想""要不要""可能"）→ reply 问"请问是否要建立行程？"，event 预填信息
 - "update"  → 修改已有日程，event.title 填原标题
 - "delete"  → 删除/取消日程，event.title 填要删除的标题
 - "query"   → 用户询问今天/某天安排，reply 里直接列出
+- "none"    → 仅当闲聊、提问、与日程完全无关时才用；此时 event 全空
+判定要点：只要用户说了"要做某事 + 时间"，就是 create；event.title 提炼核心事件名，不要复读用户原话整句。
 
 【日期换算 — 直接照抄，不要自己计算】
 今天 = ${today}
@@ -285,15 +286,19 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
   // ── 本地私有模型 ──────────────────────────────────────────────────────
   // 开发/内网：OLLAMA_BASE_URL=http://100.117.152.101:11434  (Tailscale)
   // 生产/公网：OLLAMA_BASE_URL=https://llm.gsyen.com         (Cloudflare Tunnel)
+  // ⚠️ 基座兜底（2026-06-09）：微调模型 gsyen-ethan/gsyen-fast 训练数据有缺陷
+  //   （title 复读用户原话前12字、无 date/time 字段、标注 note 泄入答案），
+  //   暂时切回 Qwen2.5 基座 + 强 system prompt 做字段抽取，日期由 server 预算注入。
+  //   待重做训练数据后再切回微调模型。详见 tasks/gsyen-model-training。
   ethan: {
     url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
-    modelId: 'gsyen-ethan',
+    modelId: 'qwen2.5:7b',
   },
   fast: {
     url:     `${process.env.OLLAMA_BASE_URL || 'http://localhost:11434'}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
-    modelId: 'gsyen-fast',
+    modelId: 'qwen2.5:3b',
   },
 };
 // ────────────────────────────────────────────────────────────────────────
@@ -388,6 +393,7 @@ async function startServer() {
             messages: ollamaPayload,
             stream: false,
             format: 'json',
+            options: { temperature: 0.3 },  // 基座兜底：降温提升字段抽取一致性
           }),
         });
         if (!ollamaRes.ok) {

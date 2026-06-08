@@ -10,6 +10,14 @@ function todayDateStr(): string {
   }).format(new Date()); // en-CA 格式本身就是 YYYY-MM-DD
 }
 
+// 把 "今天" 字符串按相对天数换算为具体日期 —— 小模型不擅长日期算术，
+// 直接把"明天/后天"算好喂给它，避免它把"明天"算成"今天"或更离谱。
+function offsetDateStr(todayStr: string, days: number): string {
+  const d = new Date(`${todayStr}T00:00:00`);
+  d.setDate(d.getDate() + days);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const CHRONOS_SCHEMA = {
   type: 'object',
   properties: {
@@ -58,19 +66,30 @@ function scheduleSystemSuffix(
   const eventsCtx = events.length > 0
     ? `\n当前已有日程（update/delete 时按 title 匹配）：\n${events.map(e => `  [${e.date} ${e.time}] ${e.title}`).join('\n')}`
     : '';
+  const yesterday = offsetDateStr(today, -1);
+  const tomorrow  = offsetDateStr(today, 1);
+  const dayAfter  = offsetDateStr(today, 2);
   return `
 
 【神机百炼 · Chronos — 必须输出 JSON】
 每次回复必须是严格 JSON，格式：
-{"reply":"回复内容","action":"none","event":{"title":"","date":"","time":"","category":"","location":"","subtitle":""}}
+{"reply":"回复内容","action":"<按下方枚举选择>","event":{"title":"","date":"","time":"","category":"","location":"","subtitle":""}}
 
-action 枚举：
-- "none"    → 普通对话
-- "create"  → 意图明确的安排 → 直接新建
-- "confirm" → 意图模糊或不确定 → reply 问"请问是否要建立行程？"，event 预填信息
+action 字段必须按用户真实意图选择，绝不能无脑填默认值：
+- "create"  → 意图明确的安排（开会/接人/吃饭/有具体时间的事）→ 必须用 create，禁止用 none
+- "confirm" → 意图模糊或不确定（"我想想""要不要""可能"）→ reply 问"请问是否要建立行程？"，event 预填信息
 - "update"  → 修改已有日程，event.title 填原标题
 - "delete"  → 删除/取消日程，event.title 填要删除的标题
 - "query"   → 查询安排，reply 里直接列出
+- "none"    → 仅当闲聊、提问、与日程完全无关时才用；此时 event 全空
+判定要点：只要用户说了"要做某事 + 时间"，就是 create；event.title 提炼核心事件名，不要复读用户原话整句。
+
+【日期换算 — 直接照抄，不要自己计算】
+今天 = ${today}
+昨天 = ${yesterday}
+明天 = ${tomorrow}
+后天 = ${dayAfter}
+用户说"今天"就填 ${today}，说"明天"就填 ${tomorrow}，说"后天"就填 ${dayAfter}，说"昨天"就填 ${yesterday}——直接照抄上面对应的日期字符串，禁止自行推算。
 
 create/confirm 时 event 填完整字段：date 默认 ${today}，time 默认 09:00，category 默认 strategy。${eventsCtx}`
 }
@@ -241,15 +260,17 @@ const MODEL_ROUTES: Record<string, { url: string; envKey: string; modelId: strin
     envKey:  'GEMINI_API_KEY',
     modelId: 'gemini-2.0-flash',
   },
+  // ⚠️ 基座兜底（2026-06-09）：微调模型训练数据有缺陷，暂切回 Qwen2.5 基座。
+  //   详见 server.ts 同处注释 + tasks/gsyen-model-training。
   ethan: {
     url:     `${OLLAMA_BASE_URL}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
-    modelId: 'gsyen-ethan',
+    modelId: 'qwen2.5:7b',
   },
   fast: {
     url:     `${OLLAMA_BASE_URL}/v1/chat/completions`,
     envKey:  'OLLAMA_BASE_URL',
-    modelId: 'gsyen-fast',
+    modelId: 'qwen2.5:3b',
   },
 };
 
@@ -367,6 +388,7 @@ export default async function handler(req: Request): Promise<Response> {
           messages: ollamaPayload,
           stream: false,
           format: 'json',
+          options: { temperature: 0.3 },  // 基座兜底：降温提升字段抽取一致性
         }),
       });
       if (!ollamaRes.ok) {
