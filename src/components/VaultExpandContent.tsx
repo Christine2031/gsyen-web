@@ -61,7 +61,7 @@ export function VaultExpandContent({
   const updated    = row?.lastUpdated ?? '';
   const catKey     = row?.category ?? 'personal';
   const catLabel   = CATEGORY_LABEL[catKey]?.[lang] ?? catKey;
-  const maskedSecret = '●'.repeat(Math.min(Math.max(secretVal.length, 8), 20));
+  const maskedSecret = '✦'.repeat(Math.min(Math.max(secretVal.length, 8), 20));
 
   return (
     <div className={`grid transition-[grid-template-rows] duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>

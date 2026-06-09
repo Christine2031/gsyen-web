@@ -18,6 +18,15 @@ function extractService(text: string): string {
   return m?.[1]?.trim() ?? '';
 }
 
+function extractUsername(text: string): string {
+  const m =
+    text.match(/用户名\s*[:：]?\s*([\w@._-]{1,40})/) ||
+    text.match(/账号\s*[:：]?\s*([\w@._-]{1,40})/) ||
+    text.match(/username\s*[:：]?\s*([\w@._-]{1,40})/i) ||
+    text.match(/用户\s*[:：]\s*([\w@._-]{1,40})/);
+  return m?.[1]?.trim() ?? '';
+}
+
 function extractSecret(text: string): string {
   const m =
     text.match(/(?:密码|password|密钥|key|令牌|token|secret)\s*(?:是|[:：])\s*([^\s，,。.]{4,64})/i) ||
@@ -54,11 +63,12 @@ export const vaultHandler: DomainHandler = {
     const service = extractService(text);
     if (!service) return null;
     const secret   = extractSecret(text);
+    const username = extractUsername(text);
     const category = inferCategory(text);
     const row: CredentialRow = {
       id:          `vault-${Date.now()}`,
       serviceName: service,
-      username:    '',
+      username,
       secretVal:   secret,
       category,
       lastUpdated: new Date().toISOString().split('T')[0],
@@ -134,15 +144,14 @@ export const vaultHandler: DomainHandler = {
 };
 
 function buildCard(row: CredentialRow, _lang: 'zh' | 'en'): ActionCard {
-  const rightTitle = row.username || (row.secretVal ? '●●●●●●' : '—');
   return {
     module: 'VAULT',
     action: 'create',
-    title:  rightTitle,
+    title:  row.serviceName,                  // 右侧标题
     meta:   [
-      row.serviceName,               // meta[0] → focusText 左侧大字
-      CATEGORY_LABEL[row.category],  // meta[1] → focusSub 左侧小字
-      row.lastUpdated,               // meta[2] → tag
+      row.username || '—',                    // meta[0] → focusText 左侧大字（用户名）
+      CATEGORY_LABEL[row.category],           // meta[1] → focusSub 左侧小字（分类）
+      row.lastUpdated,                        // meta[2] → tag
     ],
     id: row.id,
   };
