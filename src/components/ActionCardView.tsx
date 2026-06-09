@@ -189,7 +189,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
                 : `font-mono text-[8px] ${COLOR.focusSub}`
             }`}>{focusSub}</span>}
           </div>
-          <div className="flex-1 min-w-0 pl-4.5 pr-3.5 py-2.5 space-y-1 flex flex-col justify-center">
+          <div className="flex-1 min-w-0 pl-6 pr-4 py-2.5 space-y-1 flex flex-col justify-center">
             <div className="flex items-center justify-between gap-2">
               <span className={`font-mono text-[8px] tracking-[0.18em] font-bold uppercase truncate ${
                 isShared ? 'text-white/50' : 'text-[#1A1A1A]/50'
