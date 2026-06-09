@@ -45,10 +45,11 @@ const iOSIcon = () => (
   </svg>
 );
 
-const WINDOWS_DOWNLOAD = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe';
+const WINDOWS_OSS    = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe';
+const WINDOWS_GITHUB = 'https://github.com/Christine2031/gsyen-web/releases/latest/download/GSYEN-Setup-Windows.exe';
 
 const PLATFORMS = [
-  { label: 'Windows', icon: <WinIcon />,     available: true,  soon: false, href: WINDOWS_DOWNLOAD },
+  { label: 'Windows', icon: <WinIcon />,     available: true,  soon: false, href: WINDOWS_OSS, altHref: WINDOWS_GITHUB },
   { label: 'macOS',   icon: <AppleIcon />,   available: false, soon: true,  href: null },
   { label: 'Android', icon: <AndroidIcon />, available: false, soon: true,  href: null },
   { label: 'Linux',   icon: <LinuxIcon />,   available: false, soon: true,  href: null },
@@ -144,7 +145,7 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           transition={{ delay: 1.2, duration: 0.6 }}
           className="flex items-center gap-2 mt-1"
         >
-          {PLATFORMS.map(({ label, icon, available, soon, href }: any) => {
+          {PLATFORMS.map(({ label, icon, available, soon, href, altHref }: any) => {
             const cls = `flex items-center gap-2 px-4 py-2.5 border transition-colors ${
               available
                 ? 'border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10'
@@ -160,6 +161,14 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
                   <span className="font-mono text-[8px] tracking-[0.1em] text-[#F9F8F6]/20 leading-none">soon</span>
                 )}
               </>
+            );
+            if (href && altHref) return (
+              <div key={label} className="flex flex-col items-stretch gap-1">
+                <a href={href} download className={cls}>{inner}</a>
+                <a href={altHref} download className="flex items-center justify-center px-4 py-1 border border-[#F9F8F6]/10 hover:bg-[#F9F8F6]/6 transition-colors">
+                  <span className="font-mono text-[8px] tracking-[0.15em] text-[#F9F8F6]/25 hover:text-[#F9F8F6]/45">GitHub</span>
+                </a>
+              </div>
             );
             return href ? (
               <a key={label} href={href} download className={cls}>{inner}</a>
