@@ -15,4 +15,7 @@ export const vaultStore = {
   getAll: (): CredentialRow[] => load(),
   add(row: CredentialRow) { save([row, ...load()]); },
   remove(id: string) { save(load().filter(r => r.id !== id)); },
+  update(id: string, patch: Partial<CredentialRow>) {
+    save(load().map(r => r.id === id ? { ...r, ...patch } : r));
+  },
 };
