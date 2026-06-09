@@ -173,7 +173,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
                 : isPayment
                   ? `text-[20px] font-mono ${focusSub.startsWith('已到账') ? 'text-[#D4AF37]' : focusSub.startsWith('已失败') ? 'text-rose-500' : 'text-amber-500'}`
                   : isOrder
-                    ? `text-[20px] font-mono font-bold ${isShared ? 'text-white/80' : 'text-[#1A1A1A]/70'}`
+                    ? `text-[22px] font-serif font-bold tracking-wide ${isShared ? 'text-white/80' : 'text-[#1A1A1A]/70'}`
                   : `text-[20px] font-mono ${isShared ? 'text-white/80' : 'text-[#1A1A1A]/70'}`
             }`}>
               {isLedger ? (() => {
@@ -185,7 +185,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
             </span>
             {focusSub && <span className={`mt-1.5 tracking-wide truncate text-center w-full ${
               isOrder
-                ? `font-mono text-[8px] ${isShared ? 'text-white/50' : 'text-[#1A1A1A]/45'}`
+                ? `font-serif text-[10px] italic ${isShared ? 'text-white/50' : 'text-[#1A1A1A]/45'}`
                 : `font-mono text-[8px] ${COLOR.focusSub}`
             }`}>{focusSub}</span>}
           </div>

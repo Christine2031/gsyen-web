@@ -80,8 +80,9 @@ function buildCard(action: ActionCard['action'], order: Order): ActionCard {
     action,
     title:  STATUS_LABEL[order.status],           // 右侧主标题：状态
     meta:   [
-      amountStr,                                   // focusText（左大字：¥199）
-      `${order.service} · ${order.plan}`,          // focusSub（左小字：疆域 · 月会员）
+      order.service,                               // focusText（左大字：疆域）
+      order.plan,                                  // focusSub（左小字：月会员）
+      amountStr,                                   // tag：¥199
       ...(order.customer && order.customer !== '待确认' ? [order.customer] : []), // tag：客户名
     ],
     id: order.id,
