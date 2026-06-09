@@ -9,8 +9,9 @@ import BrandControlsTypeSymbol from './BrandControlsTypeSymbol';
 import BrandStudioCanvas from './BrandStudioCanvas';
 import BrandCollateral from './BrandCollateral';
 import BrandExpert from './BrandExpert';
+import BrandOrders from './BrandOrders';
 
-type BrandTab = 'studio' | 'collateral' | 'expert';
+type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders';
 
 const DEFAULT_CONFIG: LogoConfig = {
   brandName: 'GSYEN',
@@ -78,16 +79,19 @@ export default function BrandLab({ lang }: BrandLabProps) {
           {tabBtn('studio', t.studioCanvas)}
           {tabBtn('collateral', t.collateralMockups)}
           {tabBtn('expert', t.creativeAssistant)}
+          {tabBtn('orders', lang === 'zh' ? '订单' : 'Orders')}
         </div>
       </div>
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-studio-workspace">
-        {/* 左侧控制面板 */}
-        <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] p-6 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
-          <BrandControlsIdentity lang={lang} config={config} setConfig={setConfig} />
-          <hr className="border-[#1A1A1A]/10" />
-          <BrandControlsTypeSymbol lang={lang} config={config} setConfig={setConfig} />
-        </aside>
+        {/* 左侧控制面板 — 订单/PRISM 页时隐藏 */}
+        {activeTab !== 'orders' && (
+          <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] p-6 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
+            <BrandControlsIdentity lang={lang} config={config} setConfig={setConfig} />
+            <hr className="border-[#1A1A1A]/10" />
+            <BrandControlsTypeSymbol lang={lang} config={config} setConfig={setConfig} />
+          </aside>
+        )}
 
         {/* 预览工作区 */}
         <main className="flex-1 bg-[#F9F8F6] p-8 flex flex-col min-h-0" id="studio-preview-main">
@@ -107,6 +111,9 @@ export default function BrandLab({ lang }: BrandLabProps) {
                 key="expert" lang={lang} config={config} activePalette={activePalette}
                 svgMarkup={svgMarkup} isCopied={isCopied} onCopy={handleCopyCode}
               />
+            )}
+            {activeTab === 'orders' && (
+              <BrandOrders key="orders" lang={lang} />
             )}
           </AnimatePresence>
 
