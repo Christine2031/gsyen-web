@@ -46,7 +46,7 @@ const iOSIcon = () => (
 );
 
 const WINDOWS_GITHUB = 'https://github.com/Christine2031/gsyen-web/releases/latest/download/GSYEN-Setup-Windows.exe';
-const WINDOWS_CN     = 'https://download.gsyen.com/GSYEN-Setup-Windows.exe';
+const WINDOWS_CN     = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe';
 
 const PLATFORMS = [
   { label: 'Windows', icon: <WinIcon />,     available: true,  soon: false, href: WINDOWS_GITHUB, hrefCN: WINDOWS_CN },
