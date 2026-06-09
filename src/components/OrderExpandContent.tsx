@@ -1,11 +1,9 @@
 /**
  * OrderExpandContent — ORDER 卡片 L2 展开面板
- *
  * 订单只有 L1 / L2，不需要 L3。
- * 订单必然涉及客户，始终使用 shared（Regatta 蓝）配色。
  */
 import { useState, useEffect } from 'react';
-import { Trash2, CheckCircle2, Clock, CircleDashed, XCircle } from 'lucide-react';
+import { Trash2, CheckCircle2, Clock, CircleDashed, XCircle, Pencil } from 'lucide-react';
 import { CardColor } from './cardConstants';
 import { orderStore, Order, OrderStatus } from '../stores/orderStore';
 
@@ -17,14 +15,18 @@ interface Props {
   onCollapse: () => void;
 }
 
-const STATUS_CONFIG: Record<OrderStatus, { zh: string; en: string; icon: typeof Clock }> = {
-  pending:  { zh: '待付款',   en: 'Pending',  icon: CircleDashed },
-  partial:  { zh: '部分付款', en: 'Partial',  icon: Clock },
-  active:   { zh: '已生效',   en: 'Active',   icon: CheckCircle2 },
-  expired:  { zh: '已到期',   en: 'Expired',  icon: XCircle },
+const STATUS_CONFIG: Record<OrderStatus, { zh: string; en: string; Icon: typeof Clock }> = {
+  pending:  { zh: '待付款',   en: 'Pending',  Icon: CircleDashed },
+  partial:  { zh: '部分付款', en: 'Partial',  Icon: Clock },
+  active:   { zh: '已生效',   en: 'Active',   Icon: CheckCircle2 },
+  expired:  { zh: '已到期',   en: 'Expired',  Icon: XCircle },
 };
-
 const ALL_STATUSES: OrderStatus[] = ['pending', 'partial', 'active', 'expired'];
+
+interface EditState {
+  customer: string; plan: string; service: string;
+  amount: string; startDate: string; expireDate: string; notes: string;
+}
 
 export function OrderExpandContent({ lang, color: C, orderId, expanded, onCollapse }: Props) {
   const zh = lang === 'zh';
@@ -32,7 +34,10 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, onCollap
     orderId ? (orderStore.getAll().find(o => o.id === orderId) ?? null) : null
   );
   const [editing, setEditing] = useState(false);
-  const [ePaid,   setEPaid]   = useState('');
+  const [scope,   setScope]   = useState<'self' | 'shared'>('shared');
+  const [edit,    setEdit]    = useState<EditState>({
+    customer: '', plan: '', service: '', amount: '', startDate: '', expireDate: '', notes: '',
+  });
 
   useEffect(() => {
     const sync = () => {
@@ -43,34 +48,47 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, onCollap
   }, [orderId]);
 
   useEffect(() => {
-    if (!expanded) { setEditing(false); }
+    if (!expanded) setEditing(false);
   }, [expanded]);
 
   if (!expanded || !order) return null;
 
-  const symbol   = order.currency === 'USD' ? '$' : '¥';
-  const balance  = order.amount - order.paidAmount;
-  const StatusIcon = STATUS_CONFIG[order.status].icon;
+  const symbol  = order.currency === 'USD' ? '$' : '¥';
+  const balance = Math.max(0, order.amount - order.paidAmount);
 
-  const handleStatusChange = (s: OrderStatus) => {
-    orderStore.update(order.id, { status: s });
+  const handleStatusChange = (s: OrderStatus) => orderStore.update(order.id, { status: s });
+
+  const startEdit = () => {
+    setEdit({
+      customer:   order.customer,
+      plan:       order.plan,
+      service:    order.service,
+      amount:     String(order.amount || ''),
+      startDate:  order.startDate,
+      expireDate: order.expireDate ?? '',
+      notes:      order.notes ?? '',
+    });
+    setEditing(true);
   };
 
-  const handleSavePaid = () => {
-    const val = parseFloat(ePaid);
-    if (!isNaN(val) && val >= 0) {
-      orderStore.update(order.id, {
-        paidAmount: val,
-        status: val >= order.amount ? 'active' : val > 0 ? 'partial' : order.status,
-      });
-    }
+  const saveEdit = () => {
+    const amount = parseFloat(edit.amount);
+    orderStore.update(order.id, {
+      customer:   edit.customer  || order.customer,
+      plan:       edit.plan      || order.plan,
+      service:    edit.service   || order.service,
+      amount:     isNaN(amount)  ? order.amount : amount,
+      startDate:  edit.startDate || order.startDate,
+      expireDate: edit.expireDate || undefined,
+      notes:      edit.notes     || undefined,
+    });
     setEditing(false);
   };
 
-  const handleDelete = () => {
-    orderStore.remove(order.id);
-    onCollapse();
-  };
+  const handleDelete = () => { orderStore.remove(order.id); onCollapse(); };
+
+  const inputCls = `w-full px-2 py-1 rounded-[2px] border text-[11px] font-sans outline-none ${C.panelInput}`;
+  const labelCls = `font-mono text-[8px] tracking-[0.15em] uppercase shrink-0 w-14 ${C.panelLabel}`;
 
   return (
     <div className="overflow-hidden">
@@ -79,91 +97,148 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, onCollap
         {/* 状态切换 */}
         <div className="flex items-center gap-1.5 flex-wrap">
           {ALL_STATUSES.map(s => {
-            const cfg = STATUS_CONFIG[s];
-            const active = order.status === s;
+            const { zh: label, en, Icon } = STATUS_CONFIG[s];
             return (
-              <button
-                key={s}
-                onClick={() => handleStatusChange(s)}
+              <button key={s} onClick={() => handleStatusChange(s)}
                 className={`flex items-center gap-1 px-2 py-0.5 rounded-[2px] font-mono text-[9px] tracking-wide transition-all duration-150 ${
-                  active ? C.btnPrimary : C.btnGhost
-                }`}
-              >
-                <cfg.icon className="w-2.5 h-2.5" />
-                {zh ? cfg.zh : cfg.en}
+                  order.status === s ? C.btnPrimary : C.btnGhost
+                }`}>
+                <Icon className="w-2.5 h-2.5" />{zh ? label : en}
               </button>
             );
           })}
         </div>
 
-        {/* 订单字段 */}
-        <div className="space-y-1.5">
-          {[
-            { label: zh ? '服务' : 'Service', value: order.service },
-            { label: zh ? '套餐' : 'Plan',    value: order.plan },
-            { label: zh ? '客户' : 'Customer', value: order.customer },
-            { label: zh ? '开始' : 'Start',   value: order.startDate },
-            ...(order.expireDate ? [{ label: zh ? '到期' : 'Expire', value: order.expireDate }] : []),
-            ...(order.notes ? [{ label: zh ? '备注' : 'Notes', value: order.notes }] : []),
-          ].map(({ label, value }) => (
-            <div key={label} className="flex items-center gap-3">
-              <span className={`font-mono text-[8px] tracking-[0.15em] uppercase w-14 shrink-0 ${C.panelLabel}`}>{label}</span>
-              <span className={`font-sans text-[11px] ${C.panelText}`}>{value}</span>
+        {/* 商品信息 */}
+        <div className={`rounded-[3px] border ${C.panelBorder} px-3 py-2.5 space-y-2`}>
+          <span className={`font-mono text-[8px] tracking-[0.18em] uppercase font-bold ${C.panelLabel}`}>
+            {zh ? '商品信息' : 'Product'}
+          </span>
+          {editing ? (
+            <div className="space-y-1.5 pt-1">
+              {([
+                { key: 'service' as const,  label: zh ? '服务' : 'Service' },
+                { key: 'plan'    as const,  label: zh ? '套餐' : 'Plan' },
+                { key: 'customer'as const,  label: zh ? '客户' : 'Customer' },
+              ] as const).map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <span className={labelCls}>{label}</span>
+                  <input value={edit[key]} onChange={e => setEdit(p => ({ ...p, [key]: e.target.value }))}
+                    className={inputCls} />
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-
-        {/* 金额区 */}
-        <div className={`rounded-[3px] border ${C.panelBorder} px-3 py-2.5 space-y-1.5`}>
-          <div className="flex justify-between items-center">
-            <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '总额' : 'Total'}</span>
-            <span className={`font-mono text-[12px] font-bold ${C.panelText}`}>{symbol}{order.amount || '—'}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '已付' : 'Paid'}</span>
-            {editing ? (
-              <div className="flex items-center gap-1.5">
-                <input
-                  autoFocus
-                  type="number"
-                  value={ePaid}
-                  onChange={e => setEPaid(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter') handleSavePaid(); if (e.key === 'Escape') setEditing(false); }}
-                  className={`w-20 px-1.5 py-0.5 rounded-[2px] border text-[10px] font-mono ${C.panelInput} outline-none`}
-                  placeholder={String(order.paidAmount)}
-                />
-                <button onClick={handleSavePaid} className={`px-2 py-0.5 rounded-[2px] text-[9px] font-mono ${C.btnPrimary}`}>
-                  {zh ? '确认' : 'OK'}
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => { setEPaid(String(order.paidAmount)); setEditing(true); }}
-                className={`font-mono text-[12px] font-bold ${C.panelText} hover:opacity-70 transition`}
-              >
-                {symbol}{order.paidAmount}
-              </button>
-            )}
-          </div>
-          {order.amount > 0 && (
-            <div className="flex justify-between items-center">
-              <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '待收' : 'Balance'}</span>
-              <span className={`font-mono text-[12px] font-bold ${balance > 0 ? 'text-amber-400/80' : 'text-emerald-400/80'}`}>
-                {symbol}{Math.max(0, balance)}
-              </span>
+          ) : (
+            <div className="space-y-1.5 pt-1">
+              {[
+                { label: zh ? '服务' : 'Service',  value: order.service },
+                { label: zh ? '套餐' : 'Plan',     value: order.plan },
+                { label: zh ? '客户' : 'Customer', value: order.customer },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className={labelCls}>{label}</span>
+                  <span className={`font-sans text-[11px] ${C.panelText}`}>{value || '—'}</span>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
+        {/* 时间 + 备注 */}
+        <div className="space-y-1.5">
+          {editing ? (
+            <>
+              {([
+                { key: 'startDate'  as const, label: zh ? '开始' : 'Start' },
+                { key: 'expireDate' as const, label: zh ? '到期' : 'Expire' },
+                { key: 'notes'      as const, label: zh ? '备注' : 'Notes' },
+              ] as const).map(({ key, label }) => (
+                <div key={key} className="flex items-center gap-3">
+                  <span className={labelCls}>{label}</span>
+                  <input value={edit[key]} onChange={e => setEdit(p => ({ ...p, [key]: e.target.value }))}
+                    className={inputCls} />
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              {[
+                { label: zh ? '开始' : 'Start',  value: order.startDate },
+                ...(order.expireDate ? [{ label: zh ? '到期' : 'Expire', value: order.expireDate }] : []),
+                ...(order.notes      ? [{ label: zh ? '备注' : 'Notes',  value: order.notes }]      : []),
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-3">
+                  <span className={labelCls}>{label}</span>
+                  <span className={`font-sans text-[11px] ${C.panelText}`}>{value}</span>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+
+        {/* 金额 */}
+        <div className={`rounded-[3px] border ${C.panelBorder} px-3 py-2.5 space-y-1.5`}>
+          {editing ? (
+            <div className="flex items-center gap-3">
+              <span className={labelCls}>{zh ? '总额' : 'Total'}</span>
+              <input value={edit.amount} onChange={e => setEdit(p => ({ ...p, amount: e.target.value }))}
+                type="number" className={inputCls} placeholder={String(order.amount || '')} />
+            </div>
+          ) : (
+            <>
+              <div className="flex justify-between">
+                <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '总额' : 'Total'}</span>
+                <span className={`font-mono text-[12px] font-bold ${C.panelText}`}>{order.amount ? `${symbol}${order.amount}` : '—'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '已付' : 'Paid'}</span>
+                <span className={`font-mono text-[12px] font-bold ${C.panelText}`}>{symbol}{order.paidAmount}</span>
+              </div>
+              {order.amount > 0 && (
+                <div className="flex justify-between">
+                  <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '待收' : 'Balance'}</span>
+                  <span className={`font-mono text-[12px] font-bold ${balance > 0 ? 'text-amber-400/80' : 'text-emerald-400/80'}`}>{symbol}{balance}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
         {/* 底部操作 */}
-        <div className="flex items-center justify-end pt-0.5">
-          <button
-            onClick={handleDelete}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-[9px] font-mono tracking-wide ${C.btnDanger}`}
-          >
-            <Trash2 className="w-2.5 h-2.5" />
-            {zh ? '删除订单' : 'Delete'}
-          </button>
+        <div className="flex items-center justify-between pt-0.5">
+          {/* 个人/团队 */}
+          <div className="flex gap-1">
+            {(['self', 'shared'] as const).map(s => (
+              <button key={s} onClick={() => setScope(s)}
+                className={`px-2.5 py-1 rounded-[2px] font-mono text-[9px] tracking-wide transition-all ${
+                  scope === s ? C.btnPrimary : C.btnGhost
+                }`}>
+                {s === 'self' ? (zh ? '个人' : 'Personal') : (zh ? '团队' : 'Team')}
+              </button>
+            ))}
+          </div>
+          {/* 修改 / 确认 / 删除 */}
+          <div className="flex gap-1.5">
+            {editing ? (
+              <>
+                <button onClick={() => setEditing(false)} className={`px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnGhost}`}>
+                  {zh ? '取消' : 'Cancel'}
+                </button>
+                <button onClick={saveEdit} className={`px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnPrimary}`}>
+                  {zh ? '确认修改' : 'Save'}
+                </button>
+              </>
+            ) : (
+              <>
+                <button onClick={startEdit} className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnGhost}`}>
+                  <Pencil className="w-2.5 h-2.5" />{zh ? '修改编纂' : 'Edit'}
+                </button>
+                <button onClick={handleDelete} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnDanger}`}>
+                  <Trash2 className="w-2.5 h-2.5" />{zh ? '删除订单' : 'Delete'}
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

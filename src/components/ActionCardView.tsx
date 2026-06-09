@@ -172,6 +172,8 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
                 ? `text-[26px] font-serif font-bold ${focusText.startsWith('+') ? 'text-[#A6822E]' : 'text-[#8A6D1A]'}`
                 : isPayment
                   ? `text-[20px] font-mono ${focusSub.startsWith('已到账') ? 'text-[#D4AF37]' : focusSub.startsWith('已失败') ? 'text-rose-500' : 'text-amber-500'}`
+                  : isOrder
+                    ? 'text-[22px] font-serif font-bold tracking-wide text-white/90'
                   : `text-[20px] font-mono ${isShared ? 'text-white/80' : 'text-[#1A1A1A]/70'}`
             }`}>
               {isLedger ? (() => {
@@ -181,7 +183,11 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
                 return <>{sign}{num}<span className="ml-1 text-[0.55em] align-baseline opacity-80">{symbol}</span></>;
               })() : focusText}
             </span>
-            {focusSub && <span className={`font-mono text-[8px] mt-1.5 tracking-wide truncate text-center w-full ${COLOR.focusSub}`}>{focusSub}</span>}
+            {focusSub && <span className={`mt-1.5 tracking-wide truncate text-center w-full ${
+              isOrder
+                ? 'font-serif text-[10px] text-white/55 italic'
+                : `font-mono text-[8px] ${COLOR.focusSub}`
+            }`}>{focusSub}</span>}
           </div>
           <div className="flex-1 min-w-0 pl-4.5 pr-3.5 py-2.5 space-y-1 flex flex-col justify-center">
             <div className="flex items-center justify-between gap-2">
