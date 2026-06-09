@@ -82,6 +82,42 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
         >
           {lang === 'zh' ? '进入工作坊' : 'ENTER ATELIER'}
         </motion.button>
+
+        {/* Platform availability */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.2, duration: 0.6 }}
+          className="flex items-center gap-5 mt-1"
+        >
+          {[
+            { label: 'Windows', available: true },
+            { label: 'macOS',   available: true },
+            { label: 'Android', available: false },
+            { label: 'Linux',   available: false },
+            { label: 'iOS',     available: false },
+          ].map(({ label, available }) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span
+                className={`w-1 h-1 rounded-full ${
+                  available ? 'bg-[#4488CC]/80' : 'bg-[#F9F8F6]/18'
+                }`}
+              />
+              <span
+                className={`font-mono text-[9px] tracking-[0.25em] uppercase ${
+                  available ? 'text-[#F9F8F6]/45' : 'text-[#F9F8F6]/20'
+                }`}
+              >
+                {label}
+              </span>
+              {!available && (
+                <span className="font-mono text-[8px] tracking-[0.15em] text-[#F9F8F6]/15 uppercase">
+                  soon
+                </span>
+              )}
+            </div>
+          ))}
+        </motion.div>
       </div>
 
       {/* Bottom micro label */}
