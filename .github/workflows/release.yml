@@ -31,16 +31,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload to 阿里云 OSS (China mirror)
+      - name: Install oss2
+        run: python -m pip install oss2
+
+      - name: Upload to OSS
         env:
           OSS_KEY_ID: ${{ secrets.OSS_KEY_ID }}
           OSS_KEY_SECRET: ${{ secrets.OSS_KEY_SECRET }}
+        shell: python
         run: |
-          pip install oss2
-          python -c "
-import oss2
-auth = oss2.Auth('${{ secrets.OSS_KEY_ID }}', '${{ secrets.OSS_KEY_SECRET }}')
-bucket = oss2.Bucket(auth, 'https://oss-cn-shenzhen.aliyuncs.com', 'gsyen-releases')
-bucket.put_object_from_file('GSYEN-Setup-Windows.exe', 'C:/gsyen-dist/GSYEN-Setup-Windows.exe')
-print('Upload OK')
-"
+          import os, oss2
+          auth = oss2.Auth(os.environ['OSS_KEY_ID'], os.environ['OSS_KEY_SECRET'])
+          bucket = oss2.Bucket(auth, 'https://oss-cn-shenzhen.aliyuncs.com', 'gsyen-releases')
+          bucket.put_object_from_file('GSYEN-Setup-Windows.exe', 'C:/gsyen-dist/GSYEN-Setup-Windows.exe')
+          print('Upload OK')

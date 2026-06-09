@@ -144,45 +144,41 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
-          className="flex items-center gap-2 mt-1"
+          className="flex items-start gap-2 mt-1"
         >
-          {PLATFORMS.map(({ label, icon, available, soon, href }: any) => {
-            const cls = `flex items-center gap-2 px-4 py-2.5 border transition-colors ${
-              available
-                ? 'border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10'
-                : 'border-[#F9F8F6]/8 bg-transparent cursor-default'
-            }`;
-            const inner = (
-              <>
-                <span className={available ? 'text-[#F9F8F6]/65' : 'text-[#F9F8F6]/18'}>{icon}</span>
-                <span className={`font-mono text-[10px] tracking-[0.2em] ${available ? 'text-[#F9F8F6]/60' : 'text-[#F9F8F6]/20'}`}>
-                  {label}
-                </span>
-                {soon && (
-                  <span className="font-mono text-[8px] tracking-[0.1em] text-[#F9F8F6]/20 leading-none">soon</span>
-                )}
-              </>
-            );
-            return href ? (
-              <a key={label} href={href} download className={cls}>{inner}</a>
-            ) : (
-              <div key={label} className={cls}>{inner}</div>
-            );
-          })}
+          {/* Windows + GitHub stacked */}
+          <div className="flex flex-col gap-1">
+            <a
+              href={WINDOWS_OSS}
+              download
+              className="flex items-center gap-2 px-4 py-2.5 border transition-colors border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10"
+            >
+              <span className="text-[#F9F8F6]/65"><WinIcon /></span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-[#F9F8F6]/60">Windows</span>
+            </a>
+            <a
+              href={WINDOWS_GITHUB}
+              download
+              className="flex items-center gap-2 px-4 py-2.5 border transition-colors border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10"
+            >
+              <span className="text-[#F9F8F6]/65"><Github size={11} /></span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-[#F9F8F6]/60">GitHub</span>
+            </a>
+          </div>
+          {/* Other platforms */}
+          {PLATFORMS.slice(1).map(({ label, icon, soon }: any) => (
+            <div
+              key={label}
+              className="flex items-center gap-2 px-4 py-2.5 border transition-colors border-[#F9F8F6]/8 bg-transparent cursor-default"
+            >
+              <span className="text-[#F9F8F6]/18">{icon}</span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-[#F9F8F6]/20">{label}</span>
+              {soon && (
+                <span className="font-mono text-[8px] tracking-[0.1em] text-[#F9F8F6]/20 leading-none">soon</span>
+              )}
+            </div>
+          ))}
         </motion.div>
-
-        {/* GitHub fallback */}
-        <motion.a
-          href={WINDOWS_GITHUB}
-          download
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.3, duration: 0.5 }}
-          className="-mt-7 flex items-center gap-1.5 hover:opacity-70 transition-opacity"
-        >
-          <Github size={10} className="text-[#F9F8F6]/25" />
-          <span className="font-mono text-[8px] tracking-[0.15em] text-[#F9F8F6]/25">GitHub</span>
-        </motion.a>
       </div>
 
       {/* Bottom micro label */}
