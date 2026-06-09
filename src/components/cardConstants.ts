@@ -25,7 +25,7 @@ export const CARD_WIDTH: Record<string, string> = {
   CHRONOS: 'w-[360px]',
   MAIL:    'w-[400px]',
   VAULT:   'w-[400px]',
-  CANVAS:  'w-[400px]',
+  CANVAS:  'w-[420px]',
   ORDER:   'w-[420px]',
 };
 // 展开态宽度随高度等比舒展（auto 宽度无法动画，必须给具体值配合 transition-[width]）。
@@ -35,9 +35,11 @@ export const CARD_WIDTH_EXPANDED: Record<string, string> = {
   MAIL:    'w-[520px]',   // Level 2 展开态
   VAULT:   'w-[460px]',
   ORDER:   'w-[460px]',  // Level 2 展开态
+  CANVAS:  'w-[520px]',  // Level 2 展开态
 };
 export const CARD_WIDTH_COMPOSE: Record<string, string> = {
-  MAIL: 'w-[900px]',      // Level 3 撰写态（max-w-full 兜底，确保不超出容器）
+  MAIL:   'w-[900px]',    // Level 3 撰写态（max-w-full 兜底，确保不超出容器）
+  CANVAS: 'w-[900px]',   // Level 3 编辑器态
 };
 
 // 两种身份 → 两套配色。对内(self)=PANTONE 10101 C 冷灰深字；对外(shared)=Regatta 蓝白字。

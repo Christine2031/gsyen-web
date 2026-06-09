@@ -26,6 +26,8 @@ import { useChatStream } from '../hooks/useChatStream';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatEmptyState } from './ChatEmptyState';
+import { CanvasEditorContent } from './CanvasEditorContent';
+import { canvasStore } from '../stores/canvasStore';
 
 interface ChatModuleProps { lang: 'zh' | 'en' }
 
@@ -36,6 +38,16 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [recentsOpen, setRecentsOpen] = useState(true);
   const [selectedModel, setSelectedModel] = useState<ModelId>('ethan');
   const [toast, setToast]             = useState<string | null>(null);
+  const [creativeDocId, setCreativeDocId] = useState<string | null>(null);
+
+  // 创意国度：直接建文档 → 开全屏编辑器
+  const openCreativeKingdom = () => {
+    const now = new Date().toISOString();
+    const doc = { id: `canvas-${Date.now()}`, title: '无标题', content: '', type: 'doc' as const,
+      scope: 'self' as const, createdAt: now, updatedAt: now };
+    canvasStore.add(doc);
+    setCreativeDocId(doc.id);
+  };
 
   const { messages, sessions, currentSessionId, setMessages, saveChat, loadSession, deleteSession, newChat } =
     useChatSession(lang);
@@ -153,6 +165,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
 
   // ── render ─────────────────────────────────────────────────────────────────
   return (
+    <>
     <div className="flex-1 flex flex-col min-h-0 bg-[#F9F8F6]" id="ai-chat-root-workspace">
 
       {/* Toast */}
@@ -172,10 +185,11 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           <button onClick={newChat} className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
             <Plus className="w-3 h-3" /><span>NEW</span>
           </button>
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-3.5 h-3.5 text-[#1A1A1A]" />
-            <span>{lang === 'zh' ? '疆域灵感创意国度' : 'GSYEN Muse Creative Workspace'}</span>
-          </div>
+          <button onClick={openCreativeKingdom}
+            className="flex items-center gap-2 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>{lang === 'zh' ? '疆域灵感创意国度' : 'GSYEN Muse'}</span>
+          </button>
         </div>
 
         <div className="flex items-center gap-4">
@@ -274,5 +288,9 @@ export default function ChatModule({ lang }: ChatModuleProps) {
         </div>
       </div>
     </div>
+    {creativeDocId && (
+      <CanvasEditorContent docId={creativeDocId} onClose={() => setCreativeDocId(null)} />
+    )}
+    </>
   );
 }
