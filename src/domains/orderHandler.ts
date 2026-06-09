@@ -113,9 +113,24 @@ export const orderHandler: DomainHandler = {
 
   enrichMessage(text, _intent, lang) {
     const today = localDateStr(new Date());
+    const order = makeOrder(text);
+    const missingCustomer = order.customer === '待确认';
+    const missingAmount   = order.amount === 0;
+
+    let ask = '';
+    if (missingCustomer && missingAmount) {
+      ask = lang === 'zh'
+        ? '请问这是为哪位客户开通？费用是多少？'
+        : 'Who is this order for, and what is the amount?';
+    } else if (missingCustomer) {
+      ask = lang === 'zh' ? '请问这是为哪位客户开通？' : 'Who is this order for?';
+    } else if (missingAmount) {
+      ask = lang === 'zh' ? '请问这笔订单的费用是多少？' : 'What is the amount for this order?';
+    }
+
     const suffix = lang === 'zh'
-      ? `\n\n[系统] 今天是 ${today}。用户在创建订单，请确认订单信息并回复，无需生成 JSON。`
-      : `\n\n[System] Today is ${today}. User is creating an order. Confirm the order details in your reply.`;
+      ? `\n\n[系统] 今天是 ${today}。用户在创建订单。${ask ? '信息不完整，请回复：' + ask : '信息完整，请确认订单并回复。'}无需生成 JSON。`
+      : `\n\n[System] Today is ${today}. User is creating an order. ${ask ? 'Missing info — ask: ' + ask : 'Info complete, confirm the order.'} No JSON needed.`;
     return text + suffix;
   },
 
@@ -130,9 +145,12 @@ export const orderHandler: DomainHandler = {
     }));
   },
 
-  // eagerCard：intent 命中立即建卡 + 写 store，不等 AI 返回
+  // eagerCard：客户名 + 金额都齐全才建卡，缺一不可
   eagerCard(text, _lang): ActionCard | null {
     const order = makeOrder(text);
+    const hasCustomer = order.customer !== '待确认';
+    const hasAmount   = order.amount > 0;
+    if (!hasCustomer || !hasAmount) return null;  // 信息不完整，让 AI 去问
     orderStore.add(order);
     return buildCard('create', order);
   },
