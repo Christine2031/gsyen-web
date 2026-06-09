@@ -76,10 +76,10 @@ export default function BrandLab({ lang }: BrandLabProps) {
           {lang === 'zh' ? '品牌研发工具集:' : 'ATELIER BRAND LAB ENGINE:'}
         </span>
         <div className="flex gap-1.5 flex-wrap">
+          {tabBtn('orders', lang === 'zh' ? '订单' : 'Orders')}
+          {tabBtn('expert', t.creativeAssistant)}
           {tabBtn('studio', t.studioCanvas)}
           {tabBtn('collateral', t.collateralMockups)}
-          {tabBtn('expert', t.creativeAssistant)}
-          {tabBtn('orders', lang === 'zh' ? '订单' : 'Orders')}
         </div>
       </div>
 
