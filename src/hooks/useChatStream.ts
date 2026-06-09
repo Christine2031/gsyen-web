@@ -71,6 +71,37 @@ interface PendingConfirmation {
   pending: unknown;
 }
 
+/** 神机百炼裁决：收集所有命中的 handler，应用主从规则，返回最终执行者。
+ *
+ *  三档逻辑：
+ *  1. 唯一命中      → 直接执行
+ *  2. 多命中有主从  → 主 handler 执行，被压制的静默（不出卡）
+ *  3. 多命中无主从  → 返回 null（调用方负责向用户询问歧义）
+ */
+function resolveHandler(
+  text: string,
+  handlers: DomainHandler[],
+): { handler: DomainHandler; intent: string } | null {
+  const matches: Array<{ handler: DomainHandler; intent: string }> = [];
+  for (const h of handlers) {
+    const intent = h.detectIntent(text);
+    if (intent) matches.push({ handler: h, intent });
+  }
+  if (matches.length === 0) return null;
+  if (matches.length === 1) return matches[0];
+
+  // 找出被压制的 module
+  const dominated = new Set<string>();
+  for (const { handler } of matches) {
+    for (const m of handler.dominates ?? []) dominated.add(m);
+  }
+  const winners = matches.filter(m => !dominated.has(m.handler.module));
+  if (winners.length === 1) return winners[0];
+
+  // 真歧义：返回 null，交由上层询问用户
+  return null;
+}
+
 export function useChatStream(): UseChatStreamReturn {
   const [isLoading, setIsLoading] = useState(false);
   const pendingConfirmation = useRef<PendingConfirmation | null>(null);
@@ -118,24 +149,23 @@ export function useChatStream(): UseChatStreamReturn {
 
       const isStructured = STRUCTURED_MODELS.has(model);
 
-      // 3. 意图探测（所有模型都做：结构化模型用它决定是否注入域 system 后缀，
-      //    SSE 模型额外用它来增强消息文本）
+      // 3. 神机百炼裁决：收集所有命中 → 应用主从规则 → 唯一胜者执行
       let enrichedText = text;
       let streamHandler: DomainHandler | null = null;
       let streamIntent: string | null = null;
       let eagerCardEmitted = false;
-      for (const handler of domainHandlers) {
-        const intent = handler.detectIntent(text);
-        if (intent) {
-          streamHandler = handler;
-          streamIntent = intent;
-          if (!isStructured) enrichedText = handler.enrichMessage(text, intent, lang);
-          // 意图命中时立即渲染卡片（如 MAIL），无需等 AI 回复
-          const early = handler.eagerCard?.(text, lang);
-          if (early) { onActionCard?.(early); eagerCardEmitted = true; }
-          break;
-        }
+
+      const resolved = resolveHandler(text, domainHandlers);
+      if (resolved) {
+        streamHandler = resolved.handler;
+        streamIntent  = resolved.intent;
+        if (!isStructured) enrichedText = resolved.handler.enrichMessage(text, streamIntent, lang);
+        // 意图命中时立即渲染卡片（如 ORDER / MAIL），无需等 AI 回复
+        const early = resolved.handler.eagerCard?.(text, lang);
+        if (early) { onActionCard?.(early); eagerCardEmitted = true; }
       }
+      // 真歧义（多 handler 无主从）：streamHandler 为 null，缈缈以普通对话回复
+      // TODO: 向用户输出一条询问消息，让用户选择意图（下一版本实现）
 
       // 4. Build history
       const userMsg: ChatMessage = {

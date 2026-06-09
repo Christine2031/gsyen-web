@@ -15,7 +15,8 @@ const TRIGGER_VERBS = ['买', '购买', '开通', '订阅', '续费', '帮我开
 const TRIGGER_NOUNS = ['会员', '套餐', '服务', '月', '年', '季', '订单'];
 
 export function detectOrderIntent(text: string): string | null {
-  const hasVerb = TRIGGER_VERBS.some(k => text.includes(k));
+  const hasVerb = TRIGGER_VERBS.some(k => text.includes(k))
+    || /帮\s*\S{1,8}\s*开/.test(text);  // "帮 yuki 开" / "帮小明开" 等代客操作
   const hasNoun = TRIGGER_NOUNS.some(k => text.includes(k));
   if (hasVerb && hasNoun) return 'create';
   return null;
@@ -89,7 +90,7 @@ function buildCard(action: ActionCard['action'], order: Order): ActionCard {
 }
 
 function makeOrder(text: string): Order {
-  const { amount, currency } = extractAmount(text);
+  const { amount } = extractAmount(text);
   const today = localDateStr(new Date());
   return {
     id:         `order-${Date.now()}`,
@@ -97,7 +98,7 @@ function makeOrder(text: string): Order {
     plan:       extractPlan(text),
     customer:   extractCustomer(text),
     amount,
-    currency,
+    currency:   'CNY',   // 疆域服务只收人民币
     paidAmount: 0,
     status:     'pending',
     startDate:  today,
@@ -108,6 +109,7 @@ function makeOrder(text: string): Order {
 
 export const orderHandler: DomainHandler = {
   module: 'ORDER',
+  dominates: ['LEDGER'],  // 有订单必记账：ORDER 是主，LEDGER 是影子，影子不出卡
 
   detectIntent(text) { return detectOrderIntent(text); },
 

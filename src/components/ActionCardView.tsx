@@ -110,7 +110,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
   const [mailComposing, setMailComposing] = useState(false);
   const [mailScope,     setMailScope]     = useState<'self' | 'shared'>('self');
   const [vaultScope,    setVaultScope]    = useState<'self' | 'shared'>('self');
-  const [orderScope,    setOrderScope]    = useState<'self' | 'shared'>('shared'); // 默认团队
+  const [orderScope,    setOrderScope]    = useState<'self' | 'shared'>('self'); // 默认个人（灰），客户单手动切团队
 
   const isShared = isOrder
     ? orderScope === 'shared'
@@ -185,7 +185,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
             </span>
             {focusSub && <span className={`mt-1.5 tracking-wide truncate text-center w-full ${
               isOrder
-                ? `font-serif text-[10px] italic ${isShared ? 'text-white/50' : 'text-[#1A1A1A]/45'}`
+                ? `font-serif text-[11px] italic ${isShared ? 'text-white/85' : 'text-[#1A1A1A]/75'}`
                 : `font-mono text-[8px] ${COLOR.focusSub}`
             }`}>{focusSub}</span>}
           </div>
@@ -201,7 +201,20 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
                 )}
               </div>
             </div>
-            <p className={`font-sans font-semibold leading-snug truncate text-[13px] ${isDeleted ? COLOR.titleDel + ' line-through' : COLOR.title}`}>{event?.title ?? tx?.description ?? card.title}</p>
+            {isOrder ? (() => {
+              // ORDER 标题：「待付款  ¥199」→ 状态保持主体，金额 serif 金色跟在后面
+              const parts = card.title.split(/\s{2,}/);
+              const statusTxt = parts[0] ?? '';
+              const amountTxt = parts[1] ?? '';
+              return (
+                <div className="flex items-baseline gap-2.5">
+                  <span className={`font-sans font-semibold text-[13px] leading-snug ${COLOR.title}`}>{statusTxt}</span>
+                  <span className="font-serif font-bold text-[26px] leading-none text-[#A6822E] ml-auto mr-8 shrink-0">{amountTxt}</span>
+                </div>
+              );
+            })() : (
+              <p className={`font-sans font-semibold leading-snug truncate text-[13px] ${isDeleted ? COLOR.titleDel + ' line-through' : COLOR.title}`}>{event?.title ?? tx?.description ?? card.title}</p>
+            )}
             {tags.length > 0 && (
               <div className="flex items-center gap-2 pt-0.5">
                 {tags.map((tag, i) => (

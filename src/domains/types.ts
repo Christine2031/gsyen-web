@@ -48,4 +48,11 @@ export interface DomainHandler {
    * If a card is returned here, useChatStream will NOT render a second card from handleAction.
    */
   eagerCard?(text: string, lang: 'zh' | 'en'): ActionCard | null;
+
+  /**
+   * 神机百炼冲突裁决：列出当本 handler 命中时应静默压制的其他 module。
+   * 例如 ORDER 主从关系："有订单必记账"→ ORDER dominates LEDGER（LEDGER 不出卡，只做影子联动）。
+   * 被压制的 handler 不会执行 enrichMessage / eagerCard / handleAction。
+   */
+  dominates?: string[];
 }
