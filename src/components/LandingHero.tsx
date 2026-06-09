@@ -1,4 +1,5 @@
 import { motion } from 'motion/react';
+import { Github } from 'lucide-react';
 import VintageCar from './VintageCar';
 
 const WinIcon = () => (
@@ -49,7 +50,7 @@ const WINDOWS_OSS    = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYE
 const WINDOWS_GITHUB = 'https://github.com/Christine2031/gsyen-web/releases/latest/download/GSYEN-Setup-Windows.exe';
 
 const PLATFORMS = [
-  { label: 'Windows', icon: <WinIcon />,     available: true,  soon: false, href: WINDOWS_OSS, altHref: WINDOWS_GITHUB },
+  { label: 'Windows', icon: <WinIcon />,     available: true,  soon: false, href: WINDOWS_OSS },
   { label: 'macOS',   icon: <AppleIcon />,   available: false, soon: true,  href: null },
   { label: 'Android', icon: <AndroidIcon />, available: false, soon: true,  href: null },
   { label: 'Linux',   icon: <LinuxIcon />,   available: false, soon: true,  href: null },
@@ -145,7 +146,7 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           transition={{ delay: 1.2, duration: 0.6 }}
           className="flex items-center gap-2 mt-1"
         >
-          {PLATFORMS.map(({ label, icon, available, soon, href, altHref }: any) => {
+          {PLATFORMS.map(({ label, icon, available, soon, href }: any) => {
             const cls = `flex items-center gap-2 px-4 py-2.5 border transition-colors ${
               available
                 ? 'border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10'
@@ -162,14 +163,6 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
                 )}
               </>
             );
-            if (href && altHref) return (
-              <div key={label} className="flex flex-col items-stretch gap-1">
-                <a href={href} download className={cls}>{inner}</a>
-                <a href={altHref} download className="flex items-center justify-center px-4 py-1 border border-[#F9F8F6]/10 hover:bg-[#F9F8F6]/6 transition-colors">
-                  <span className="font-mono text-[8px] tracking-[0.15em] text-[#F9F8F6]/25 hover:text-[#F9F8F6]/45">GitHub</span>
-                </a>
-              </div>
-            );
             return href ? (
               <a key={label} href={href} download className={cls}>{inner}</a>
             ) : (
@@ -177,6 +170,19 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
             );
           })}
         </motion.div>
+
+        {/* GitHub fallback */}
+        <motion.a
+          href={WINDOWS_GITHUB}
+          download
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3, duration: 0.5 }}
+          className="-mt-7 flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+        >
+          <Github size={10} className="text-[#F9F8F6]/25" />
+          <span className="font-mono text-[8px] tracking-[0.15em] text-[#F9F8F6]/25">GitHub</span>
+        </motion.a>
       </div>
 
       {/* Bottom micro label */}
