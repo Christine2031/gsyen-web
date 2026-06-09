@@ -134,11 +134,16 @@ export const vaultHandler: DomainHandler = {
 };
 
 function buildCard(row: CredentialRow, _lang: 'zh' | 'en'): ActionCard {
+  const rightTitle = row.username || (row.secretVal ? '●●●●●●' : '—');
   return {
     module: 'VAULT',
     action: 'create',
-    title:  row.serviceName,
-    meta:   [CATEGORY_LABEL[row.category], row.username, row.lastUpdated],
-    id:     row.id,
+    title:  rightTitle,
+    meta:   [
+      row.serviceName,               // meta[0] → focusText 左侧大字
+      CATEGORY_LABEL[row.category],  // meta[1] → focusSub 左侧小字
+      row.lastUpdated,               // meta[2] → tag
+    ],
+    id: row.id,
   };
 }

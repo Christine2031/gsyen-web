@@ -215,7 +215,7 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
             lang={lang}
             color={COLOR}
             credentialId={card.id}
-            serviceName={card.title}
+            serviceName={focusText}
             expanded={expanded}
             scope={vaultScope}
             onScopeChange={setVaultScope}
