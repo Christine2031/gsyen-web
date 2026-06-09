@@ -36,7 +36,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
   return (
     <>
-      <header className="border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-center justify-between" id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <header className="border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-start justify-between" id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="p-2.5 bg-transparent rounded-none border border-[#1A1A1A]/15 shadow-[1px_1px_0px_rgba(26,26,26,0.06)] shrink-0 transition-transform duration-500 hover:rotate-6">
             <VintageCar size={44} className="text-[#1A1A1A]/95" />
@@ -68,25 +68,46 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           ))}
         </div>
 
-        {/* 语言切换 + 状态 */}
-        <div className="flex items-center gap-3 text-[10px]" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <div className="flex bg-[#1A1A1A]/5 p-0.5 rounded-none border border-[#1A1A1A]/10">
-            <button
-              onClick={() => setLang('en')}
-              className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'en' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
-            >
-              EN
-            </button>
-            <button
-              onClick={() => setLang('zh')}
-              className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'zh' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
-            >
-              中文
-            </button>
-          </div>
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 rounded-none">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-pulse" />
-            <span className="text-[#1A1A1A]/75 font-serif-sc text-[10px] tracking-[0.12em] font-medium uppercase">{t.inkModeActive}</span>
+        {/* 右侧：窗口控制（Electron 右对齐浮在底行上方）+ 语言 + 状态 */}
+        <div className="relative flex items-center gap-3 text-[10px]"
+          style={{
+            WebkitAppRegion: 'no-drag',
+            paddingTop: (window as any).electronAPI?.isElectron ? 31 : 0,
+          } as React.CSSProperties}>
+
+          {/* 窗口控制：3个 28×28 正方形，间隙 8px，右偏 10px，矢量墨水 hover */}
+          {(window as any).electronAPI?.isElectron && (
+            <div className="absolute top-0 right-0 flex items-center gap-2 pr-[10px]">
+              {([
+                { label: '—', fontSize: '13px', action: 'minimize' },
+                { label: '□', fontSize: '11px', action: 'maximize' },
+                { label: '×', fontSize: '13px', action: 'close'    },
+              ] as const).map(({ label, fontSize, action }) => (
+                <button key={action}
+                  onClick={() => (window as any).electronAPI.window[action]()}
+                  className="w-[26px] h-[26px] flex items-center justify-center leading-none font-mono text-[#1A1A1A]/40 border border-[#1A1A1A]/12 bg-[#1A1A1A]/4 hover:bg-[#1A1A1A]/8 hover:text-[#1A1A1A] transition-all select-none"
+                  style={{ fontSize }}
+                >{label}</button>
+              ))}
+            </div>
+          )}
+
+          {/* 语言切换 + 状态（这一行决定 controls 宽度）*/}
+          <div className="flex items-center gap-3 text-[10px]">
+            <div className="flex bg-[#1A1A1A]/5 p-0.5 rounded-none border border-[#1A1A1A]/10">
+              <button
+                onClick={() => setLang('en')}
+                className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'en' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
+              >EN</button>
+              <button
+                onClick={() => setLang('zh')}
+                className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'zh' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
+              >中文</button>
+            </div>
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 rounded-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-pulse" />
+              <span className="text-[#1A1A1A]/75 font-serif-sc text-[10px] tracking-[0.12em] font-medium uppercase">{t.inkModeActive}</span>
+            </div>
           </div>
         </div>
       </header>
