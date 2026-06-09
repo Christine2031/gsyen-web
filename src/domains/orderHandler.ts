@@ -78,11 +78,10 @@ function buildCard(action: ActionCard['action'], order: Order): ActionCard {
   return {
     module: 'ORDER',
     action,
-    title:  STATUS_LABEL[order.status],           // 右侧主标题：状态
+    title:  `${STATUS_LABEL[order.status]}  ${amountStr}`,  // 右侧主标题：待付款  ¥199
     meta:   [
       order.service,                               // focusText（左大字：疆域）
       order.plan,                                  // focusSub（左小字：月会员）
-      amountStr,                                   // tag：¥199
       ...(order.customer && order.customer !== '待确认' ? [order.customer] : []), // tag：客户名
     ],
     id: order.id,
