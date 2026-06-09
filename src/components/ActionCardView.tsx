@@ -198,20 +198,9 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
             <p className={`font-sans font-semibold leading-snug truncate text-[13px] ${isDeleted ? COLOR.titleDel + ' line-through' : COLOR.title}`}>{event?.title ?? tx?.description ?? card.title}</p>
             {tags.length > 0 && (
               <div className="flex items-center gap-2 pt-0.5">
-                {tags.map((tag, i) => {
-                  // ORDER 的状态 tag 用徽章样式——按文字匹配，不依赖 index
-                  const ORDER_STATUSES = ['待付款', '部分付款', '已生效', '已到期'];
-                  const isOrderStatus = isOrder && ORDER_STATUSES.includes(tag);
-                  const orderStatusClass = isOrderStatus
-                    ? tag === '待付款'   ? 'bg-amber-400/25 text-amber-300 font-bold'
-                    : tag === '部分付款' ? 'bg-amber-300/20 text-amber-200 font-bold'
-                    : tag === '已到期'   ? 'bg-white/10 text-white/40'
-                    : 'bg-white/20 text-white font-bold'   // 已生效
-                    : COLOR.tag;
-                  return (
-                    <span key={i} className={`font-mono text-[9px] px-1.5 py-0.5 rounded-[1.5px] truncate ${orderStatusClass}`}>{tag}</span>
-                  );
-                })}
+                {tags.map((tag, i) => (
+                  <span key={i} className={`font-mono text-[9px] px-1.5 py-0.5 rounded-[1.5px] truncate ${COLOR.tag}`}>{tag}</span>
+                ))}
               </div>
             )}
           </div>

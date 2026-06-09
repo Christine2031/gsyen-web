@@ -72,15 +72,19 @@ const STATUS_LABEL: Record<OrderStatus, string> = {
 
 function buildCard(action: ActionCard['action'], order: Order): ActionCard {
   const symbol = order.currency === 'USD' ? '$' : '¥';
+  // 左侧：服务名（大字）+ 套餐·金额（小字）
+  // 右侧：订单状态（主标题）+ 会员名（tag）
+  const planSub = order.amount > 0
+    ? `${order.plan} · ${symbol}${order.amount}`
+    : order.plan;
   return {
     module: 'ORDER',
     action,
-    title:  order.customer,
+    title:  STATUS_LABEL[order.status],   // 状态作主标题
     meta:   [
-      order.service,
-      order.plan,
-      ...(order.amount > 0 ? [`${symbol}${order.amount}`] : []),
-      STATUS_LABEL[order.status],
+      order.service,   // focusText（左大字）
+      planSub,         // focusSub（左小字：月会员 · ¥199）
+      order.customer,  // tag（会员名）
     ],
     id: order.id,
   };
