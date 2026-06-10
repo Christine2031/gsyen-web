@@ -102,16 +102,24 @@ export function ChatSidebar({
 
         {/* 底部：有更新时显示 Art Deco 更新卡，否则显示存储状态 */}
         {phase !== 'idle' && (
-          <div className="shrink-0" style={{ background: '#111111', border: '1px solid rgba(249,248,246,0.18)', position: 'relative', width: '100%' }}>
-            {/* 四角装饰 */}
+          <div className="shrink-0" style={{
+            position: 'relative', width: '100%',
+            background: '#111111',
+            backgroundImage: 'radial-gradient(rgba(249,248,246,0.07) 1px, transparent 1px)',
+            backgroundSize: '8px 8px',
+            border: '1px solid rgba(249,248,246,0.22)',
+          }}>
+            {/* amber 顶线 — 工业感 */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'rgba(245,158,11,0.72)' }} />
+            {/* 四角装饰 — 加粗加亮 */}
             {(['tl','tr','bl','br'] as const).map(p => (
-              <div key={p} style={{ position: 'absolute', width: 8, height: 8,
-                ...(p.includes('t') ? { top: 4 } : { bottom: 4 }),
-                ...(p.includes('l') ? { left: 4 } : { right: 4 }),
-                borderTop:    p.includes('t') ? '1px solid rgba(249,248,246,0.28)' : undefined,
-                borderBottom: p.includes('b') ? '1px solid rgba(249,248,246,0.28)' : undefined,
-                borderLeft:   p.includes('l') ? '1px solid rgba(249,248,246,0.28)' : undefined,
-                borderRight:  p.includes('r') ? '1px solid rgba(249,248,246,0.28)' : undefined,
+              <div key={p} style={{ position: 'absolute', width: 10, height: 10,
+                ...(p.includes('t') ? { top: 5 } : { bottom: 5 }),
+                ...(p.includes('l') ? { left: 5 } : { right: 5 }),
+                borderTop:    p.includes('t') ? '1.5px solid rgba(249,248,246,0.55)' : undefined,
+                borderBottom: p.includes('b') ? '1.5px solid rgba(249,248,246,0.55)' : undefined,
+                borderLeft:   p.includes('l') ? '1.5px solid rgba(249,248,246,0.55)' : undefined,
+                borderRight:  p.includes('r') ? '1.5px solid rgba(249,248,246,0.55)' : undefined,
               }} />
             ))}
             <div style={{ padding: '13px 15px 15px' }}>

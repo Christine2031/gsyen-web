@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.67.15",
+  "version": "2.67.16",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
