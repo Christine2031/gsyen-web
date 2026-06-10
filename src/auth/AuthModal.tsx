@@ -58,7 +58,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     } else {
       const { error: e } = await signUpWithEmail(email, password);
       if (e) setError(e.message);
-      else setInfo(lang === 'zh' ? '验证邮件已发送，请查收收件箱' : 'Verification email sent — check your inbox');
+      else onClose();
     }
     setBusy(false);
   };
