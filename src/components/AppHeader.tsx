@@ -92,26 +92,25 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
         )}
 
         {/* 右侧：语言 + 状态 */}
-        <div className="flex items-center gap-3 text-[10px]"
+        <div className="flex items-center gap-3 text-[10px] shrink-0"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
 
-          {/* 语言切换 + 状态 */}
-          <div className="flex items-center gap-3 text-[10px]">
-            <div className="flex bg-[#1A1A1A]/5 p-0.5 rounded-none border border-[#1A1A1A]/10">
-              <button
-                onClick={() => setLang('en')}
-                className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'en' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
-              >EN</button>
-              <button
-                onClick={() => setLang('zh')}
-                className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'zh' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
-              >中文</button>
-            </div>
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 rounded-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-pulse" />
-              <span className="text-[#1A1A1A]/75 font-serif-sc text-[10px] tracking-[0.12em] font-medium uppercase">{t.inkModeActive}</span>
-            </div>
+          <div className="flex bg-[#1A1A1A]/5 p-0.5 rounded-none border border-[#1A1A1A]/10 shrink-0">
+            <button
+              onClick={() => setLang('en')}
+              className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'en' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
+            >EN</button>
+            <button
+              onClick={() => setLang('zh')}
+              className={`px-2 py-1 rounded-none text-[9px] font-bold tracking-wider uppercase transition-all ${lang === 'zh' ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}
+            >中文</button>
           </div>
+          {!compact && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/5 border border-[#1A1A1A]/10 rounded-none shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1A1A1A] animate-pulse" />
+              <span className="text-[#1A1A1A]/75 font-serif-sc text-[10px] tracking-[0.12em] font-medium uppercase whitespace-nowrap">{t.inkModeActive}</span>
+            </div>
+          )}
         </div>
       </header>
 
