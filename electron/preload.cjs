@@ -7,9 +7,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     delete:  (id)        => ipcRenderer.invoke('canvas:delete', id),
   },
   window: {
-    minimize: () => ipcRenderer.invoke('window:minimize'),
-    maximize: () => ipcRenderer.invoke('window:maximize'),
-    close:    () => ipcRenderer.invoke('window:close'),
+    minimize:   () => ipcRenderer.invoke('window:minimize'),
+    maximize:   () => ipcRenderer.invoke('window:maximize'),
+    fullscreen: () => ipcRenderer.invoke('window:fullscreen'),
+    close:      () => ipcRenderer.invoke('window:close'),
   },
   updater: {
     install:  ()       => ipcRenderer.invoke('updater:install'),

@@ -125,6 +125,11 @@ ipcMain.handle('window:maximize', (e) => {
   if (!w) return;
   w.isMaximized() ? w.unmaximize() : w.maximize();
 });
+ipcMain.handle('window:fullscreen', (e) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  if (!w) return;
+  w.setFullScreen(!w.isFullScreen());
+});
 ipcMain.handle('window:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
 
 // ── 窗口 ──────────────────────────────────────────────────────────────────────
@@ -156,6 +161,13 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+
+  // F11 真全屏（在渲染层拦截前注册，覆盖系统默认行为）
+  win.webContents.on('before-input-event', (_e, input) => {
+    if (input.type === 'keyDown' && input.key === 'F11') {
+      win.setFullScreen(!win.isFullScreen());
+    }
   });
 
   // 关闭窗口 → 最小化到托盘，不退出

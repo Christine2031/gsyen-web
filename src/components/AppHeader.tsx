@@ -55,6 +55,18 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
     return () => { window.removeEventListener('resize', fn); cancelAnimationFrame(raf); };
   }, []);
 
+  useEffect(() => {
+    if (!isElectron) return;
+    const fn = (e: KeyboardEvent) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        (window as any).electronAPI.window.fullscreen();
+      }
+    };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, [isElectron]);
+
   return (
     <>
       <header className={`relative border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 py-6 flex items-start justify-between ${isMac ? 'pl-20 pr-8' : 'px-8'}`} id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
