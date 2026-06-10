@@ -6,7 +6,7 @@ import VintageCar from './VintageCar';
 import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
-import { useAuth } from '../auth/useAuth';
+import { useAuth, type UserTier } from '../auth/useAuth';
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -41,7 +41,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  const { user, signOut } = useAuth();
+  const { user, tier, signOut } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
 
@@ -122,11 +122,12 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           <div className="w-px h-3.5 bg-[#1A1A1A]/15 shrink-0" />
 
           {user ? (
-            /* 已登录：显示邮箱缩写 + 登出 */
+            /* 已登录：邮箱缩写 + 等级徽章 + 登出 */
             <>
               <span className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 whitespace-nowrap shrink-0 font-mono">
                 {user.email?.split('@')[0]}
               </span>
+              <TierBadge tier={tier} />
               <button
                 onClick={signOut}
                 className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-[9px] font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
@@ -176,5 +177,23 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
         ))}
       </div>
     </>
+  );
+}
+
+/* ── 会员等级徽章 ── */
+const TIER_CFG: Record<string, { label: string; cls: string }> = {
+  owner: { label: 'OWNER', cls: 'border-amber-400/60 text-amber-600 bg-amber-50'          },
+  admin: { label: 'ADMIN', cls: 'border-[#1A1A1A]/30 text-[#1A1A1A]/70 bg-[#1A1A1A]/5'  },
+  user:  { label: 'PRO',   cls: 'border-[#1A1A1A]/20 text-[#1A1A1A]/50 bg-transparent'   },
+  guest: { label: 'GUEST', cls: 'border-[#1A1A1A]/10 text-[#1A1A1A]/30 bg-transparent'   },
+};
+
+function TierBadge({ tier }: { tier: UserTier | null }) {
+  if (!tier) return null;
+  const cfg = TIER_CFG[tier] ?? TIER_CFG.guest;
+  return (
+    <span className={`px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 ${cfg.cls}`}>
+      {cfg.label}
+    </span>
   );
 }

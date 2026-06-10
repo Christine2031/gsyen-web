@@ -2,26 +2,46 @@ import { useState, useEffect } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
+export type UserTier = 'guest' | 'user' | 'admin' | 'owner';
+
 export interface AuthState {
-  user: User | null;
+  user:    User | null;
   session: Session | null;
+  tier:    UserTier | null;   // halfsphere 会员等级
   loading: boolean;
 }
 
 const NOT_CONFIGURED = { error: { message: 'Supabase not configured' } } as any;
 
+async function fetchTier(userId: string): Promise<UserTier | null> {
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from('user_tiers')
+    .select('tier')
+    .eq('user_id', userId)
+    .single();
+  return (data?.tier as UserTier) ?? 'guest';
+}
+
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({ user: null, session: null, loading: false });
+  const [state, setState] = useState<AuthState>({ user: null, session: null, tier: null, loading: false });
 
   useEffect(() => {
     if (!supabase) return;
     setState(s => ({ ...s, loading: true }));
-    supabase.auth.getSession().then(({ data }) => {
-      setState({ user: data.session?.user ?? null, session: data.session, loading: false });
+
+    supabase.auth.getSession().then(async ({ data }) => {
+      const user = data.session?.user ?? null;
+      const tier = user ? await fetchTier(user.id) : null;
+      setState({ user, session: data.session, tier, loading: false });
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ user: session?.user ?? null, session, loading: false });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const user = session?.user ?? null;
+      const tier = user ? await fetchTier(user.id) : null;
+      setState({ user, session, tier, loading: false });
     });
+
     return () => subscription.unsubscribe();
   }, []);
 
