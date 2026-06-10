@@ -8,7 +8,7 @@ interface Params {
   words: number; chars: number; readMin: number;
   mode: EditorMode; dark: boolean; tw: boolean;
   focusMode: FocusMode; lineLen: LineLen; font: FontChoice;
-  docType: 'doc' | 'canvas';
+  docType: 'doc' | 'canvas' | 'nodes';
   setMode:      (m: EditorMode) => void;
   setDark:      (v: (p: boolean) => boolean) => void;
   setTw:        (v: (p: boolean) => boolean) => void;
@@ -102,7 +102,7 @@ export function useCanvasMenus(p: Params): MenuSpec[] {
       { label: 'Larger Text',  shortcut: 'Ctrl++', action: () => { p.setFontSize(s => Math.min(24, s + 1)); p.setActiveMenu(null); } },
       { label: 'Smaller Text', shortcut: 'Ctrl+−', action: () => { p.setFontSize(s => Math.max(13, s - 1)); p.setActiveMenu(null); } },
       '---',
-      { label: p.docType === 'doc' ? 'Switch to Canvas' : 'Switch to Document', action: p.toggleDocType },
+      { label: p.docType === 'doc' ? 'Switch to Whiteboard' : p.docType === 'canvas' ? 'Switch to Node Canvas' : 'Switch to Document', action: p.toggleDocType },
     ]},
     { id: 'help', label: 'Help', items: [
       { label: 'Keyboard Shortcuts', disabled: true },

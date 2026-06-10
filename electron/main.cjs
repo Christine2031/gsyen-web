@@ -72,8 +72,11 @@ function setupAutoUpdater() {
   autoUpdater.on('update-downloaded',   info     => win?.webContents.send('updater:downloaded',    info));
   autoUpdater.on('error',               err      => win?.webContents.send('updater:error',         err?.message ?? String(err)));
 
-  // 启动 5 秒后检查
-  setTimeout(() => autoUpdater.checkForUpdates(), 5000);
+  // 启动 5 秒后检查，捕获网络/配置错误防止主进程崩溃
+  setTimeout(() => autoUpdater.checkForUpdates().catch(err => {
+    console.error('[updater] checkForUpdates failed:', err?.message ?? err);
+    win?.webContents.send('updater:error', err?.message ?? String(err));
+  }), 5000);
 }
 
 ipcMain.handle('updater:install', () => autoUpdater.quitAndInstall(false, true));

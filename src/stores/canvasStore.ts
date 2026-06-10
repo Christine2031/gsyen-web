@@ -5,7 +5,7 @@
 
 const KEY = 'gsyen_canvas_docs';
 
-export type CanvasType = 'doc' | 'canvas';
+export type CanvasType = 'doc' | 'canvas' | 'nodes';
 
 export interface CanvasDoc {
   id:        string;

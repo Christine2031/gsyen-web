@@ -26,7 +26,10 @@
       "electron/**/*"
     ],
     "extraResources": [
-      { "from": "public/icon.ico", "to": "icon.ico" }
+      {
+        "from": "public/icon.ico",
+        "to": "icon.ico"
+      }
     ],
     "win": {
       "target": [
@@ -63,7 +66,9 @@
     }
   },
   "dependencies": {
-    "electron-updater": "^6.8.9"
+    "@xyflow/react": "^12.11.0",
+    "electron-updater": "^6.8.9",
+    "mermaid": "^11.15.0"
   },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.5.0",

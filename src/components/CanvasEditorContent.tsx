@@ -5,6 +5,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { CanvasDrawEditor } from './CanvasDrawEditor';
+import { CanvasNodeEditor } from './CanvasNodeEditor';
 import { CanvasChrome } from './CanvasChrome';
 import {
   DARK, LIGHT, CHROME_H, STATUS_H, LINE_W, SYS_FONT,
@@ -16,6 +17,7 @@ import { EditorView } from '@codemirror/view';
 import { canvasStore } from '../stores/canvasStore';
 import { iaWriterTheme, focusModeExt, sentenceFocusExt, typewriterExt, baseExtensions } from '../hooks/useCanvasTheme';
 import ReactMarkdown from 'react-markdown';
+import { MermaidBlock } from './MermaidBlock';
 
 interface Props { docId: string | undefined; onClose: () => void; }
 
@@ -160,7 +162,8 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   }, [onTitleChange, onContent, setActiveMenu]);
 
   const toggleDocType = useCallback(() => {
-    const next: 'doc'|'canvas' = docType === 'doc' ? 'canvas' : 'doc';
+    const cycle = ['doc', 'canvas', 'nodes'] as const;
+    const next = cycle[(cycle.indexOf(docType as typeof cycle[number]) + 1) % cycle.length];
     setDocType(next); if (docId) canvasStore.update(docId, { type: next }); setActiveMenu(null);
   }, [docType, docId, setActiveMenu]);
 
@@ -182,7 +185,16 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     <div className="flex-1 min-w-0 overflow-y-auto" style={{ borderLeft: mode === 'split' ? `1px solid ${P.border}` : 'none' }}>
       <div style={padStyle}>
         {content
-          ? <div className="prose prose-lg max-w-none" style={{ '--tw-prose-body':P.fg, '--tw-prose-headings':P.fg, '--tw-prose-links':P.accent, '--tw-prose-hr':P.border, '--tw-prose-bullets':P.dim, '--tw-prose-counters':P.dim, fontFamily, fontSize:`${fontSize}px`, lineHeight:'1.9', color:P.fg } as React.CSSProperties}><ReactMarkdown>{content}</ReactMarkdown></div>
+          ? <div className="prose prose-lg max-w-none" style={{ '--tw-prose-body':P.fg, '--tw-prose-headings':P.fg, '--tw-prose-links':P.accent, '--tw-prose-hr':P.border, '--tw-prose-bullets':P.dim, '--tw-prose-counters':P.dim, fontFamily, fontSize:`${fontSize}px`, lineHeight:'1.9', color:P.fg } as React.CSSProperties}><ReactMarkdown
+                    components={{
+                      code({ className, children }) {
+                        const lang = (className ?? '').replace('language-', '');
+                        const code = String(children).replace(/\n$/, '');
+                        if (lang === 'mermaid') return <MermaidBlock code={code} dark={dark} />;
+                        return <code className={className}>{children}</code>;
+                      }
+                    }}
+                  >{content}</ReactMarkdown></div>
           : <p style={{ color:P.dim, fontStyle:'italic', fontSize:15, fontFamily }}>暂无内容</p>}
       </div>
     </div>
@@ -204,7 +216,8 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
       {/* Content */}
       <div style={{ position:'absolute', inset:0, paddingTop:CHROME_H, paddingBottom:STATUS_H, display:'flex', overflow:'hidden' }}>
-        {docType === 'canvas' ? <CanvasDrawEditor docId={docId!} dark={dark} />
+        {docType === 'nodes'  ? <CanvasNodeEditor docId={docId!} dark={dark} />
+          : docType === 'canvas' ? <CanvasDrawEditor docId={docId!} dark={dark} />
           : mode === 'write'   ? EditorPane
           : mode === 'preview' ? PreviewPane
           : <>{EditorPane}{PreviewPane}</>}
