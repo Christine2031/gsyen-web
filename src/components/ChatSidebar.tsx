@@ -3,8 +3,28 @@
  * 从 ChatModule.tsx 拆出（保持核心壳文件精简、稳定）。
  * 底部状态栏：平时显示存储状态，有更新时切换为更新提示。
  */
+import { useState, useEffect } from 'react';
 import { MessageSquare, Terminal, X } from 'lucide-react';
 import { StoredSession } from '../types/chat';
+
+function useUpdater() {
+  const api = (window as any).electronAPI?.updater;
+  const [phase, setPhase] = useState<'idle' | 'downloading' | 'ready'>('idle');
+  const [version, setVersion] = useState('');
+  const [pct, setPct] = useState(0);
+  useEffect(() => {
+    if (!api) return;
+    const isMac = (window as any).electronAPI?.platform === 'darwin';
+    if (isMac) {
+      api.onAvailable((i: any) => { setVersion(i.version ?? ''); setPhase('ready'); });
+    } else {
+      api.onAvailable((i: any) => { setVersion(i.version ?? ''); setPhase('downloading'); });
+      api.onProgress((p: any) => setPct(Math.round(p.percent ?? 0)));
+      api.onDownloaded((i: any) => { setVersion(i.version ?? ''); setPhase('ready'); setPct(100); });
+    }
+  }, []);
+  return { api, phase, version, pct };
+}
 
 interface ChatSidebarProps {
   lang: 'zh' | 'en';
@@ -21,6 +41,7 @@ export function ChatSidebar({
   lang, open, recentsOpen, setRecentsOpen,
   sessions, currentSessionId, loadSession, deleteSession,
 }: ChatSidebarProps) {
+  const { api, phase, version, pct } = useUpdater();
 
   return (
     <aside className={`bg-[#F4F2EE] border-[#1A1A1A]/10 flex flex-col justify-between transition-all duration-300 overflow-hidden shrink-0 ${open ? 'w-full md:w-[320px] p-6 border-r opacity-100' : 'w-0 p-0 border-r-0 opacity-0 pointer-events-none'}`}>
@@ -58,16 +79,59 @@ export function ChatSidebar({
           ))}
         </div>
 
-        {/* 底部存储状态 */}
-        <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 shadow-xs shrink-0">
-          <div className="inline-flex items-center gap-1.5 text-[#1A1A1A]/60 font-bold">
-            <Terminal className="w-3 h-3" />
-            {lang === 'zh' ? '本地存储 · 云同步就绪' : 'LOCAL · CLOUD READY'}
+        {/* 底部：有更新时显示 Art Deco 更新卡，否则显示存储状态 */}
+        {phase !== 'idle' && (
+          <div className="shrink-0" style={{ background: '#111111', border: '1px solid rgba(249,248,246,0.18)', position: 'relative', width: '100%' }}>
+            {/* 四角装饰 */}
+            {(['tl','tr','bl','br'] as const).map(p => (
+              <div key={p} style={{ position: 'absolute', width: 8, height: 8,
+                ...(p.includes('t') ? { top: 4 } : { bottom: 4 }),
+                ...(p.includes('l') ? { left: 4 } : { right: 4 }),
+                borderTop:    p.includes('t') ? '1px solid rgba(249,248,246,0.28)' : undefined,
+                borderBottom: p.includes('b') ? '1px solid rgba(249,248,246,0.28)' : undefined,
+                borderLeft:   p.includes('l') ? '1px solid rgba(249,248,246,0.28)' : undefined,
+                borderRight:  p.includes('r') ? '1px solid rgba(249,248,246,0.28)' : undefined,
+              }} />
+            ))}
+            <div style={{ padding: '13px 15px 15px' }}>
+              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 7, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(249,248,246,0.35)', marginBottom: 4 }}>
+                {phase === 'downloading' ? 'Downloading Update' : 'Update Ready'}
+              </div>
+              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 13, fontWeight: 700, color: 'rgba(249,248,246,0.9)', letterSpacing: '0.08em', marginBottom: 11 }}>
+                GSYEN{version ? ` v${version}` : ''}
+              </div>
+              {phase === 'downloading' && (
+                <>
+                  <div style={{ width: '100%', height: 18, background: 'rgba(249,248,246,0.07)', position: 'relative', overflow: 'hidden', marginBottom: 7 }}>
+                    <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', width: `${pct}%`, transition: 'width 0.4s linear',
+                      background: 'repeating-linear-gradient(-45deg,rgba(245,158,11,0.9) 0px,rgba(245,158,11,0.9) 5px,rgba(0,0,0,0.75) 5px,rgba(0,0,0,0.75) 10px)' }} />
+                    <span style={{ position: 'absolute', right: 7, top: '50%', transform: 'translateY(-50%)', fontFamily: 'monospace', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+                      color: pct > 80 ? '#111' : 'rgba(245,158,11,0.9)' }}>{pct}%</span>
+                  </div>
+                </>
+              )}
+              {phase === 'ready' && (
+                <button onClick={() => api?.install()} style={{ width: '100%', padding: '8px 0', background: 'transparent',
+                  border: '1px solid rgba(249,248,246,0.25)', color: 'rgba(249,248,246,0.65)', fontFamily: '"Cinzel",Georgia,serif',
+                  fontSize: 8, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  {lang === 'zh' ? '重启升级 →' : 'Restart →'}
+                </button>
+              )}
+            </div>
           </div>
-          <p className="text-[8px] text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
-            {lang === 'zh' ? '记录保存于本设备，登录后自动云同步。' : 'Sessions stored locally. Sign in to enable cloud sync.'}
-          </p>
-        </div>
+        )}
+
+        {phase === 'idle' && (
+          <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 shadow-xs shrink-0">
+            <div className="inline-flex items-center gap-1.5 text-[#1A1A1A]/60 font-bold">
+              <Terminal className="w-3 h-3" />
+              {lang === 'zh' ? '本地存储 · 云同步就绪' : 'LOCAL · CLOUD READY'}
+            </div>
+            <p className="text-[8px] text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
+              {lang === 'zh' ? '记录保存于本设备，登录后自动云同步。' : 'Sessions stored locally. Sign in to enable cloud sync.'}
+            </p>
+          </div>
+        )}
       </div>
     </aside>
   );
