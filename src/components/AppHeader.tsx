@@ -2,7 +2,7 @@ import React, { ComponentType } from 'react';
 import { Sparkles, Mail, Calendar, DollarSign, Lock } from 'lucide-react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
-import { WinCtrlButton } from '../gsyen-designer';
+import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -17,7 +17,7 @@ interface SpaceTab {
 const SPACES: SpaceTab[] = [
   { value: 'chat',     Icon: Sparkles,   iconClass: 'w-3.5 h-3.5 text-amber-500 animate-pulse', zh: '疆域灵阁', en: 'GSYEN Muse',    mZh: '疆域灵阁',   mEn: 'MUSE' },
   { value: 'mail',     Icon: Mail,       iconClass: 'w-3.5 h-3.5',                                zh: '工作邮件', en: 'Mailbox',       mZh: '工作邮件',   mEn: 'MAIL' },
-  { value: 'schedule', Icon: Calendar,   iconClass: 'w-3.5 h-3.5 animate-pulse',                  zh: '项目看板', en: 'Kanban',        mZh: '项目看板',   mEn: 'KANBAN' },
+  { value: 'schedule', Icon: KanbanIcon,  iconClass: 'w-3.5 h-3.5 animate-pulse',                  zh: '项目看板', en: 'Kanban',        mZh: '项目看板',   mEn: 'KANBAN' },
   { value: 'calendar', Icon: Calendar,   iconClass: 'w-3.5 h-3.5',                                zh: '日程日历', en: 'Calendar',      mZh: '日程日历',   mEn: 'CALENDAR' },
   { value: 'finance',  Icon: DollarSign, iconClass: 'w-3.5 h-3.5',                                zh: '复式财务账簿', en: 'Atelier Ledger', mZh: '复式财务', mEn: 'LEDGER' },
   { value: 'password', Icon: Lock,       iconClass: 'w-3.5 h-3.5',                                zh: '军事级密钥库', en: 'Citadel Key',  mZh: '密钥库',    mEn: 'KEYS' },

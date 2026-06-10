@@ -45,6 +45,16 @@ export const ChevronIcon = () => (
   </svg>
 );
 
+// ── Kanban Board 14×14  (Trello-style) ────────────────────────────────────
+export const KanbanIcon = ({ className }: { className?: string }) => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className={className}>
+    <rect x="0.75" y="0.75" width="12.5" height="12.5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="2.5"  y="3" width="2.5" height="8"   rx="0.75" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="5.75" y="3" width="2.5" height="5.5" rx="0.75" stroke="currentColor" strokeWidth="1.5"/>
+    <rect x="9"    y="3" width="2.5" height="3"   rx="0.75" stroke="currentColor" strokeWidth="1.5"/>
+  </svg>
+);
+
 // ── Doc / Draw / Node  13×13 ──────────────────────────────────────────────
 export const DocIcon = () => (
   <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
