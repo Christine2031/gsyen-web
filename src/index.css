@@ -147,6 +147,22 @@
    GLOBAL BASE STYLES
    ---------------------------------------------------------- */
 
+/* 最小宽度 880px — 防止窗口压缩破版 / 文字竖排 */
+html, body {
+  min-width: 880px;
+}
+body {
+  overflow-x: auto;
+}
+#root {
+  min-width: 880px;
+}
+
+/* flex 子元素默认 min-width: auto，压缩时会竖排。全局修复。 */
+.flex > *, .flex-col > *, .flex-row > * {
+  min-width: 0;
+}
+
 /* 文字选中效果：墨水底 + 羊皮纸字 */
 ::selection {
   background-color: #1A1A1A;
