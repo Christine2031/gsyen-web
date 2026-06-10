@@ -54,7 +54,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
         </div>
 
         {/* 桌面标签栏 */}
-        <div className="hidden md:flex bg-[#1A1A1A]/5 p-1 rounded-none border border-[#1A1A1A]/10 gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+        <div className="flex bg-[#1A1A1A]/5 p-1 rounded-none border border-[#1A1A1A]/10 gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {SPACES.map(({ value, Icon, iconClass, zh, en }) => (
             <button
               key={value}
@@ -104,8 +104,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
         </div>
       </header>
 
-      {/* 移动端横向标签条 */}
-      <div className="md:hidden sticky top-[73px] z-30 bg-[#F4F2EE] border-b border-[#1A1A1A]/10 flex overflow-x-auto [scroll-snap-type:x_mandatory] [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      {/* 移动端横向标签条 — 已禁用（最小宽度 880px 桌面应用） */}
+      <div className="hidden">
         {SPACES.map(({ value, mZh, mEn }) => (
           <button
             key={value}
