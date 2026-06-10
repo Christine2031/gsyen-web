@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     onError:        (fn) => ipcRenderer.on('updater:error',        (_e, m) => fn(m)),
     onNotAvailable: (fn) => ipcRenderer.on('updater:not-available', () => fn()),
   },
+  onFullscreenChange: (fn) => ipcRenderer.on('fullscreen:change', (_e, d) => fn(d)),
   getAppPath: () => ipcRenderer.invoke('app:getPath'),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   isElectron: true,

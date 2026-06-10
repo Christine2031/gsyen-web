@@ -21,30 +21,30 @@ let forceQuit = false;
 // 改用手动 setBounds 覆盖全显示区 + screen-saver 层级
 let savedBounds = null;
 
-function isManualFullscreen(w) {
-  if (process.platform !== 'win32') return w.isFullScreen();
-  if (!savedBounds) return false;
-  const b = w.getBounds();
-  const d = screen.getDisplayNearestPoint({ x: b.x, y: b.y });
-  return b.x === d.bounds.x && b.y === d.bounds.y &&
-         b.width === d.bounds.width && b.height === d.bounds.height;
-}
-
 function toggleFullscreen(w) {
   if (process.platform !== 'win32') {
     w.setFullScreen(!w.isFullScreen());
     return;
   }
-  if (isManualFullscreen(w)) {
-    w.setAlwaysOnTop(false);
-    if (savedBounds) { w.setBounds(savedBounds); savedBounds = null; }
-  } else {
-    savedBounds = w.getBounds();
-    const d = screen.getDisplayNearestPoint({ x: savedBounds.x, y: savedBounds.y });
-    w.setAlwaysOnTop(true, 'screen-saver');
-    w.setBounds(d.bounds);
-    w.moveTop();
-  }
+  // 先发淡出信号，100ms 后窗口变黑再做 resize
+  w.webContents.send('fullscreen:change', { phase: 'out' });
+  setTimeout(() => {
+    if (savedBounds !== null) {
+      // 退出全屏
+      w.setAlwaysOnTop(false);
+      w.setBounds(savedBounds);
+      savedBounds = null;
+    } else {
+      // 进入全屏
+      savedBounds = w.getBounds();
+      const d = screen.getDisplayNearestPoint({ x: savedBounds.x, y: savedBounds.y });
+      w.setAlwaysOnTop(true, 'screen-saver');
+      w.setBounds(d.bounds);
+      w.moveTop();
+    }
+    // resize 落定后淡入
+    setTimeout(() => w.webContents.send('fullscreen:change', { phase: 'in' }), 80);
+  }, 100);
 }
 
 // ── 系统托盘 ──────────────────────────────────────────────────────────────────

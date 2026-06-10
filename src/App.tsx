@@ -15,6 +15,7 @@ import LandingHero from './components/LandingHero';
 import AppHeader, { ActiveSpace } from './components/AppHeader';
 import BrandLab from './components/brand/BrandLab';
 import { UpdateToast } from './components/UpdateToast';
+import { FullscreenFade } from './components/FullscreenFade';
 /**
  * App — 工作坊外壳：语言/落地页/当前空间，外加顶栏导航与空间路由。
  * Brand Lab（标识设计器）已抽到 components/brand/BrandLab；各业务模块各自管自己的状态。
@@ -33,6 +34,7 @@ export default function App() {
 
       <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={setActiveSpace} />
       <UpdateToast />
+      <FullscreenFade />
 
       {activeSpace === 'brand' ? (
         <BrandLab lang={lang} />
