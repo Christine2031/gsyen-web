@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, screen, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const Sentry = require('@sentry/electron/main');
 const path = require('path');
@@ -192,13 +192,6 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // F11
-  win.webContents.on('before-input-event', (_e, input) => {
-    if (input.type === 'keyDown' && input.key === 'F11') {
-      toggleFullscreen(win);
-    }
-  });
-
   // 关闭窗口 → 最小化到托盘，不退出
   win.on('close', (e) => {
     if (!forceQuit) {
@@ -216,11 +209,16 @@ app.whenReady().then(() => {
   createWindow();
   try { createTray(); } catch (e) { console.error('tray init failed:', e); }
 
+  // globalShortcut 绕开 Chromium 对 F11 的拦截
+  globalShortcut.register('F11', () => { if (win) toggleFullscreen(win); });
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
     else showWindow();
   });
 });
+
+app.on('will-quit', () => { globalShortcut.unregisterAll(); });
 
 app.on('window-all-closed', () => {
   // Windows/Linux：窗口全关也不退出（托盘常驻）
