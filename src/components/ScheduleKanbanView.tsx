@@ -30,7 +30,7 @@ export default function ScheduleKanbanView({
     activeFilteredList.filter(e => (e.status || (e.completed ? 'done' : 'todo')) === colId);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 align-stretch" id="kanban-lanes-master">
+    <div className="flex flex-row gap-2 overflow-x-auto pb-3" id="kanban-lanes-master">
       {SCHEDULE_COLUMNS.map(col => {
         const columnEvents = getColumnEvents(col.id);
         const isOver = dragOverColumn === col.id;
@@ -40,7 +40,7 @@ export default function ScheduleKanbanView({
             key={col.id}
             onDragOver={e => onDragOverColumn(e, col.id)}
             onDrop={e => onDropColumn(e, col.id)}
-            className={`flex flex-col min-h-[500px] p-4 border transition-all rounded-none ${col.colorClass} ${
+            className={`shrink-0 w-[272px] flex flex-col min-h-[500px] p-2 border transition-all rounded-none ${col.colorClass} ${
               isOver ? col.borderFocus + ' ring-1 ring-[#1A1A1A]/10 bg-[#F9F8F6]' : 'border-[#1A1A1A]/10 bg-white shadow-xs'
             }`}
           >
