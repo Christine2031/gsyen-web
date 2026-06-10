@@ -19,31 +19,34 @@ let forceQuit = false;
 
 // Windows 任务栏覆盖：setFullScreen 对 frameless 窗口不可靠，
 // 改用手动 setBounds 覆盖全显示区 + screen-saver 层级
-let savedBounds = null;
+let savedBounds    = null;
+let fsTransitioning = false;  // 动画期间锁，防止连按乱序
 
 function toggleFullscreen(w) {
   if (process.platform !== 'win32') {
     w.setFullScreen(!w.isFullScreen());
     return;
   }
-  // 先发淡出信号，100ms 后窗口变黑再做 resize
+  if (fsTransitioning) return;
+  fsTransitioning = true;
+
   w.webContents.send('fullscreen:change', { phase: 'out' });
   setTimeout(() => {
     if (savedBounds !== null) {
-      // 退出全屏
       w.setAlwaysOnTop(false);
       w.setBounds(savedBounds);
       savedBounds = null;
     } else {
-      // 进入全屏
       savedBounds = w.getBounds();
       const d = screen.getDisplayNearestPoint({ x: savedBounds.x, y: savedBounds.y });
       w.setAlwaysOnTop(true, 'screen-saver');
       w.setBounds(d.bounds);
       w.moveTop();
     }
-    // resize 落定后淡入
-    setTimeout(() => w.webContents.send('fullscreen:change', { phase: 'in' }), 80);
+    setTimeout(() => {
+      w.webContents.send('fullscreen:change', { phase: 'in' });
+      setTimeout(() => { fsTransitioning = false; }, 240); // 等淡入完成再解锁
+    }, 80);
   }, 100);
 }
 
