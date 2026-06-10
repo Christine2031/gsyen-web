@@ -3,6 +3,7 @@ import { Sparkles, Mail, Calendar, DollarSign, Lock, Globe } from 'lucide-react'
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
 import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
+import AboutDialog from './AboutDialog';
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -35,6 +36,8 @@ interface AppHeaderProps {
 export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }: AppHeaderProps) {
   const t = translations[lang];
   const [compact, setCompact] = useState(window.innerWidth < 1100);
+  const [showAbout, setShowAbout] = useState(false);
+  const isElectron = !!(window as any).electronAPI?.isElectron;
 
   useEffect(() => {
     let raf = 0;
@@ -50,7 +53,11 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
     <>
       <header className="relative border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-start justify-between" id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-          <div className="shrink-0 transition-transform duration-500 hover:rotate-6 -mt-1">
+          <div
+            className={`shrink-0 transition-transform duration-500 hover:rotate-6 -mt-1 ${isElectron ? 'cursor-pointer' : ''}`}
+            onClick={() => isElectron && setShowAbout(true)}
+            title={isElectron ? (lang === 'zh' ? '关于 GSYEN' : 'About GSYEN') : undefined}
+          >
             <VintageCar size={44} className="text-[#1A1A1A]/95" />
           </div>
           <div className="flex flex-col">
@@ -120,6 +127,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
         </div>
       </header>
+
+      {showAbout && <AboutDialog lang={lang} onClose={() => setShowAbout(false)} />}
 
       {/* 移动端横向标签条 — 已禁用（最小宽度 880px 桌面应用） */}
       <div className="hidden">
