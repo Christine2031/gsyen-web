@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppPath: () => ipcRenderer.invoke('app:getPath'),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   isElectron: true,
+  platform: process.platform,
 });

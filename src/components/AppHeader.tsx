@@ -87,8 +87,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           ))}
         </div>
 
-        {/* 窗口控制：absolute 挂在 header 上，top-0 right-0，与 Canvas WinCtrl 位置一致 */}
-        {(window as any).electronAPI?.isElectron && (
+        {/* 窗口控制：Windows 专属，Mac 用原生红绿灯 */}
+        {(window as any).electronAPI?.platform === 'win32' && (
           <div style={{ position:'absolute', top:0, right:0, display:'flex', alignItems:'center',
             WebkitAppRegion:'no-drag' } as React.CSSProperties}>
             {(['minimize', 'maximize', 'close'] as const).map(action => (
