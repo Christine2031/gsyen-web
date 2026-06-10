@@ -7,7 +7,7 @@ const MONO   = 'var(--font-mono, "SF Mono", "Cascadia Code", monospace)';
 
 // gd-ad palette — mirrors LandingHero exactly, no blue
 const IV  = (a: number) => `rgba(249,248,246,${a})`;   // ivory
-const AMB = (a: number) => `rgba(245,158,11,${a})`;     // amber-400, used for BETA badge
+const AMB = (a: number) => `rgba(245,158,11,${a})`;     // amber
 
 interface ProgressInfo { percent: number; bytesPerSecond: number; }
 type Phase = 'downloading' | 'ready';
@@ -108,8 +108,8 @@ export function UpdateToast() {
                     width: `${pct}%`,
                     background: `repeating-linear-gradient(
                       -45deg,
-                      ${AMB(0.82)} 0px, ${AMB(0.82)} 5px,
-                      ${AMB(0.5)}  5px, ${AMB(0.5)}  10px
+                      ${AMB(0.9)}        0px, ${AMB(0.9)}        5px,
+                      rgba(0,0,0,0.75)   5px, rgba(0,0,0,0.75)  10px
                     )`,
                     transition: 'width 0.4s linear',
                   }} />

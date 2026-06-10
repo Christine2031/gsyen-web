@@ -89,9 +89,9 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
         onClick={onClose}
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(4,4,4,0.06)',
-          backdropFilter: 'blur(1.5px)',
-          WebkitBackdropFilter: 'blur(1.5px)',
+          background: 'rgba(4,4,4,0.68)',
+          backdropFilter: 'blur(22px) saturate(0.45)',
+          WebkitBackdropFilter: 'blur(22px) saturate(0.45)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
