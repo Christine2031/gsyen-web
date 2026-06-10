@@ -38,6 +38,7 @@ jobs:
           pip install awscli --quiet
           aws configure set aws_access_key_id $env:OSS_KEY_ID
           aws configure set aws_secret_access_key $env:OSS_KEY_SECRET
+          aws configure set default.s3.addressing_style virtual
           aws s3 cp "..\gsyen-dist\GSYEN-Setup-Windows.exe" s3://gsyen-releases/GSYEN-Setup-Windows.exe --endpoint-url https://oss-cn-shenzhen.aliyuncs.com
         shell: pwsh
         env:
@@ -71,6 +72,7 @@ jobs:
           pip install awscli --quiet
           aws configure set aws_access_key_id $OSS_KEY_ID
           aws configure set aws_secret_access_key $OSS_KEY_SECRET
+          aws configure set default.s3.addressing_style virtual
           aws s3 cp "../gsyen-dist/GSYEN-Setup-Mac.dmg" s3://gsyen-releases/GSYEN-Setup-Mac.dmg --endpoint-url https://oss-cn-shenzhen.aliyuncs.com
         env:
           OSS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}

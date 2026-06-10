@@ -40,7 +40,8 @@
           ]
         }
       ],
-      "icon": "public/icon.ico"
+      "icon": "public/icon.ico",
+      "artifactName": "GSYEN-Setup-Windows.exe"
     },
     "nsis": {
       "oneClick": false,

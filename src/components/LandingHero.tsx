@@ -63,7 +63,7 @@ const MAC_OSS        = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYE
 const WINDOWS_GITHUB = 'https://github.com/Christine2031/gsyen-web/releases/latest';
 const GITHUB_URL     = 'https://github.com/Christine2031/gsyen-web';
 const YOUTUBE_URL    = 'https://www.youtube.com/@iSgsyenTt';
-const DISCORD_USER   = 'ethan.hunt.7586';
+const DISCORD_SERVER = 'https://discord.gg/338tsy2Dup';
 
 const PLATFORMS = [
   { label: 'Windows', icon: <WinIcon />,     available: true, soon: false, beta: false, href: WINDOWS_OSS },
@@ -223,9 +223,10 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
             title="YouTube · @iSgsyenTt" className="text-[#F9F8F6]/25 hover:text-[#F9F8F6]/70 transition-colors">
             <YoutubeIcon />
           </a>
-          <span title={`Discord · ${DISCORD_USER}`} className="text-[#F9F8F6]/25 hover:text-[#F9F8F6]/50 transition-colors cursor-default">
+          <a href={DISCORD_SERVER} target="_blank" rel="noopener noreferrer"
+            title="Discord 服务器" className="text-[#F9F8F6]/25 hover:text-[#F9F8F6]/70 transition-colors">
             <DiscordIcon />
-          </span>
+          </a>
         </div>
         <p className="font-mono text-[8px] tracking-[0.3em] text-[#F9F8F6]/18 uppercase">
           GSYEN WORKSPACE SUITE · ATELIER EDITION

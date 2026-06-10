@@ -18,7 +18,7 @@
 [![License](https://img.shields.io/badge/License-Private-red?style=flat)](.)
 
 [![YouTube](https://img.shields.io/badge/YouTube-@iSgsyenTt-FF0000?style=flat&logo=youtube&logoColor=white)](https://www.youtube.com/@iSgsyenTt)
-[![Discord](https://img.shields.io/badge/Discord-ethan.hunt.7586-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.com)
+[![Discord](https://img.shields.io/badge/Discord-加入服务器-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/338tsy2Dup)
 
 </div>
 
