@@ -17,36 +17,41 @@ let win  = null;
 let tray = null;
 let forceQuit = false;
 
-// Windows 任务栏覆盖：setFullScreen 对 frameless 窗口不可靠，
-// 改用手动 setBounds 覆盖全显示区 + screen-saver 层级
-let savedBounds    = null;
-let fsTransitioning = false;  // 动画期间锁，防止连按乱序
+let savedBounds     = null;   // Windows 手动全屏时保存原始窗口尺寸
+let fsTransitioning = false;  // 淡入淡出期间加锁，防连按乱序
 
+// ── 全屏切换（Win + Mac 统一淡入淡出）────────────────────────────────────────
+// 流程：fade-out 100ms → 做 resize → fade-in
+// Windows：手动 setBounds(display.bounds) 覆盖任务栏
+// macOS  ：native setFullScreen，enter/leave-full-screen 事件触发 fade-in
 function toggleFullscreen(w) {
-  if (process.platform !== 'win32') {
-    w.setFullScreen(!w.isFullScreen());
-    return;
-  }
   if (fsTransitioning) return;
   fsTransitioning = true;
 
   w.webContents.send('fullscreen:change', { phase: 'out' });
+
   setTimeout(() => {
-    if (savedBounds !== null) {
-      w.setAlwaysOnTop(false);
-      w.setBounds(savedBounds);
-      savedBounds = null;
+    if (process.platform === 'win32') {
+      if (savedBounds !== null) {
+        w.setAlwaysOnTop(false);
+        w.setBounds(savedBounds);
+        savedBounds = null;
+      } else {
+        savedBounds = w.getBounds();
+        const d = screen.getDisplayNearestPoint({ x: savedBounds.x, y: savedBounds.y });
+        w.setAlwaysOnTop(true, 'screen-saver');
+        w.setBounds(d.bounds);
+        w.moveTop();
+      }
+      // Windows resize 是同步的，80ms 后直接淡入
+      setTimeout(() => {
+        w.webContents.send('fullscreen:change', { phase: 'in' });
+        setTimeout(() => { fsTransitioning = false; }, 240);
+      }, 80);
     } else {
-      savedBounds = w.getBounds();
-      const d = screen.getDisplayNearestPoint({ x: savedBounds.x, y: savedBounds.y });
-      w.setAlwaysOnTop(true, 'screen-saver');
-      w.setBounds(d.bounds);
-      w.moveTop();
+      // macOS：setFullScreen 异步，淡入由 enter/leave-full-screen 事件驱动
+      w.setFullScreen(!w.isFullScreen());
     }
-    setTimeout(() => {
-      w.webContents.send('fullscreen:change', { phase: 'in' });
-      setTimeout(() => { fsTransitioning = false; }, 240); // 等淡入完成再解锁
-    }, 80);
   }, 100);
 }
 
@@ -195,6 +200,16 @@ function createWindow() {
     return { action: 'deny' };
   });
 
+  // macOS：native 全屏动画结束后触发淡入
+  if (process.platform === 'darwin') {
+    const onFsChange = () => {
+      win.webContents.send('fullscreen:change', { phase: 'in' });
+      setTimeout(() => { fsTransitioning = false; }, 240);
+    };
+    win.on('enter-full-screen', onFsChange);
+    win.on('leave-full-screen', onFsChange);
+  }
+
   // 关闭窗口 → 最小化到托盘，不退出
   win.on('close', (e) => {
     if (!forceQuit) {
@@ -212,8 +227,11 @@ app.whenReady().then(() => {
   createWindow();
   try { createTray(); } catch (e) { console.error('tray init failed:', e); }
 
-  // globalShortcut 绕开 Chromium 对 F11 的拦截
+  // F11 全平台；Mac 另加 Ctrl+Cmd+F（系统惯例）
   globalShortcut.register('F11', () => { if (win) toggleFullscreen(win); });
+  if (process.platform === 'darwin') {
+    globalShortcut.register('Ctrl+Command+F', () => { if (win) toggleFullscreen(win); });
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
