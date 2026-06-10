@@ -20,10 +20,10 @@ const CloseIcon = () => (
 );
 
 export default function ElectronTitleBar() {
-  if (!isElectron) return null;
-
-  const { minimize, maximize, close } = (window as any).electronAPI.window;
   const idle = 'rgba(0,0,0,0.18)';
+  const min  = () => isElectron && (window as any).electronAPI.window.minimize();
+  const max  = () => isElectron && (window as any).electronAPI.window.maximize();
+  const cls  = () => isElectron && (window as any).electronAPI.window.close();
 
   const btn = (Icon: React.FC, onClick: () => void) => (
     <button onClick={onClick}
@@ -50,9 +50,9 @@ export default function ElectronTitleBar() {
       style={{ height: 28, WebkitAppRegion: 'drag' } as React.CSSProperties}>
       <div className="flex items-center pr-1"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
-        {btn(MinIcon, minimize)}
-        {btn(MaxIcon, maximize)}
-        {btn(CloseIcon, close)}
+        {btn(MinIcon, min)}
+        {btn(MaxIcon, max)}
+        {btn(CloseIcon, cls)}
       </div>
     </div>
   );

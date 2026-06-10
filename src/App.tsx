@@ -14,6 +14,7 @@ import ChatModule from './components/ChatModule';
 import LandingHero from './components/LandingHero';
 import AppHeader, { ActiveSpace } from './components/AppHeader';
 import BrandLab from './components/brand/BrandLab';
+import ElectronTitleBar from './components/ElectronTitleBar';
 
 /**
  * App — 工作坊外壳：语言/落地页/当前空间，外加顶栏导航与空间路由。
@@ -30,6 +31,7 @@ export default function App() {
         {showLanding && <LandingHero lang={lang} onEnter={() => setShowLanding(false)} />}
       </AnimatePresence>
 
+      <ElectronTitleBar />
       <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={setActiveSpace} />
 
       {activeSpace === 'brand' ? (
