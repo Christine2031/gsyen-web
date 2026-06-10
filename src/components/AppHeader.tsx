@@ -1,5 +1,5 @@
 import React, { ComponentType, useState, useEffect } from 'react';
-import { Sparkles, Mail, Calendar, DollarSign, Lock, Globe } from 'lucide-react';
+import { Sparkles, Mail, DollarSign, Lock, Globe } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
@@ -7,6 +7,24 @@ import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import { useAuth, type UserTier } from '../auth/useAuth';
+
+/** Google Calendar 风格：显示当天日期数字的动态日历 icon */
+function CalendarDateIcon({ className }: { className?: string }) {
+  const day = new Date().getDate();
+  return (
+    <svg viewBox="0 0 24 24" className={className}
+      style={{ fill: 'none', stroke: 'currentColor', strokeWidth: 1.5, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="8" y1="2" x2="8" y2="6" />
+      <line x1="16" y1="2" x2="16" y2="6" />
+      <text x="12" y="20" textAnchor="middle" fontSize="9.5" fontWeight="700"
+        fill="currentColor" stroke="none" style={{ fontFamily: 'system-ui,sans-serif', fontVariantNumeric: 'tabular-nums' }}>
+        {day}
+      </text>
+    </svg>
+  );
+}
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -22,7 +40,7 @@ const SPACES: SpaceTab[] = [
   { value: 'chat',     Icon: Sparkles,   iconClass: 'text-amber-500 animate-pulse', zh: '疆域灵阁',     en: 'GSYEN Muse',      shortZh: '灵阁', shortEn: 'Muse'    },
   { value: 'mail',     Icon: Mail,       iconClass: '',                             zh: '工作邮件',     en: 'Mailbox',         shortZh: '邮件', shortEn: 'Mail'    },
   { value: 'schedule', Icon: KanbanIcon, iconClass: 'animate-pulse',               zh: '项目看板',     en: 'Kanban',          shortZh: '看板', shortEn: 'Kanban'  },
-  { value: 'calendar', Icon: Calendar,   iconClass: '',                             zh: '日程日历',     en: 'Calendar',        shortZh: '日历', shortEn: 'Cal'     },
+  { value: 'calendar', Icon: CalendarDateIcon, iconClass: '',                        zh: '日程日历',     en: 'Calendar',        shortZh: '日历', shortEn: 'Cal'     },
   { value: 'finance',  Icon: DollarSign, iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger',  shortZh: '财务', shortEn: 'Ledger'  },
   { value: 'password', Icon: Lock,       iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',     shortZh: '密钥', shortEn: 'Keys'    },
   { value: 'brand',    Icon: Sparkles,   iconClass: '',                             zh: '品牌实验室',   en: 'Brand Lab',       shortZh: '品牌', shortEn: 'Brand'   },
