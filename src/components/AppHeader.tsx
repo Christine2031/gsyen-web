@@ -37,9 +37,13 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
   const [compact, setCompact] = useState(window.innerWidth < 1100);
 
   useEffect(() => {
-    const fn = () => setCompact(window.innerWidth < 1100);
+    let raf = 0;
+    const fn = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setCompact(window.innerWidth < 1100));
+    };
     window.addEventListener('resize', fn);
-    return () => window.removeEventListener('resize', fn);
+    return () => { window.removeEventListener('resize', fn); cancelAnimationFrame(raf); };
   }, []);
 
   return (
