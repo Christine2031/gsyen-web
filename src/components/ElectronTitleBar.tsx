@@ -25,18 +25,17 @@ export default function ElectronTitleBar() {
   const { minimize, maximize, close } = (window as any).electronAPI.window;
   const idle = 'rgba(0,0,0,0.18)';
 
-  const btn = (Icon: React.FC, onClick: () => void, danger = false) => (
+  const btn = (Icon: React.FC, onClick: () => void) => (
     <button onClick={onClick}
       style={{
-        width: 40, height: '100%',
+        width: 32, height: 22, margin: '0 3px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: idle, background: 'transparent', border: 'none',
+        color: idle, background: 'transparent', border: 'none', borderRadius: 4,
         cursor: 'pointer', transition: 'background 0.18s, color 0.18s',
       }}
       onMouseEnter={e => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background = danger ? '#C42B1C' : 'rgba(0,0,0,0.07)';
-        el.style.color = danger ? '#FFFFFF' : 'rgba(0,0,0,0.75)';
+        e.currentTarget.style.background = 'rgba(0,0,0,0.07)';
+        e.currentTarget.style.color = 'rgba(0,0,0,0.6)';
       }}
       onMouseLeave={e => {
         e.currentTarget.style.background = 'transparent';
@@ -49,11 +48,11 @@ export default function ElectronTitleBar() {
   return (
     <div className="w-full flex items-center justify-end bg-[#F9F8F6]"
       style={{ height: 28, WebkitAppRegion: 'drag' } as React.CSSProperties}>
-      <div className="flex items-stretch h-full"
+      <div className="flex items-center pr-1"
         style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
         {btn(MinIcon, minimize)}
         {btn(MaxIcon, maximize)}
-        {btn(CloseIcon, close, true)}
+        {btn(CloseIcon, close)}
       </div>
     </div>
   );
