@@ -1,7 +1,9 @@
-import { motion } from 'motion/react';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Github } from 'lucide-react';
 import VintageCar from './VintageCar';
 import { version } from '../../package.json';
+import AuthModal from '../auth/AuthModal';
 
 const DiscordIcon = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
@@ -80,6 +82,9 @@ interface LandingHeroProps {
 }
 
 export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
+  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
+  const zh = lang === 'zh';
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -90,6 +95,30 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
     >
       {/* Subtle grid texture */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#F9F8F608_1px,transparent_1px),linear-gradient(to_bottom,#F9F8F608_1px,transparent_1px)] bg-[size:60px_60px] pointer-events-none" />
+
+      {/* 右上角：登录 / 注册 */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
+        <button
+          onClick={() => setAuthModal('login')}
+          className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#F9F8F6]/45 hover:text-[#F9F8F6]/80 transition-all whitespace-nowrap font-mono"
+        >
+          {zh ? '登录' : 'LOGIN'}
+        </button>
+        <div className="w-px h-3.5 bg-[#F9F8F6]/15" />
+        <button
+          onClick={() => setAuthModal('register')}
+          className="flex items-center gap-1 px-3 py-1.5 border border-[#F9F8F6]/20 text-[#F9F8F6]/55 text-[9px] font-bold tracking-wider uppercase hover:border-[#F9F8F6]/45 hover:text-[#F9F8F6]/85 transition-all whitespace-nowrap font-mono"
+        >
+          {zh ? '注册' : 'REGISTER'}
+          <span className="opacity-50 ml-0.5">→</span>
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {authModal && (
+          <AuthModal key="auth" lang={lang} initialTab={authModal} onClose={() => setAuthModal(null)} />
+        )}
+      </AnimatePresence>
 
       {/* Center block */}
       <div className="relative z-10 flex flex-col items-center gap-10">
