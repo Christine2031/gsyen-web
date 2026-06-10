@@ -19,7 +19,7 @@
     "productName": "GSYEN",
     "copyright": "Copyright © 2026 GSYEN",
     "directories": {
-      "output": "C:/gsyen-dist"
+      "output": "../gsyen-dist"
     },
     "files": [
       "dist/**/*",
