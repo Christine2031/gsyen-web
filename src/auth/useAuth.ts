@@ -5,10 +5,11 @@ import { supabase } from './supabase';
 export type UserTier = 'guest' | 'user' | 'admin' | 'owner';
 
 export interface AuthState {
-  user:    User | null;
-  session: Session | null;
-  tier:    UserTier | null;   // halfsphere 会员等级
-  loading: boolean;
+  user:          User | null;
+  session:       Session | null;
+  tier:          UserTier | null;   // halfsphere 会员等级
+  emailVerified: boolean;           // Supabase email_confirmed_at 非空
+  loading:       boolean;
 }
 
 const NOT_CONFIGURED = { error: { message: 'Supabase not configured' } } as any;
@@ -24,7 +25,7 @@ async function fetchTier(userId: string): Promise<UserTier | null> {
 }
 
 export function useAuth() {
-  const [state, setState] = useState<AuthState>({ user: null, session: null, tier: null, loading: false });
+  const [state, setState] = useState<AuthState>({ user: null, session: null, tier: null, emailVerified: false, loading: false });
 
   useEffect(() => {
     if (!supabase) return;
@@ -33,13 +34,15 @@ export function useAuth() {
     supabase.auth.getSession().then(async ({ data }) => {
       const user = data.session?.user ?? null;
       const tier = user ? await fetchTier(user.id) : null;
-      setState({ user, session: data.session, tier, loading: false });
+      const emailVerified = !!user?.email_confirmed_at;
+      setState({ user, session: data.session, tier, emailVerified, loading: false });
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const user = session?.user ?? null;
       const tier = user ? await fetchTier(user.id) : null;
-      setState({ user, session, tier, loading: false });
+      const emailVerified = !!user?.email_confirmed_at;
+      setState({ user, session, tier, emailVerified, loading: false });
     });
 
     return () => subscription.unsubscribe();

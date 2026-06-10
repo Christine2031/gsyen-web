@@ -41,7 +41,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  const { user, tier, signOut } = useAuth();
+  const { user, tier, emailVerified, signOut } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
 
@@ -127,7 +127,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
               <span className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 whitespace-nowrap shrink-0 font-mono">
                 {user.email?.split('@')[0]}
               </span>
-              <TierBadge tier={tier} />
+              <TierBadge tier={tier} emailVerified={emailVerified} />
               <button
                 onClick={signOut}
                 className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-[9px] font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
@@ -188,12 +188,29 @@ const TIER_CFG: Record<string, { label: string; cls: string }> = {
   guest: { label: 'GUEST', cls: 'border-[#1A1A1A]/10 text-[#1A1A1A]/30 bg-transparent'   },
 };
 
-function TierBadge({ tier }: { tier: UserTier | null }) {
+function TierBadge({ tier, emailVerified }: { tier: UserTier | null; emailVerified: boolean }) {
   if (!tier) return null;
-  const cfg = TIER_CFG[tier] ?? TIER_CFG.guest;
-  return (
-    <span className={`px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 ${cfg.cls}`}>
-      {cfg.label}
+
+  // owner / admin — 固定徽章
+  if (tier === 'owner') return (
+    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-amber-400/60 text-amber-600 bg-amber-50">
+      OWNER
+    </span>
+  );
+  if (tier === 'admin') return (
+    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/30 text-[#1A1A1A]/70 bg-[#1A1A1A]/5">
+      ADMIN
+    </span>
+  );
+
+  // 普通会员：已验证 vs 未验证
+  return emailVerified ? (
+    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/25 text-[#1A1A1A]/60">
+      MEMBER
+    </span>
+  ) : (
+    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/12 text-[#1A1A1A]/30">
+      MEMBER · UNVERIFIED
     </span>
   );
 }
