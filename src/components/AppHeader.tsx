@@ -15,13 +15,13 @@ interface SpaceTab {
 }
 
 const SPACES: SpaceTab[] = [
-  { value: 'chat',     Icon: Sparkles,   iconClass: 'w-3.5 h-3.5 text-amber-500 animate-pulse', zh: '疆域灵阁', en: 'GSYEN Muse',    mZh: '疆域灵阁',   mEn: 'MUSE' },
-  { value: 'mail',     Icon: Mail,       iconClass: 'w-3.5 h-3.5',                                zh: '工作邮件', en: 'Mailbox',       mZh: '工作邮件',   mEn: 'MAIL' },
-  { value: 'schedule', Icon: KanbanIcon,  iconClass: 'w-3.5 h-3.5 animate-pulse',                  zh: '项目看板', en: 'Kanban',        mZh: '项目看板',   mEn: 'KANBAN' },
-  { value: 'calendar', Icon: Calendar,   iconClass: 'w-3.5 h-3.5',                                zh: '日程日历', en: 'Calendar',      mZh: '日程日历',   mEn: 'CALENDAR' },
-  { value: 'finance',  Icon: DollarSign, iconClass: 'w-3.5 h-3.5',                                zh: '复式财务账簿', en: 'Atelier Ledger', mZh: '复式财务', mEn: 'LEDGER' },
-  { value: 'password', Icon: Lock,       iconClass: 'w-3.5 h-3.5',                                zh: '军事级密钥库', en: 'Citadel Key',  mZh: '密钥库',    mEn: 'KEYS' },
-  { value: 'brand',    Icon: Sparkles,   iconClass: 'w-3.5 h-3.5',                                zh: '品牌实验室', en: 'Brand Lab',    mZh: '品牌实验室', mEn: 'BRAND' },
+  { value: 'chat',     Icon: Sparkles,   iconClass: 'w-3.5 h-3.5 text-amber-500 animate-pulse', zh: '灵阁', en: 'Muse',    mZh: '灵阁', mEn: 'MUSE' },
+  { value: 'mail',     Icon: Mail,       iconClass: 'w-3.5 h-3.5',                                zh: '邮件', en: 'Mail',    mZh: '邮件', mEn: 'MAIL' },
+  { value: 'schedule', Icon: KanbanIcon, iconClass: 'w-3.5 h-3.5 animate-pulse',                  zh: '看板', en: 'Kanban',  mZh: '看板', mEn: 'KANBAN' },
+  { value: 'calendar', Icon: Calendar,   iconClass: 'w-3.5 h-3.5',                                zh: '日历', en: 'Calendar',mZh: '日历', mEn: 'CAL' },
+  { value: 'finance',  Icon: DollarSign, iconClass: 'w-3.5 h-3.5',                                zh: '财务', en: 'Ledger',  mZh: '财务', mEn: 'LEDGER' },
+  { value: 'password', Icon: Lock,       iconClass: 'w-3.5 h-3.5',                                zh: '密钥', en: 'Keys',    mZh: '密钥', mEn: 'KEYS' },
+  { value: 'brand',    Icon: Sparkles,   iconClass: 'w-3.5 h-3.5',                                zh: '品牌', en: 'Brand',   mZh: '品牌', mEn: 'BRAND' },
 ];
 
 interface AppHeaderProps {
@@ -59,7 +59,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
             <button
               key={value}
               onClick={() => setActiveSpace(value)}
-              className={`px-3.5 py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 whitespace-nowrap ${
                 activeSpace === value ? 'bg-[#1A1A1A] text-[#F9F8F6] shadow-sm font-bold' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
               }`}
             >
