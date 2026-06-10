@@ -2,6 +2,7 @@ import React, { ComponentType } from 'react';
 import { Sparkles, Mail, Calendar, DollarSign, Lock } from 'lucide-react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
+import { WinCtrlButton } from '../gsyen-designer';
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -36,7 +37,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
   return (
     <>
-      <header className="border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-start justify-between" id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <header className="relative border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 px-8 py-6 flex items-start justify-between" id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           <div className="p-2.5 bg-transparent rounded-none border border-[#1A1A1A]/15 shadow-[1px_1px_0px_rgba(26,26,26,0.06)] shrink-0 transition-transform duration-500 hover:rotate-6">
             <VintageCar size={44} className="text-[#1A1A1A]/95" />
@@ -68,31 +69,22 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           ))}
         </div>
 
-        {/* 右侧：窗口控制（Electron 右对齐浮在底行上方）+ 语言 + 状态 */}
-        <div className="relative flex items-center gap-3 text-[10px]"
-          style={{
-            WebkitAppRegion: 'no-drag',
-            paddingTop: (window as any).electronAPI?.isElectron ? 31 : 0,
-          } as React.CSSProperties}>
+        {/* 窗口控制：absolute 挂在 header 上，top-0 right-0，与 Canvas WinCtrl 位置一致 */}
+        {(window as any).electronAPI?.isElectron && (
+          <div style={{ position:'absolute', top:0, right:0, display:'flex', alignItems:'center',
+            WebkitAppRegion:'no-drag' } as React.CSSProperties}>
+            {(['minimize', 'maximize', 'close'] as const).map(action => (
+              <WinCtrlButton key={action} action={action} redClose={action === 'close'}
+                onClick={() => (window as any).electronAPI.window[action]()} />
+            ))}
+          </div>
+        )}
 
-          {/* 窗口控制：3个 28×28 正方形，间隙 8px，右偏 10px，矢量墨水 hover */}
-          {(window as any).electronAPI?.isElectron && (
-            <div className="absolute top-0 right-0 flex items-center gap-2 pr-[10px]">
-              {([
-                { label: '—', fontSize: '13px', action: 'minimize' },
-                { label: '□', fontSize: '11px', action: 'maximize' },
-                { label: '×', fontSize: '13px', action: 'close'    },
-              ] as const).map(({ label, fontSize, action }) => (
-                <button key={action}
-                  onClick={() => (window as any).electronAPI.window[action]()}
-                  className="w-[26px] h-[26px] flex items-center justify-center leading-none font-mono text-[#1A1A1A]/40 border border-[#1A1A1A]/12 bg-[#1A1A1A]/4 hover:bg-[#1A1A1A]/8 hover:text-[#1A1A1A] transition-all select-none"
-                  style={{ fontSize }}
-                >{label}</button>
-              ))}
-            </div>
-          )}
+        {/* 右侧：语言 + 状态 */}
+        <div className="flex items-center gap-3 text-[10px]"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
 
-          {/* 语言切换 + 状态（这一行决定 controls 宽度）*/}
+          {/* 语言切换 + 状态 */}
           <div className="flex items-center gap-3 text-[10px]">
             <div className="flex bg-[#1A1A1A]/5 p-0.5 rounded-none border border-[#1A1A1A]/10">
               <button

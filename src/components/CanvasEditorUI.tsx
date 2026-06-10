@@ -1,6 +1,6 @@
 /** CanvasEditorUI — Dropdown + WinCtrl（模块层定义，避免 render 时重建组件类型） */
-import React from 'react';
 import { Palette, MenuItem, SYS_FONT } from './CanvasEditorTypes';
+export { WinCtrlButton as WinCtrl } from '../gsyen-designer';
 
 interface DropdownProps {
   items: (MenuItem | '---')[];
@@ -46,53 +46,5 @@ export function Dropdown({ items, P, dark }: DropdownProps) {
           )
       )}
     </div>
-  );
-}
-
-const MinIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-    <line x1="2" y1="5.5" x2="9" y2="5.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-const MaxIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-    <rect x="1" y="1" width="9" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-  </svg>
-);
-const CloseIcon = () => (
-  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-    <line x1="2" y1="2" x2="9" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-    <line x1="9" y1="2" x2="2" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-  </svg>
-);
-const WIN_ICON: Record<string, React.FC> = { '–': MinIcon, '□': MaxIcon, '×': CloseIcon };
-
-interface WinCtrlProps {
-  sym: string; title?: string; onClick: () => void;
-  danger?: boolean; P: Palette; dark: boolean;
-}
-export function WinCtrl({ sym, title: tip, onClick, danger, P, dark }: WinCtrlProps) {
-  const idle = dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
-  const Icon = WIN_ICON[sym] ?? (() => <span>{sym}</span>);
-  return (
-    <button title={tip} onClick={onClick}
-      style={{
-        width: 32, height: 22, margin: '0 3px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: idle, background: 'transparent', border: 'none', borderRadius: 4,
-        cursor: 'pointer', flexShrink: 0, transition: 'background 0.18s, color 0.18s',
-      }}
-      onMouseEnter={e => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
-        el.style.color = P.menuFgHover;
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background = 'transparent';
-        el.style.color = idle;
-      }}>
-      <Icon />
-    </button>
   );
 }

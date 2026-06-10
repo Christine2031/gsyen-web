@@ -3,7 +3,8 @@
  * 由 CanvasEditorContent 控制显隐动画，本组件只负责渲染。
  */
 import { useRef } from 'react';
-import { Dropdown, WinCtrl } from './CanvasEditorUI';
+import { Dropdown } from './CanvasEditorUI';
+import { WinCtrlButton, SidebarIcon, DocIcon, DrawIcon, NodeIcon, PreviewIcon } from '../gsyen-designer';
 import {
   Palette, MenuSpec, MenuId, EditorMode,
   TITLE_H, MENU_H, SYS_FONT, isElectron,
@@ -31,10 +32,6 @@ interface Props {
   menuBarRef:  React.RefObject<HTMLDivElement>;
 }
 
-// 模式图标 SVG
-const DocIcon  = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><line x1="3.5" y1="4" x2="9.5" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="3.5" y1="6.5" x2="9.5" y2="6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="3.5" y1="9" x2="7.5" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>;
-const DrawIcon = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2 10.5L4 6L8 8L10.5 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="10.5" cy="2.5" r="1.2" stroke="currentColor" strokeWidth="1.5"/></svg>;
-const NodeIcon = () => <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="4" height="3" rx="1" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><rect x="8" y="1" width="4" height="3" rx="1" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><rect x="4" y="9" width="5" height="3" rx="1" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><line x1="3" y1="4" x2="6.5" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1.5 1.5"/><line x1="10" y1="4" x2="6.5" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1.5 1.5"/></svg>;
 
 export function CanvasChrome({
   title, titleEdit, onTitleChange, setTitleEdit, titleInputRef,
@@ -59,10 +56,7 @@ export function CanvasChrome({
             ...(isElectron ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {}) }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.menuFgHover}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = P.menuFg}>
-          <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
-            <rect x="0.75" y="0.75" width="14.5" height="10.5" rx="1.5" stroke="currentColor" strokeWidth="1.5"/>
-            <line x1="5.25" y1="0.75" x2="5.25" y2="11.25" stroke="currentColor" strokeWidth="1.5"/>
-          </svg>
+          <SidebarIcon />
         </button>
 
         {/* Title */}
@@ -109,9 +103,9 @@ export function CanvasChrome({
         {/* 三剑客常驻；Electron 下实际控窗，web 下静默 */}
         <div className="flex items-center"
           style={isElectron ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {}}>
-          <WinCtrl sym="–" title="Minimize" P={P} dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.minimize()} />
-          <WinCtrl sym="□" title="Maximize" P={P} dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.maximize()} />
-          <WinCtrl sym="×" title="退回 Chat  Esc" P={P} dark={dark} onClick={onClose} danger />
+          <WinCtrlButton action="minimize" dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.minimize()} title="Minimize" />
+          <WinCtrlButton action="maximize" dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.maximize()} title="Maximize" />
+          <WinCtrlButton action="close"    dark={dark} onClick={onClose} title="退回 Chat  Esc" />
         </div>
       </div>
 
@@ -146,7 +140,7 @@ export function CanvasChrome({
               cursor: 'pointer', transition: 'color 0.1s' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.menuFgHover}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = mode !== 'write' ? P.accent : P.menuFg}>
-            <svg width="15" height="17" viewBox="0 0 15 17" fill="none"><path d="M2 1.5L12.5 7.5Q14 8.5 12.5 9.5L2 15.5Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round"/></svg>
+            <PreviewIcon />
           </button>
         </div>
       )}
