@@ -147,7 +147,7 @@ function createWindow() {
   });
 
   if (isDev) {
-    win.loadURL('http://127.0.0.1:3000');
+    win.loadURL('http://127.0.0.1:5173');
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'));
     setupAutoUpdater();

@@ -1,9 +1,12 @@
 import React, { ComponentType, useState, useEffect } from 'react';
 import { Sparkles, Mail, Calendar, DollarSign, Lock, Globe } from 'lucide-react';
+import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
 import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
+import AuthModal from '../auth/AuthModal';
+import { useAuth } from '../auth/useAuth';
 
 export type ActiveSpace = 'chat' | 'mail' | 'schedule' | 'calendar' | 'finance' | 'password' | 'brand';
 
@@ -37,6 +40,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
   const t = translations[lang];
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
+  const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
+  const { user, signOut } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
 
@@ -115,21 +120,45 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           {/* 竖线 */}
           <div className="w-px h-3.5 bg-[#1A1A1A]/15 shrink-0" />
 
-          {/* 登录 文字链 */}
-          <button className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all whitespace-nowrap shrink-0">
-            {lang === 'zh' ? '登录' : 'LOGIN'}
-          </button>
-
-          {/* 注册 实块 */}
-          <button className="flex items-center gap-1 px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[9px] font-bold tracking-wider uppercase hover:bg-[#1A1A1A]/80 transition-all whitespace-nowrap shrink-0">
-            {lang === 'zh' ? '注册' : 'REGISTER'}
-            <span className="text-[#F9F8F6]/50 ml-0.5">→</span>
-          </button>
+          {user ? (
+            /* 已登录：显示邮箱缩写 + 登出 */
+            <>
+              <span className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 whitespace-nowrap shrink-0 font-mono">
+                {user.email?.split('@')[0]}
+              </span>
+              <button
+                onClick={signOut}
+                className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-[9px] font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
+              >
+                {lang === 'zh' ? '登出' : 'SIGN OUT'}
+              </button>
+            </>
+          ) : (
+            /* 未登录：登录 + 注册 */
+            <>
+              <button
+                onClick={() => setAuthModal('login')}
+                className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all whitespace-nowrap shrink-0"
+              >
+                {lang === 'zh' ? '登录' : 'LOGIN'}
+              </button>
+              <button
+                onClick={() => setAuthModal('register')}
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[9px] font-bold tracking-wider uppercase hover:bg-[#1A1A1A]/80 transition-all whitespace-nowrap shrink-0"
+              >
+                {lang === 'zh' ? '注册' : 'REGISTER'}
+                <span className="text-[#F9F8F6]/50 ml-0.5">→</span>
+              </button>
+            </>
+          )}
 
         </div>
       </header>
 
       {showAbout && <AboutDialog lang={lang} onClose={() => setShowAbout(false)} />}
+      <AnimatePresence>
+        {authModal && <AuthModal key="auth-modal" lang={lang} initialTab={authModal} onClose={() => setAuthModal(null)} />}
+      </AnimatePresence>
 
       {/* 移动端横向标签条 — 已禁用（最小宽度 880px 桌面应用） */}
       <div className="hidden">
