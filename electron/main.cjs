@@ -16,22 +16,9 @@ const CANVAS_DIR = path.join(app.getPath('userData'), 'canvas');
 let win  = null;
 let tray = null;
 let forceQuit = false;
-let savedBounds = null;  // fullscreen 前的窗口位置
 
 function toggleFullscreen(w) {
-  if (savedBounds) {
-    w.setAlwaysOnTop(false);
-    w.setBounds(savedBounds);
-    savedBounds = null;
-  } else {
-    savedBounds = w.getBounds();
-    const { bounds } = screen.getDisplayMatching(w.getBounds());
-    // 先声明 topmost，再扩展尺寸，最后 moveTop 确保压住任务栏
-    w.setAlwaysOnTop(true, 'screen-saver');
-    w.setBounds({ x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height });
-    w.moveTop();
-    w.focus();
-  }
+  w.setFullScreen(!w.isFullScreen());
 }
 
 // ── 系统托盘 ──────────────────────────────────────────────────────────────────
