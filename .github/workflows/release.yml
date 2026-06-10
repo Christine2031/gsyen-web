@@ -41,6 +41,8 @@ jobs:
           aws configure set default.s3.addressing_style virtual
           aws configure set default.s3.multipart_threshold 500MB
           aws configure set default.s3.payload_signing_enabled false
+          aws configure set default.s3.request_checksum_calculation when_required
+          aws configure set default.s3.response_checksum_validation when_required
           aws s3 cp "..\gsyen-dist\GSYEN-Setup-Windows.exe" s3://gsyen-releases/GSYEN-Setup-Windows.exe --endpoint-url https://oss-cn-shenzhen.aliyuncs.com
         shell: pwsh
         env:
@@ -77,6 +79,8 @@ jobs:
           aws configure set default.s3.addressing_style virtual
           aws configure set default.s3.multipart_threshold 500MB
           aws configure set default.s3.payload_signing_enabled false
+          aws configure set default.s3.request_checksum_calculation when_required
+          aws configure set default.s3.response_checksum_validation when_required
           aws s3 cp "../gsyen-dist/GSYEN-Setup-Mac.dmg" s3://gsyen-releases/GSYEN-Setup-Mac.dmg --endpoint-url https://oss-cn-shenzhen.aliyuncs.com
         env:
           OSS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
