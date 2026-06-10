@@ -13,17 +13,19 @@ let forceQuit = false;
 // ── 系统托盘 ──────────────────────────────────────────────────────────────────
 
 function createTray() {
-  const iconPath = isDev
-    ? path.join(__dirname, '../public/icon.png')
-    : path.join(process.resourcesPath, 'app.asar', 'dist', 'icon.png');
+  // dev: public/icon.png；prod: __dirname = app.asar/electron/，../dist/icon.png 正确
+  const iconPath = path.join(__dirname, isDev ? '../public/icon.png' : '../dist/icon.png');
 
-  // 托盘图标（32×32，Electron 自动缩放）
   let icon;
   try {
-    icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    const raw = nativeImage.createFromPath(iconPath);
+    icon = raw.isEmpty() ? null : raw.resize({ width: 16, height: 16 });
   } catch {
-    icon = nativeImage.createEmpty();
+    icon = null;
   }
+
+  // Windows 托盘必须有有效图标，没有就跳过
+  if (!icon || icon.isEmpty()) return;
 
   tray = new Tray(icon);
   tray.setToolTip('GSYEN');
@@ -158,7 +160,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow();
-  createTray();
+  try { createTray(); } catch (e) { console.error('tray init failed:', e); }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
