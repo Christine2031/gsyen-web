@@ -138,7 +138,7 @@ function createWindow() {
     backgroundColor: '#F9F8F6',
     icon: path.join(__dirname, '../public/icon.png'),
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
-    trafficLightPosition: process.platform === 'darwin' ? { x: 14, y: 14 } : undefined,
+    trafficLightPosition: process.platform === 'darwin' ? { x: 14, y: 10 } : undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       nodeIntegration: false,
