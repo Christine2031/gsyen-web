@@ -21,6 +21,12 @@ jobs:
 
       - run: npm ci
 
+      - name: Bump version from tag
+        run: |
+          $version = "${{ github.ref_name }}" -replace '^v', ''
+          npm version $version --no-git-tag-version
+        shell: pwsh
+
       - name: Build Windows
         run: npm run electron:build
         env:
@@ -54,6 +60,12 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+
+      - name: Bump version from tag
+        run: |
+          VERSION="${{ github.ref_name }}"
+          VERSION="${VERSION#v}"
+          npm version "$VERSION" --no-git-tag-version
 
       - name: Build Mac
         run: npm run electron:build
