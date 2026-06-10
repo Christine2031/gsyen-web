@@ -5,45 +5,72 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: '22'
+          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build Windows installer
+      - name: Build Windows
         run: npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload to GitHub Release
+      - name: Upload Windows to GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: C:/gsyen-dist/GSYEN-Setup-Windows.exe
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          files: |
+            ../gsyen-dist/GSYEN-Setup-*.exe
+            ../gsyen-dist/latest.yml
 
-      - name: Install oss2
-        run: python -m pip install oss2
-
-      - name: Upload to OSS
-        env:
-          OSS_KEY_ID: ${{ secrets.OSS_KEY_ID }}
-          OSS_KEY_SECRET: ${{ secrets.OSS_KEY_SECRET }}
-        shell: python
+      - name: Upload Windows to OSS
         run: |
-          import os, oss2
-          auth = oss2.Auth(os.environ['OSS_KEY_ID'], os.environ['OSS_KEY_SECRET'])
-          bucket = oss2.Bucket(auth, 'https://oss-cn-shenzhen.aliyuncs.com', 'gsyen-releases')
-          bucket.put_object_from_file('GSYEN-Setup-Windows.exe', 'C:/gsyen-dist/GSYEN-Setup-Windows.exe')
-          print('Upload OK')
+          curl -o ossutil.exe https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil64.exe
+          ./ossutil.exe config -e oss-cn-shenzhen.aliyuncs.com -i $env:OSS_KEY_ID -k $env:OSS_KEY_SECRET
+          ./ossutil.exe cp "..\gsyen-dist\GSYEN-Setup-Windows.exe" oss://gsyen-releases/GSYEN-Setup-Windows.exe --force
+        shell: pwsh
+        env:
+          OSS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build Mac
+        run: npm run electron:build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Mac to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ../gsyen-dist/GSYEN-Setup-Mac.dmg
+
+      - name: Upload Mac to OSS
+        run: |
+          curl -L -o ~/ossutil https://gosspublic.alicdn.com/ossutil/1.7.19/ossutil-mac-amd64
+          chmod +x ~/ossutil
+          ~/ossutil config -e oss-cn-shenzhen.aliyuncs.com -i $OSS_KEY_ID -k $OSS_KEY_SECRET
+          ~/ossutil cp "../gsyen-dist/GSYEN-Setup-Mac.dmg" oss://gsyen-releases/GSYEN-Setup-Mac.dmg --force
+        env:
+          OSS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}
+          OSS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
