@@ -107,7 +107,7 @@ export function CanvasChrome({
         </div>
 
         {/* Electron: – □ 管窗口，× 退回 Chat；web: 只有 × */}
-        <div className="flex items-stretch h-full"
+        <div className="flex items-center"
           style={isElectron ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {}}>
           {isElectron && (
             <>
