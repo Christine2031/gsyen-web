@@ -1,4 +1,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+/* ── iA Writer Fonts (SIL OFL, iaolo/iA-Fonts) ── */
+@font-face { font-family:'iA Writer Mono'; src:url('/fonts/iAWriterMonoS-Regular.ttf') format('truetype'); font-weight:400; font-style:normal; }
+@font-face { font-family:'iA Writer Mono'; src:url('/fonts/iAWriterMonoS-Bold.ttf') format('truetype'); font-weight:700; font-style:normal; }
+@font-face { font-family:'iA Writer Mono'; src:url('/fonts/iAWriterMonoS-Italic.ttf') format('truetype'); font-weight:400; font-style:italic; }
+@font-face { font-family:'iA Writer Mono'; src:url('/fonts/iAWriterMonoS-BoldItalic.ttf') format('truetype'); font-weight:700; font-style:italic; }
+@font-face { font-family:'iA Writer Quattro'; src:url('/fonts/iAWriterQuattroS-Regular.ttf') format('truetype'); font-weight:400; font-style:normal; }
+@font-face { font-family:'iA Writer Quattro'; src:url('/fonts/iAWriterQuattroS-Bold.ttf') format('truetype'); font-weight:700; font-style:normal; }
+@font-face { font-family:'iA Writer Quattro'; src:url('/fonts/iAWriterQuattroS-Italic.ttf') format('truetype'); font-weight:400; font-style:italic; }
+@font-face { font-family:'iA Writer Quattro'; src:url('/fonts/iAWriterQuattroS-BoldItalic.ttf') format('truetype'); font-weight:700; font-style:italic; }
 @import "tailwindcss";
 
 /* ============================================================
