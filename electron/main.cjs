@@ -18,19 +18,7 @@ let tray = null;
 let forceQuit = false;
 
 function toggleFullscreen(w) {
-  const going = !w.isFullScreen();
-  if (process.platform === 'win32') {
-    if (going) {
-      // 无边框窗口在 Windows 上 setFullScreen 单独不够，需先声明最高层级
-      w.setAlwaysOnTop(true, 'screen-saver');
-      w.setFullScreen(true);
-    } else {
-      w.setFullScreen(false);
-      w.setAlwaysOnTop(false);
-    }
-  } else {
-    w.setFullScreen(going);
-  }
+  w.setFullScreen(!w.isFullScreen());
 }
 
 // ── 系统托盘 ──────────────────────────────────────────────────────────────────
@@ -178,7 +166,19 @@ function createWindow() {
     return { action: 'deny' };
   });
 
-  // F11 真全屏 — 手动 setBounds 铺满整块屏幕（绕过 setFullScreen 对任务栏无效的问题）
+  // Windows frameless 全屏：必须在 enter-full-screen 事件后才能 setAlwaysOnTop
+  // 先设 alwaysOnTop 再 setFullScreen 无效（Electron issue #24932）
+  if (process.platform === 'win32') {
+    win.on('enter-full-screen', () => {
+      win.setAlwaysOnTop(true, 'screen-saver');
+      win.moveTop();
+    });
+    win.on('leave-full-screen', () => {
+      win.setAlwaysOnTop(false);
+    });
+  }
+
+  // F11
   win.webContents.on('before-input-event', (_e, input) => {
     if (input.type === 'keyDown' && input.key === 'F11') {
       toggleFullscreen(win);
