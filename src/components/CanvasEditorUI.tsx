@@ -77,14 +77,14 @@ export function WinCtrl({ sym, title: tip, onClick, danger, P, dark }: WinCtrlPr
   return (
     <button title={tip} onClick={onClick}
       style={{
-        width: 46, height: '100%',
+        width: 32, height: 22, margin: '0 3px',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: idle, background: 'transparent', border: 'none',
+        color: idle, background: 'transparent', border: 'none', borderRadius: 4,
         cursor: 'pointer', flexShrink: 0, transition: 'background 0.18s, color 0.18s',
       }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement;
-        el.style.background = dark ? '#3A3A3A' : '#D8D8D8';
+        el.style.background = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)';
         el.style.color = P.menuFgHover;
       }}
       onMouseLeave={e => {
