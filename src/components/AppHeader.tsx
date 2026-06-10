@@ -97,9 +97,9 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
           {/* 绿点 ONLINE */}
           {!compact && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-[#1A1A1A]/10 bg-[#1A1A1A]/[0.03] shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shrink-0" />
-              <span className="text-[8px] font-mono font-bold tracking-[0.12em] text-[#1A1A1A]/40 uppercase whitespace-nowrap">ONLINE</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 border border-[#1A1A1A]/20 bg-[#1A1A1A]/[0.05] shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" style={{ animation: 'gsyen-breathe 2s ease-in-out infinite' }} />
+              <span className="text-[8px] font-mono font-bold tracking-[0.12em] text-[#1A1A1A]/60 uppercase whitespace-nowrap">ONLINE</span>
             </div>
           )}
 
