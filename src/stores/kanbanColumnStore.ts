@@ -1,45 +1,44 @@
-// 动态看板列，持久化到 localStorage
+// 动态看板列，按 boardId 隔离存储
 export interface KanbanColumn {
   id: string;
   title: string;
 }
 
-const KEY = 'gsyen_kanban_columns';
+const KEY     = (boardId: string) => `gsyen_kanban_cols_${boardId}`;
+const NOTIFY  = () => window.dispatchEvent(new CustomEvent('kanban-columns-updated'));
 
 const DEFAULTS: KanbanColumn[] = [
-  { id: 'todo',     title: '预约待编' },
-  { id: 'progress', title: '执行中柜' },
-  { id: 'review',   title: '评审阶段' },
-  { id: 'done',     title: '极速已成' },
+  { id: 'todo',     title: '待处理' },
+  { id: 'progress', title: '进行中' },
+  { id: 'review',   title: '评审中' },
+  { id: 'done',     title: '已完成' },
 ];
 
-function load(): KanbanColumn[] {
+function load(boardId: string): KanbanColumn[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(KEY(boardId));
     if (raw) return JSON.parse(raw);
   } catch {}
   return DEFAULTS;
 }
 
-function persist(cols: KanbanColumn[]) {
-  localStorage.setItem(KEY, JSON.stringify(cols));
-  window.dispatchEvent(new CustomEvent('kanban-columns-updated'));
+function persist(boardId: string, cols: KanbanColumn[]) {
+  localStorage.setItem(KEY(boardId), JSON.stringify(cols));
+  NOTIFY();
 }
 
 export const kanbanColumnStore = {
-  getAll: (): KanbanColumn[] => load(),
+  getAll: (boardId: string): KanbanColumn[] => load(boardId),
 
-  add: (title: string): KanbanColumn => {
+  add: (boardId: string, title: string): KanbanColumn => {
     const col: KanbanColumn = { id: `col_${Date.now()}`, title };
-    persist([...load(), col]);
+    persist(boardId, [...load(boardId), col]);
     return col;
   },
 
-  rename: (id: string, title: string) => {
-    persist(load().map(c => c.id === id ? { ...c, title } : c));
-  },
+  rename: (boardId: string, id: string, title: string) =>
+    persist(boardId, load(boardId).map(c => c.id === id ? { ...c, title } : c)),
 
-  remove: (id: string) => {
-    persist(load().filter(c => c.id !== id));
-  },
+  remove: (boardId: string, id: string) =>
+    persist(boardId, load(boardId).filter(c => c.id !== id)),
 };
