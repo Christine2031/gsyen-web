@@ -76,7 +76,7 @@ export default function ScheduleKanbanView({
                   lastReorderPair.current = pair;
                   if (reorderTimer.current) clearTimeout(reorderTimer.current);
                   const fromId = draggingColId, toId = col.id;
-                  reorderTimer.current = setTimeout(() => onReorderColumn(fromId, toId), 90);
+                  reorderTimer.current = setTimeout(() => onReorderColumn(fromId, toId), 300);
                 }
               } else if (!e.dataTransfer.types.includes('col-id')) { onDragOverColumn(e, col.id); }
             }}
