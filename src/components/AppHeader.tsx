@@ -8,14 +8,14 @@ import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import { useAuth, type UserTier } from '../auth/useAuth';
 
-/** ShieldLock icon — 护盾 + 挂锁，密钥库专用 */
+/** ShieldLock icon — 精确复刻 Tabler ti-shield-lock（护盾 + 钥匙孔） */
 function ShieldLockIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor"
       strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" />
-      <rect x="9.5" y="13.5" width="5" height="4" rx="0.8" />
-      <path d="M10.5 13.5v-1.8a1.5 1.5 0 0 1 3 0v1.8" />
+      <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+      <path d="M11 11a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+      <path d="M12 12l0 2.5" />
     </svg>
   );
 }
