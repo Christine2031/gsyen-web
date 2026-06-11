@@ -79,15 +79,7 @@ export default function FinanceModule({ lang }: FinanceModuleProps) {
 
   return (
     <div className="space-y-6">
-      <div className="max-w-4xl">
-        <h2 className="text-xl font-serif text-[#1A1A1A] font-bold tracking-tight">
-          {lang === 'zh' ? 'Atelier Ledger 奢雅资产复式记账账簿' : 'Atelier Ledger & Capital Flow Tracker'}
-        </h2>
-        <p className="text-xs text-[#1A1A1A]/60 font-mono uppercase tracking-widest mt-1">
-          {lang === 'zh' ? '面向创作者和精英工作室定制的印记账簿与开支分析器' : 'Aesthetic financial ledger optimized for premium design practices'}
-        </p>
-      </div>
-
+      {/* 模块身份由顶栏 logo 区承担，此处不再重复标题 */}
       <FinanceMetrics
         lang={lang}
         totalIncome={totalIncome}
