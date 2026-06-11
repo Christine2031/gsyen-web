@@ -8,9 +8,8 @@
  */
 import React, { useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
-import { KanbanIcon } from '../gsyen-designer';
 
-import { ScheduleToolbar, ScheduleFooter, type ViewMode } from './ScheduleChrome';
+import { ScheduleToolbar, type ViewMode } from './ScheduleChrome';
 import { EventItem } from '../types/schedule';
 import { DEFAULT_EVENTS }       from '../config/scheduleConfig';
 import { useScheduleEvents }    from '../hooks/useScheduleEvents';
@@ -141,26 +140,9 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
         </div>
       )}
 
-      {/* Module header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-serif text-[#1A1A1A] font-bold tracking-tight flex items-center gap-2">
-            <span className="p-1.5 bg-[#1A1A1A] text-white rounded-none"><KanbanIcon className="w-4 h-4" /></span>
-            <span>{lang === 'zh' ? 'Chronos 极速格栅日程空间' : 'Chronos Multi-Interactive Calendar'}</span>
-          </h2>
-          <p className="text-xs text-[#1A1A1A]/40 font-mono uppercase tracking-widest mt-1">
-            {lang === 'zh' ? '融合传统 Google Calendar 侧栏联动与极低延迟拖拽，守护本地机密文册' : 'Atelier workspace integrating day-grid visualizers and bespoke task schedulers'}
-          </p>
-        </div>
-        <div className="flex gap-4 items-center bg-white border border-[#1A1A1A]/10 px-4 py-2 text-[10px] font-mono text-[#1A1A1A]/70 uppercase tracking-widest">
-          <div>{lang === 'zh' ? '总日程安排:' : 'TOTAL ENGAGED:'} <strong className="text-amber-800 font-bold">{events.length} 项</strong></div>
-          <div className="w-[1px] h-4 bg-[#1A1A1A]/10" />
-          <div>{lang === 'zh' ? '当前筛选视图:' : 'DISPLAYING:'} <strong className="text-[#1A1A1A]">{activeFilteredList.length} 项</strong></div>
-        </div>
-      </div>
-
-      {/* Toolbar */}
+      {/* Toolbar — 模块身份由顶栏 logo 区承担，此处不再重复标题 */}
       <ScheduleToolbar
+        total={events.length} active={activeFilteredList.length}
         lang={lang}
         viewMode={viewMode} setViewMode={setViewMode}
         searchText={searchText} setSearchText={setSearchText}
@@ -249,8 +231,6 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
         />
       )}
 
-      {/* Footer */}
-      <ScheduleFooter lang={lang} total={events.length} active={activeFilteredList.length} />
     </div>
   );
 }
