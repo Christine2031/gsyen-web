@@ -226,6 +226,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           currentSessionId={currentSessionId}
           loadSession={loadSession}
           deleteSession={deleteSession}
+          onNewChat={newChat}
         />
 
         {/* Chat panel */}

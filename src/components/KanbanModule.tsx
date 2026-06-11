@@ -63,6 +63,14 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
   const sid    = activeSessionId;
   const notify = (t: string) => { setNotification(t); setTimeout(() => setNotification(null), 3500); };
 
+  const handleNewSession = () => {
+    const id = `session-${Date.now()}`;
+    chatSessionStore.upsert(id, [], 'ethan');
+    const updated = chatSessionStore.loadAll();
+    setSessions(updated);
+    setActiveSessionId(id);
+  };
+
   const activeFilteredList = events.filter(item => {
     const matchSearch   = item.title.toLowerCase().includes(searchText.toLowerCase()) ||
                           item.subtitle.toLowerCase().includes(searchText.toLowerCase());
@@ -122,7 +130,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
           <button onClick={() => setSidebarOpen(o => !o)} className={`p-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
             <PanelLeft className="w-3.5 h-3.5" />
           </button>
-          <button onClick={() => openAddForm()} className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
+          <button onClick={handleNewSession} className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
             <Plus className="w-3 h-3" /><span>NEW</span>
           </button>
         </div>
