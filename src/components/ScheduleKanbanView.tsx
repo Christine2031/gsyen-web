@@ -76,8 +76,14 @@ export default function ScheduleKanbanView({
             }}
             onDrop={e => { const cid = e.dataTransfer.getData('col-id'); if (!cid) onDropColumn(e, col.id); }}
             style={{
-              transform: isColOver ? 'scaleX(0.94) scaleY(1.03)' : draggingColId === col.id ? 'scaleX(0.97)' : 'scale(1)',
-              transition: 'transform 180ms cubic-bezier(0.34,1.56,0.64,1), opacity 150ms, border-color 150ms, background 150ms',
+              transform: isColOver
+                ? 'scaleX(0.965) scaleY(1.012)'
+                : isOver
+                ? 'scaleY(1.008)'
+                : draggingColId === col.id ? 'scaleX(0.97)' : 'scale(1)',
+              transition: isColOver
+                ? 'transform 160ms cubic-bezier(0.34,1.56,0.64,1), opacity 150ms, border-color 150ms, background 150ms'
+                : 'transform 110ms ease-out, opacity 150ms, border-color 150ms, background 150ms',
               transformOrigin: 'center top',
             }}
             className={`shrink-0 w-[272px] flex flex-col min-h-[120px] p-2 border ${
