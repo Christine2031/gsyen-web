@@ -22,8 +22,8 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 5173,
-      strictPort: true,
+      port: process.env.PORT ? parseInt(process.env.PORT) : 5173,
+      strictPort: false,
       host: '127.0.0.1',
       hmr: process.env.DISABLE_HMR !== 'true',
       watch: process.env.DISABLE_HMR === 'true' ? null : {},

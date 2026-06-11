@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Clock, MapPin, Move, ArrowLeft, ArrowRight, Trash2, Plus, X, Check } from 'lucide-react';
 import { EventItem, ColumnId } from '../types/schedule';
-import { KanbanColumn } from '../stores/kanbanColumnStore';
+import { KanbanColumn, kanbanColumnStore } from '../stores/kanbanColumnStore';
 import { categoryMap } from '../config/scheduleConfig';
 
 // 列头色点，按索引轮换
@@ -134,6 +134,9 @@ export default function ScheduleKanbanView({
   const getColEvents = (colId: ColumnId) =>
     activeFilteredList.filter(e => (e.status || (e.completed ? 'done' : 'todo')) === colId);
 
+  const [draggingColId, setDraggingColId] = useState<string | null>(null);
+  const [colDragOver,   setColDragOver]   = useState<string | null>(null);
+
   const boardRef   = useRef<HTMLDivElement>(null);
   const isPanning  = useRef(false);
   const panStartX  = useRef(0);
@@ -180,11 +183,21 @@ export default function ScheduleKanbanView({
         const isFirstCol = idx === 0;
         const isLastCol  = idx === columns.length - 1;
 
+        const isColOver = colDragOver === col.id && draggingColId !== col.id;
         return (
           <div key={col.id}
-            onDragOver={e => onDragOverColumn(e, col.id)}
-            onDrop={e => onDropColumn(e, col.id)}
+            draggable
+            onDragStart={e => { e.dataTransfer.setData('col-id', col.id); e.dataTransfer.effectAllowed = 'move'; setDraggingColId(col.id); }}
+            onDragEnd={() => { setDraggingColId(null); setColDragOver(null); onDragEnd(); }}
+            onDragOver={e => { e.preventDefault(); setColDragOver(col.id); if (!e.dataTransfer.types.includes('col-id')) onDragOverColumn(e, col.id); }}
+            onDrop={e => {
+              const cid = e.dataTransfer.getData('col-id');
+              if (cid && cid !== col.id) { kanbanColumnStore.reorder(cid, col.id); setDraggingColId(null); setColDragOver(null); }
+              else onDropColumn(e, col.id);
+            }}
             className={`shrink-0 w-[272px] flex flex-col min-h-[120px] p-2 border transition-all ${
+              draggingColId === col.id ? 'opacity-40 border-dashed border-[#1A1A1A]/30 bg-white' :
+              isColOver ? 'border-[#1A1A1A]/50 bg-[#F4F2EE]' :
               isOver ? 'border-[#1A1A1A]/40 bg-[#F9F8F6]' : 'border-[#1A1A1A]/10 bg-white'
             }`}
           >
@@ -206,7 +219,7 @@ export default function ScheduleKanbanView({
                 const isDragging = draggingId === item.id;
                 return (
                   <div key={item.id} draggable
-                    onDragStart={e => onDragStart(e, item.id)} onDragEnd={onDragEnd}
+                    onDragStart={e => { e.stopPropagation(); onDragStart(e, item.id); }} onDragEnd={e => { e.stopPropagation(); onDragEnd(); }}
                     onClick={() => onOpenEvent(item)}
                     className={`group relative border bg-white p-3 transition-all cursor-grab active:cursor-grabbing hover:shadow-sm ${
                       isDragging ? 'opacity-30 border-dashed border-[#1A1A1A]/20' : 'border-[#1A1A1A]/10 hover:border-[#1A1A1A]/25'

@@ -42,4 +42,15 @@ export const kanbanColumnStore = {
   remove: (id: string) => {
     persist(load().filter(c => c.id !== id));
   },
+
+  reorder: (fromId: string, toId: string) => {
+    const cols = load();
+    const from = cols.findIndex(c => c.id === fromId);
+    const to   = cols.findIndex(c => c.id === toId);
+    if (from < 0 || to < 0 || from === to) return;
+    const next = [...cols];
+    const [moved] = next.splice(from, 1);
+    next.splice(to, 0, moved);
+    persist(next);
+  },
 };
