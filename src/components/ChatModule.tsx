@@ -206,7 +206,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           <span className="flex items-center gap-1">
             <span className="w-2 h-2 rounded-full transition-all"
               style={isAlive
-                ? { background: 'radial-gradient(circle at 50% 50%, #86efac 40%, #16a34a 60%, #14532d)', boxShadow: '0 0 6px rgba(74,222,128,0.8), 0 0 0 1px rgba(74,222,128,0.25)', border: '1px solid rgba(74,222,128,0.6)', animation: 'gsyen-breathe 2.4s ease-in-out infinite' }
+                ? { background: 'radial-gradient(circle at 50% 50%, #86efac 40%, #16a34a 60%, #14532d)', boxShadow: '0 0 8px rgba(74,222,128,0.6), 0 0 14px rgba(74,222,128,0.3), 0 0 0 1px rgba(74,222,128,0.2)', border: '1px solid rgba(74,222,128,0.6)', animation: 'gsyen-breathe 2.4s ease-in-out infinite' }
                 : { background: 'radial-gradient(circle at 38% 32%, #aaa 0%, #777 45%, #555 100%)', border: '2px solid rgba(255,255,255,0.7)', boxShadow: '0 0 6px rgba(255,255,255,0.2), 0 0 3px rgba(150,150,150,0.3), inset 0 1px 1px rgba(255,255,255,0.08)' }
               } />
             {isAlive ? 'SYSTEM GATEWAY IS ALIVE' : 'GSYEN MODEL OFFLINE'}
