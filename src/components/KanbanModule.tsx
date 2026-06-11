@@ -4,7 +4,7 @@
  * 卡片数据与 ScheduleModule 共享 scheduleStore。
  */
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, Plus, Search, X } from 'lucide-react';
+import { CheckCircle2, Plus, Search, X, PanelLeft, MessageSquare } from 'lucide-react';
 import { KanbanIcon } from '../gsyen-designer';
 
 import { EventItem, ColumnId } from '../types/schedule';
@@ -35,6 +35,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
   }, []);
 
   // ── 卡片状态 ──────────────────────────────────────────────────────────────
+  const [sidebarOpen,          setSidebarOpen]          = useState(true);
   const [filterCategory,       setFilterCategory]       = useState('all');
   const [searchText,           setSearchText]           = useState('');
   const [showAddForm,          setShowAddForm]          = useState(false);
@@ -124,7 +125,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
   };
 
   return (
-    <div className="flex flex-col h-full text-[#1A1A1A] font-sans animate-fadeIn">
+    <div className="flex flex-row h-full text-[#1A1A1A] font-sans animate-fadeIn">
 
       {notification && (
         <div className="fixed bottom-6 right-6 bg-[#1A1A1A] text-[#F9F8F6] px-5 py-3 border border-amber-900/40 text-xs font-mono uppercase tracking-widest z-50 flex items-center gap-3">
@@ -133,8 +134,53 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         </div>
       )}
 
+      {/* ── 左侧往来侧边栏（视觉，功能待接） ─────────────────────────── */}
+      <aside className={`shrink-0 flex flex-col border-r border-[#1A1A1A]/10 bg-[#F4F2EE] transition-all duration-300 overflow-hidden ${
+        sidebarOpen ? 'w-[320px] p-6 opacity-100' : 'w-0 p-0 opacity-0 pointer-events-none'
+      }`}>
+        <div className="flex flex-col h-full min-w-[272px] gap-4">
+          <div className="flex items-center justify-between w-full">
+            <h2 className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
+              {lang === 'zh' ? '往来' : 'Recents'}
+            </h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[8px] font-mono text-[#1A1A1A]/25">0</span>
+              <span className="text-[#1A1A1A]/30 text-[10px]">›</span>
+            </div>
+          </div>
+          <div className="overflow-y-auto space-y-1.5 pr-0.5 flex-1">
+            <div className="py-10 text-center">
+              <p className="text-[9px] font-mono text-[#1A1A1A]/30 uppercase tracking-widest">
+                {lang === 'zh' ? '暂无记录' : 'No history yet'}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ── 右侧主内容 ──────────────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* 顶部栏：□ + NEW + 会话标题 */}
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2 bg-[#EFEFEF] border-b border-[#1A1A1A]/8">
+          <button onClick={() => setSidebarOpen(o => !o)}
+            className="p-1.5 text-[#1A1A1A]/50 hover:text-[#1A1A1A] hover:bg-[#1A1A1A]/8 transition-all">
+            <PanelLeft className="w-4 h-4" />
+          </button>
+          <button onClick={() => openAddForm()}
+            className="flex items-center gap-1 px-3 py-1.5 text-[10px] font-bold font-mono tracking-widest uppercase text-[#1A1A1A]/60 hover:text-[#1A1A1A] hover:bg-[#1A1A1A]/8 transition-all">
+            <Plus className="w-3 h-3" />NEW
+          </button>
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#1A1A1A]/8">
+            <MessageSquare className="w-3.5 h-3.5 text-[#1A1A1A]/50" />
+            <span className="text-[11px] font-sans text-[#1A1A1A]/75">
+              {lang === 'zh' ? '疆域灵感创意国度' : 'Project Board'}
+            </span>
+          </div>
+        </div>
+
       {/* Header + 工具栏 + 表单 — shrink-0 */}
-      <div className="shrink-0 px-8 pt-8 pb-4 space-y-4">
+      <div className="shrink-0 px-8 pt-6 pb-4 space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-serif text-[#1A1A1A] font-bold tracking-tight flex items-center gap-2">
@@ -212,6 +258,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
           onDelete={id => { handleDeleteEvent(id); setSelectedEventForView(null); }}
         />
       )}
+      </div>{/* end 右侧主内容 */}
     </div>
   );
 }
