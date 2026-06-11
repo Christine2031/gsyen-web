@@ -161,7 +161,7 @@ export default function ScheduleKanbanView({
   return (
     <>
       <style>{`
-        #kanban-lanes-master::-webkit-scrollbar { height: 30px; }
+        #kanban-lanes-master::-webkit-scrollbar { height: 15px; }
         #kanban-lanes-master::-webkit-scrollbar-track { background: rgba(26,26,26,0.06); }
         #kanban-lanes-master::-webkit-scrollbar-thumb { background: rgba(26,26,26,0.28); border-radius: 0; }
         #kanban-lanes-master::-webkit-scrollbar-thumb:hover { background: rgba(26,26,26,0.45); }
