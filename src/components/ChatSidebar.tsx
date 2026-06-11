@@ -135,18 +135,18 @@ export function ChatSidebar({
                 borderRight:  p.includes('r') ? '1.5px solid rgba(249,248,246,0.55)' : undefined,
               }} />
             ))}
-            <div style={{ padding: '13px 15px 15px' }}>
-              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 7, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(249,248,246,0.35)', marginBottom: 4 }}>
+            <div style={{ padding: '8px 12px' }}>
+              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 6, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(249,248,246,0.35)', marginBottom: 2 }}>
                 {phase === 'downloading' ? 'Downloading Update' : 'Update Ready'}
               </div>
-              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 13, fontWeight: 700, color: 'rgba(249,248,246,0.9)', letterSpacing: '0.08em', marginBottom: 11 }}>
+              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 11, fontWeight: 700, color: 'rgba(249,248,246,0.9)', letterSpacing: '0.08em', marginBottom: 6 }}>
                 GSYEN{version ? ` v${version}` : ''}
               </div>
               {phase === 'downloading' && (
                 <>
                   {/* 全轨道暗条纹，填充段亮条纹 — 施工警戒带感 */}
                   <div style={{
-                    width: '100%', height: 20, position: 'relative', overflow: 'hidden', marginBottom: 8,
+                    width: '100%', height: 16, position: 'relative', overflow: 'hidden', marginBottom: 0,
                     border: '1px solid rgba(249,248,246,0.14)',
                     background: 'repeating-linear-gradient(-45deg,rgba(245,158,11,0.14) 0px,rgba(245,158,11,0.14) 5px,rgba(0,0,0,0.22) 5px,rgba(0,0,0,0.22) 10px)',
                   }}>
