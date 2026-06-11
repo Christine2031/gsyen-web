@@ -42,7 +42,7 @@ export default function App() {
           <div className="flex-grow flex flex-col min-h-0 overflow-hidden">
             {activeSpace === 'chat' && <ChatModule lang={lang} />}
             {activeSpace === 'mail' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><MailModule lang={lang} /></div>}
-            {activeSpace === 'schedule' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><KanbanModule lang={lang} /></div>}
+            {activeSpace === 'schedule' && <div className="h-full overflow-hidden"><KanbanModule lang={lang} /></div>}
             {activeSpace === 'calendar' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><ScheduleModule lang={lang} /></div>}
             {activeSpace === 'finance' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><FinanceModule lang={lang} /></div>}
             {activeSpace === 'password' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><PasswordModule lang={lang} /></div>}

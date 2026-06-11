@@ -124,7 +124,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
   };
 
   return (
-    <div className="space-y-4 text-[#1A1A1A] font-sans animate-fadeIn">
+    <div className="flex flex-col h-full text-[#1A1A1A] font-sans animate-fadeIn">
 
       {notification && (
         <div className="fixed bottom-6 right-6 bg-[#1A1A1A] text-[#F9F8F6] px-5 py-3 border border-amber-900/40 text-xs font-mono uppercase tracking-widest z-50 flex items-center gap-3">
@@ -133,7 +133,8 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         </div>
       )}
 
-      {/* Header */}
+      {/* Header + 工具栏 + 表单 — shrink-0 */}
+      <div className="shrink-0 px-8 pt-8 pb-4 space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-serif text-[#1A1A1A] font-bold tracking-tight flex items-center gap-2">
@@ -181,7 +182,10 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
           onClose={() => setShowAddForm(false)}
         />
       )}
+      </div>{/* end shrink-0 header */}
 
+      {/* 看板主体 — 填满剩余高度 */}
+      <div className="flex-1 min-h-0 overflow-hidden px-8">
       <ScheduleKanbanView
         lang={lang} columns={columns} activeFilteredList={activeFilteredList}
         dragOverColumn={dragOverColumn} draggingId={draggingId}
@@ -194,6 +198,12 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         onRenameColumn={handleRenameColumn}
         onDeleteColumn={handleDeleteColumn}
       />
+      </div>{/* end flex-1 kanban */}
+
+      {/* Footer */}
+      <div className="shrink-0 px-8">
+        <ScheduleFooter lang={lang} total={events.length} active={activeFilteredList.length} />
+      </div>
 
       {selectedEventForView && (
         <ScheduleEventModal lang={lang} event={selectedEventForView}
@@ -202,8 +212,6 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
           onDelete={id => { handleDeleteEvent(id); setSelectedEventForView(null); }}
         />
       )}
-
-      <ScheduleFooter lang={lang} total={events.length} active={activeFilteredList.length} />
     </div>
   );
 }

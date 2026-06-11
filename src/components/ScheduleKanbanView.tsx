@@ -1,7 +1,7 @@
 /**
  * ScheduleKanbanView — 动态多列看板，严格对齐 Trello 272px 列宽
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Clock, MapPin, Move, ArrowLeft, ArrowRight, Trash2, Plus, X, Check } from 'lucide-react';
 import { EventItem, ColumnId } from '../types/schedule';
 import { KanbanColumn } from '../stores/kanbanColumnStore';
@@ -134,8 +134,45 @@ export default function ScheduleKanbanView({
   const getColEvents = (colId: ColumnId) =>
     activeFilteredList.filter(e => (e.status || (e.completed ? 'done' : 'todo')) === colId);
 
+  const boardRef   = useRef<HTMLDivElement>(null);
+  const isPanning  = useRef(false);
+  const panStartX  = useRef(0);
+  const panScrollL = useRef(0);
+
+  const onBoardMouseDown = useCallback((e: React.MouseEvent) => {
+    if ((e.target as Element).closest('button,input,textarea,[draggable="true"]')) return;
+    isPanning.current  = true;
+    panStartX.current  = e.clientX;
+    panScrollL.current = boardRef.current?.scrollLeft ?? 0;
+    if (boardRef.current) boardRef.current.style.cursor = 'grabbing';
+  }, []);
+
+  const onBoardMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanning.current || !boardRef.current) return;
+    e.preventDefault();
+    boardRef.current.scrollLeft = panScrollL.current - (e.clientX - panStartX.current);
+  }, []);
+
+  const stopPan = useCallback(() => {
+    isPanning.current = false;
+    if (boardRef.current) boardRef.current.style.cursor = '';
+  }, []);
+
   return (
-    <div className="flex flex-row gap-2 overflow-x-auto pb-3 items-start" id="kanban-lanes-master">
+    <>
+      <style>{`
+        #kanban-lanes-master::-webkit-scrollbar { height: 30px; }
+        #kanban-lanes-master::-webkit-scrollbar-track { background: rgba(26,26,26,0.06); }
+        #kanban-lanes-master::-webkit-scrollbar-thumb { background: rgba(26,26,26,0.28); border-radius: 0; }
+        #kanban-lanes-master::-webkit-scrollbar-thumb:hover { background: rgba(26,26,26,0.45); }
+      `}</style>
+      <div className="flex flex-row gap-2 h-full overflow-x-auto overflow-y-hidden items-start select-none"
+        id="kanban-lanes-master" ref={boardRef}
+        onMouseDown={onBoardMouseDown}
+        onMouseMove={onBoardMouseMove}
+        onMouseUp={stopPan}
+        onMouseLeave={stopPan}
+      >
       {columns.map((col, idx) => {
         const colEvents  = getColEvents(col.id);
         const isOver     = dragOverColumn === col.id;
@@ -230,6 +267,7 @@ export default function ScheduleKanbanView({
 
       {/* + Add a list */}
       <AddListButton lang={lang} onAdd={onAddColumn} />
-    </div>
+      </div>
+    </>
   );
 }
