@@ -80,7 +80,7 @@ export default function ScheduleKanbanView({
                 ? 'scaleX(0.965) scaleY(1.012)'
                 : draggingColId === col.id ? 'scaleX(0.97)' : 'scale(1)',
               transition: isColOver
-                ? 'transform 90ms cubic-bezier(0.34,2.8,0.64,1), opacity 150ms, border-color 150ms, background 150ms'
+                ? 'transform 90ms cubic-bezier(0.34,8.4,0.64,1), opacity 150ms, border-color 150ms, background 150ms'
                 : 'transform 100ms ease-out, opacity 150ms, border-color 150ms, background 150ms',
               transformOrigin: 'center top',
             }}
