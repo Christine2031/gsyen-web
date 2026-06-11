@@ -8,6 +8,7 @@ import { StoredSession }       from '../types/chat';
 import { useDragDrop }         from '../hooks/useDragDrop';
 import { sessionKanbanStore, KanbanColumn } from '../stores/sessionKanbanStore';
 import { chatSessionStore }    from '../stores/chatSessionStore';
+import { runSessionGC }        from '../stores/sessionGC';
 
 import ScheduleAddForm    from './ScheduleAddForm';
 import ScheduleKanbanView from './ScheduleKanbanView';
@@ -23,6 +24,9 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
   const [columns,  setColumns]  = useState<KanbanColumn[]>(() => sessionKanbanStore.getCols('default'));
   const [events,   setEvents]   = useState<EventItem[]>  (() => sessionKanbanStore.getCards('default'));
   const [sessions, setSessions] = useState<StoredSession[]>(() => chatSessionStore.loadAll());
+
+  // GC: 挂载时回收 24h 空 session
+  useEffect(() => { runSessionGC(); setSessions(chatSessionStore.loadAll()); }, []);
 
   // reload kanban when session switches
   useEffect(() => {
