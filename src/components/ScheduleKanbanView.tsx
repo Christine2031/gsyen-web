@@ -16,7 +16,8 @@ export default function ScheduleKanbanView({
 
   const [draggingColId, setDraggingColId] = useState<string | null>(null);
   const [colDragOver,   setColDragOver]   = useState<string | null>(null);
-  const lastReorderPair = useRef('');
+  const lastReorderPair  = useRef('');
+  const reorderTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const boardRef   = useRef<HTMLDivElement>(null);
   const isPanning  = useRef(false);
@@ -65,13 +66,18 @@ export default function ScheduleKanbanView({
 
         return (
           <div key={col.id} draggable
-            onDragStart={e => { e.dataTransfer.setData('col-id', col.id); e.dataTransfer.effectAllowed = 'move'; setDraggingColId(col.id); lastReorderPair.current = ''; }}
-            onDragEnd={() => { setDraggingColId(null); setColDragOver(null); lastReorderPair.current = ''; onDragEnd(); }}
+            onDragStart={e => { e.dataTransfer.setData('col-id', col.id); e.dataTransfer.effectAllowed = 'move'; setDraggingColId(col.id); lastReorderPair.current = ''; if (reorderTimer.current) clearTimeout(reorderTimer.current); }}
+            onDragEnd={() => { if (reorderTimer.current) clearTimeout(reorderTimer.current); setDraggingColId(null); setColDragOver(null); lastReorderPair.current = ''; onDragEnd(); }}
             onDragOver={e => {
               e.preventDefault(); setColDragOver(col.id);
               if (e.dataTransfer.types.includes('col-id') && draggingColId && draggingColId !== col.id) {
                 const pair = `${draggingColId}→${col.id}`;
-                if (lastReorderPair.current !== pair) { lastReorderPair.current = pair; onReorderColumn(draggingColId, col.id); }
+                if (lastReorderPair.current !== pair) {
+                  lastReorderPair.current = pair;
+                  if (reorderTimer.current) clearTimeout(reorderTimer.current);
+                  const fromId = draggingColId, toId = col.id;
+                  reorderTimer.current = setTimeout(() => onReorderColumn(fromId, toId), 90);
+                }
               } else if (!e.dataTransfer.types.includes('col-id')) { onDragOverColumn(e, col.id); }
             }}
             onDrop={e => { const cid = e.dataTransfer.getData('col-id'); if (!cid) onDropColumn(e, col.id); }}
