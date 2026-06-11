@@ -130,7 +130,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
   return (
     <>
-      <header className={`relative border-b border-[#1A1A1A]/10 bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 py-6 flex items-start justify-between ${isMac ? 'pl-20 pr-8' : 'px-8'}`} id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+      <header className={`relative bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 py-6 flex items-start justify-between ${isMac ? 'pl-20 pr-8' : 'px-8'}`} id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
         <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {(() => {
             const space = SPACES.find(s => s.value === activeSpace);
