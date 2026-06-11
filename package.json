@@ -16,7 +16,8 @@
     "version:help": "node -e \"console.log('\\n版本规则  v{大版本}.{功能点}.{patch}\\n──────────────────────────────────────\\nversion:fix   bug修复 / CI重推 / 小改    patch++   功能点不变\\nversion:feat  新功能完成                功能点++  patch 继承（不清零）\\nversion:era   里程碑（如会员体系上线）  大版本++  功能点+patch 全清零\\n')\"",
     "version:fix": "npm version patch --no-git-tag-version",
     "version:feat": "node -e \"const v=require('./package.json').version.split('.');v[1]=String(Number(v[1])+1);const nv=v.join('.');require('child_process').execSync('npm version '+nv+' --no-git-tag-version',{stdio:'inherit'});\"",
-    "version:era": "npm version major --no-git-tag-version"
+    "version:era": "npm version major --no-git-tag-version",
+    "version:release": "node -e \"const v=require('./package.json').version;require('child_process').execSync('git add package.json && git commit -m \\\"chore: release v'+v+'\\\" && git tag v'+v+' && git push && git push --tags',{stdio:'inherit'});\""
   },
   "build": {
     "appId": "com.gsyen.app",
