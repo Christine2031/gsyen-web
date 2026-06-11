@@ -41,11 +41,11 @@ export default function App() {
         <main className="flex-grow flex flex-col justify-between bg-[#F9F8F6] min-h-0">
           <div className="flex-grow flex flex-col min-h-0 overflow-hidden">
             {activeSpace === 'chat' && <ChatModule lang={lang} />}
-            {activeSpace === 'mail' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><MailModule lang={lang} /></div>}
+            {activeSpace === 'mail' && <div className="h-full overflow-hidden"><MailModule lang={lang} /></div>}
             {activeSpace === 'schedule' && <div className="h-full overflow-hidden"><KanbanModule lang={lang} /></div>}
-            {activeSpace === 'calendar' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><ScheduleModule lang={lang} /></div>}
-            {activeSpace === 'finance' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><FinanceModule lang={lang} /></div>}
-            {activeSpace === 'password' && <div className="h-full overflow-y-auto px-8 pb-10 pt-0"><PasswordModule lang={lang} /></div>}
+            {activeSpace === 'calendar' && <div className="h-full overflow-hidden"><ScheduleModule lang={lang} /></div>}
+            {activeSpace === 'finance' && <div className="h-full overflow-hidden"><FinanceModule lang={lang} /></div>}
+            {activeSpace === 'password' && <div className="h-full overflow-hidden"><PasswordModule lang={lang} /></div>}
           </div>
 
           <footer className="mt-auto pt-6 border-t border-[#1A1A1A]/10 text-[9px] text-[#1A1A1A]/40 font-mono uppercase tracking-widest flex flex-col sm:flex-row items-center justify-between gap-4" id="app-footer-other">

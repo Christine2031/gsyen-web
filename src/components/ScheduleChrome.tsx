@@ -32,7 +32,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
     ? p.selectedDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : p.selectedDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long' });
   return (
-    <div className="flex flex-row items-center justify-between gap-3 flex-nowrap">
+    <div className="w-full flex flex-row items-center justify-between gap-3 flex-nowrap">
       {/* 左：目录开关 + 签发事件 + 今天 / 翻页 / 日期标题（Google Calendar 惯例） */}
       <div className="flex items-center gap-3 shrink-0">
         <button onClick={() => p.setIsSidebarOpen(o => !o)}
@@ -69,7 +69,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
         <div className="flex items-center gap-1 border border-[#1A1A1A]/10 p-1 bg-[#F9F8F6]/40">
           {(['month','week','day'] as ViewMode[]).map(mode => (
             <button key={mode} onClick={() => p.setViewMode(mode)}
-              className={`p-1.5 px-3.5 text-[9px] font-mono uppercase tracking-wider transition-all rounded-none ${p.viewMode === mode ? 'bg-[#1A1A1A] text-white font-bold' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'}`}>
+              className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all rounded-none ${p.viewMode === mode ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'}`}>
               {mode === 'month' ? (lang === 'zh' ? '格网月历' : 'Month Grid')
                 : mode === 'week' ? (lang === 'zh' ? '执行周历' : 'Week Timeline')
                 :                  (lang === 'zh' ? '单日重点' : 'Day Focus')}

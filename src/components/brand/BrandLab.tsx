@@ -10,8 +10,9 @@ import BrandStudioCanvas from './BrandStudioCanvas';
 import BrandCollateral from './BrandCollateral';
 import BrandExpert from './BrandExpert';
 import BrandOrders from './BrandOrders';
+import BrandContacts from './BrandContacts';
 
-type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders';
+type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders' | 'contacts';
 
 const DEFAULT_CONFIG: LogoConfig = {
   brandName: 'GSYEN',
@@ -60,8 +61,8 @@ export default function BrandLab({ lang }: BrandLabProps) {
   const tabBtn = (tab: BrandTab, label: string) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`p-1.5 px-3.5 text-[9px] font-mono uppercase tracking-wider transition-all rounded-none ${
-        activeTab === tab ? 'bg-[#1A1A1A] text-white font-bold' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
+      className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all rounded-none ${
+        activeTab === tab ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
       }`}
     >
       {label}
@@ -71,19 +72,21 @@ export default function BrandLab({ lang }: BrandLabProps) {
   return (
     <>
       {/* 品牌子标签条 — 透明无色带，切换器样式与日历视图切换统一 */}
-      <div className="px-8 py-3 flex items-center">
+      <div className="relative shrink-0 h-[52px] flex items-center px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE]">
         <div className="flex items-center gap-1 border border-[#1A1A1A]/10 p-1 bg-[#F9F8F6]/40">
           {tabBtn('orders', lang === 'zh' ? '订单' : 'Orders')}
+          {tabBtn('contacts', lang === 'zh' ? '往来' : 'Contacts')}
           {tabBtn('expert', t.creativeAssistant)}
           {tabBtn('studio', t.studioCanvas)}
           {tabBtn('collateral', t.collateralMockups)}
         </div>
       </div>
 
+
       <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-studio-workspace">
-        {/* 左侧控制面板 — 订单/PRISM 页时隐藏 */}
-        {activeTab !== 'orders' && (
-          <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] p-6 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
+        {/* 左侧控制面板 — 订单/往来页时隐藏 */}
+        {activeTab !== 'orders' && activeTab !== 'contacts' && (
+          <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] px-6 pb-6 pt-0 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
             <BrandControlsIdentity lang={lang} config={config} setConfig={setConfig} />
             <hr className="border-[#1A1A1A]/10" />
             <BrandControlsTypeSymbol lang={lang} config={config} setConfig={setConfig} />
@@ -91,7 +94,7 @@ export default function BrandLab({ lang }: BrandLabProps) {
         )}
 
         {/* 预览工作区 */}
-        <main className="flex-1 bg-[#F9F8F6] p-8 flex flex-col min-h-0" id="studio-preview-main">
+        <main className="flex-1 bg-[#F9F8F6] px-8 pb-8 pt-0 flex flex-col min-h-0" id="studio-preview-main">
           <AnimatePresence mode="wait">
             {activeTab === 'studio' && (
               <BrandStudioCanvas
@@ -111,6 +114,9 @@ export default function BrandLab({ lang }: BrandLabProps) {
             )}
             {activeTab === 'orders' && (
               <BrandOrders key="orders" lang={lang} />
+            )}
+            {activeTab === 'contacts' && (
+              <BrandContacts key="contacts" lang={lang} />
             )}
           </AnimatePresence>
 

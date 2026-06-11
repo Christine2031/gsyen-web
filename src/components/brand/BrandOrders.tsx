@@ -1,6 +1,6 @@
 /**
- * BrandOrders — 品牌实验室「订单」tab
- * 监听 order-updated 事件，展示所有订单卡片（active/partial/pending/expired）。
+ * BrandOrders — Google-style 订单视图
+ * 参考 Google Store / Workspace 订单历史页面风格
  */
 import { useState, useEffect } from 'react';
 import { Package } from 'lucide-react';
@@ -8,130 +8,172 @@ import { orderStore, Order, OrderStatus } from '../../stores/orderStore';
 
 interface Props { lang: 'zh' | 'en' }
 
-const STATUS_LABEL: Record<OrderStatus, { zh: string; en: string; color: string }> = {
-  active:  { zh: '已生效',   en: 'Active',   color: 'text-[#4F77AC] bg-[#4F77AC]/10' },
-  partial: { zh: '部分付款', en: 'Partial',  color: 'text-amber-600 bg-amber-50' },
-  pending: { zh: '待付款',   en: 'Pending',  color: 'text-[#9B8C7A] bg-[#9B8C7A]/10' },
-  expired: { zh: '已到期',   en: 'Expired',  color: 'text-[#6B6258] bg-[#6B6258]/10' },
+const DEMO_ORDERS: Order[] = [
+  { id: 'd1', service: '散装鲜鱼', plan: '草鱼 36条',  customer: '李建军', amount: 1296,  currency: 'CNY', paidAmount: 1296,  status: 'active',  startDate: '2026-06-12', notes: '上海江桥批发市场 A3 档口' },
+  { id: 'd2', service: '活鱼配送', plan: '鲈鱼 12条',  customer: '陈秋霞', amount: 840,   currency: 'CNY', paidAmount: 420,   status: 'partial', startDate: '2026-06-11', notes: '广州南沙渔港 码头 7 号' },
+  { id: 'd3', service: '冷链运输', plan: '三文鱼 8条', customer: '王浩然', amount: 2400,  currency: 'CNY', paidAmount: 0,     status: 'pending', startDate: '2026-06-10', notes: '北京朝阳区三元桥市场' },
+  { id: 'd4', service: '年度合约', plan: '综合鱼类',   customer: '赵云昌', amount: 18000, currency: 'CNY', paidAmount: 18000, status: 'expired', startDate: '2025-06-01', expireDate: '2026-05-31', notes: '成都锦里东路水产中心' },
+];
+
+const STATUS_CFG: Record<OrderStatus, { zh: string; en: string; cls: string }> = {
+  active:  { zh: '已生效', en: 'Active',  cls: 'bg-[#E6F4EA] text-[#137333]' },
+  partial: { zh: '部分付', en: 'Partial', cls: 'bg-[#FEF7E0] text-[#B05E00]' },
+  pending: { zh: '待付款', en: 'Pending', cls: 'bg-[#E8F0FE] text-[#1A73E8]' },
+  expired: { zh: '已到期', en: 'Expired', cls: 'bg-[#F1F3F4] text-[#5F6368]' },
 };
 
 const FILTERS: { key: OrderStatus | 'all'; zh: string; en: string }[] = [
-  { key: 'all',     zh: '全部',   en: 'All' },
-  { key: 'active',  zh: '已生效', en: 'Active' },
+  { key: 'all',     zh: '全部',   en: 'All'     },
+  { key: 'active',  zh: '已生效', en: 'Active'  },
   { key: 'partial', zh: '部分',   en: 'Partial' },
   { key: 'pending', zh: '待付款', en: 'Pending' },
   { key: 'expired', zh: '已到期', en: 'Expired' },
 ];
 
+const AVATAR_COLORS = [
+  'bg-[#1A73E8]', 'bg-[#137333]', 'bg-[#B05E00]',
+  'bg-[#9334E6]', 'bg-[#D93025]',
+];
+
+function avatarColor(name: string) {
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
+}
+
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="flex-1 bg-white rounded-lg border border-[#DADCE0] px-5 py-4 min-w-0">
+      <p className="text-[11px] text-[#5F6368] font-sans mb-1">{label}</p>
+      <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
+      {sub && <p className="text-[11px] text-[#5F6368] mt-1">{sub}</p>}
+    </div>
+  );
+}
+
 function OrderRow({ order, lang }: { order: Order; lang: 'zh' | 'en' }) {
   const zh = lang === 'zh';
-  const cfg = STATUS_LABEL[order.status];
+  const cfg = STATUS_CFG[order.status];
   const symbol = order.currency === 'USD' ? '$' : '¥';
   const balance = order.amount - order.paidAmount;
+  const initial = order.customer.charAt(0);
 
   return (
-    <div className="flex items-center gap-4 px-4 py-3 border-b border-[#1A1A1A]/[0.05] hover:bg-[#1A1A1A]/[0.02] transition-colors">
-      <div className="w-[90px] shrink-0">
-        <span className={`font-mono text-[9px] px-1.5 py-0.5 rounded-[2px] tracking-wide ${cfg.color}`}>
+    <tr className="border-b border-[#E8EAED] hover:bg-[#F8F9FA] transition-colors group">
+      {/* 客户 avatar + 名称 */}
+      <td className="py-3.5 pl-6 pr-3">
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-full ${avatarColor(order.customer)} flex items-center justify-center shrink-0`}>
+            <span className="text-white text-[12px] font-bold font-sans">{initial}</span>
+          </div>
+          <div>
+            <p className="text-[13px] font-medium text-[#202124] font-sans">{order.customer}</p>
+            {order.notes && <p className="text-[11px] text-[#5F6368] font-sans truncate max-w-[180px]">{order.notes}</p>}
+          </div>
+        </div>
+      </td>
+
+      {/* 服务 */}
+      <td className="py-3.5 px-3">
+        <p className="text-[13px] text-[#202124] font-sans">{order.service}</p>
+        <p className="text-[11px] text-[#5F6368] font-sans">{order.plan}</p>
+      </td>
+
+      {/* 日期 */}
+      <td className="py-3.5 px-3 whitespace-nowrap">
+        <p className="text-[12px] text-[#5F6368] font-sans">{order.startDate}</p>
+        {order.expireDate && <p className="text-[11px] text-[#9AA0A6] font-sans">→ {order.expireDate}</p>}
+      </td>
+
+      {/* 状态 chip */}
+      <td className="py-3.5 px-3">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans ${cfg.cls}`}>
           {zh ? cfg.zh : cfg.en}
         </span>
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-sans text-[12px] font-semibold text-[#1A1A1A]/80 truncate">{order.customer}</p>
-        <p className="font-mono text-[9px] text-[#1A1A1A]/40 truncate">{order.service} · {order.plan}</p>
-      </div>
-      <div className="text-right shrink-0 w-[80px]">
-        <p className="font-mono text-[11px] font-bold text-[#1A1A1A]/70">{symbol}{order.amount || '—'}</p>
+      </td>
+
+      {/* 金额 */}
+      <td className="py-3.5 pl-3 pr-6 text-right">
+        <p className="text-[13px] font-semibold text-[#202124] font-sans">{symbol}{order.amount.toLocaleString()}</p>
         {balance > 0 && order.amount > 0 && (
-          <p className="font-mono text-[9px] text-amber-600/70">{zh ? '待收' : 'Due'} {symbol}{balance}</p>
+          <p className="text-[11px] text-[#B05E00] font-sans">{zh ? '待收' : 'Due'} {symbol}{balance.toLocaleString()}</p>
         )}
-      </div>
-      <div className="text-right shrink-0 w-[70px]">
-        <p className="font-mono text-[9px] text-[#1A1A1A]/35">{order.startDate}</p>
-        {order.expireDate && (
-          <p className="font-mono text-[9px] text-[#1A1A1A]/25">{order.expireDate}</p>
-        )}
-      </div>
-    </div>
+      </td>
+    </tr>
   );
 }
 
 export default function BrandOrders({ lang }: Props) {
   const zh = lang === 'zh';
-  const [orders, setOrders] = useState<Order[]>(() => orderStore.getAll());
+  const [rawOrders, setRawOrders] = useState<Order[]>(() => orderStore.getAll());
   const [filter, setFilter] = useState<OrderStatus | 'all'>('all');
+  const orders = rawOrders.length > 0 ? rawOrders : DEMO_ORDERS;
 
   useEffect(() => {
-    const sync = () => setOrders(orderStore.getAll());
+    const sync = () => setRawOrders(orderStore.getAll());
     window.addEventListener('order-updated', sync);
     return () => window.removeEventListener('order-updated', sync);
   }, []);
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
-  const totalPaid = orders.filter(o => o.status === 'active').reduce((s, o) => s + o.paidAmount, 0);
-  const totalPending = orders.filter(o => o.status !== 'expired').reduce((s, o) => s + (o.amount - o.paidAmount), 0);
+  const totalPaid    = orders.filter(o => o.paidAmount > 0).reduce((s, o) => s + o.paidAmount, 0);
+  const totalPending = orders.filter(o => o.status !== 'expired').reduce((s, o) => s + Math.max(0, o.amount - o.paidAmount), 0);
 
   if (orders.length === 0) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <Package className="w-8 h-8 text-[#1A1A1A]/20" strokeWidth={1.2} />
-        <p className="text-xs font-mono tracking-widest uppercase text-[#1A1A1A]/40">
-          {zh ? '暂无订单' : 'No orders yet'}
-        </p>
-        <p className="text-[11px] font-serif italic text-[#1A1A1A]/30 max-w-xs">
-          {zh ? '在 Chat 里说「帮我开一个月的疆域会员」试试' : 'Try saying "open a monthly plan" in Chat'}
-        </p>
+        <Package className="w-10 h-10 text-[#DADCE0]" strokeWidth={1.2} />
+        <p className="text-[14px] font-sans text-[#5F6368]">{zh ? '暂无订单' : 'No orders yet'}</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* 汇总 */}
-      <div className="flex items-center gap-6 px-4 py-3 border-b border-[#1A1A1A]/[0.06]">
-        <div>
-          <p className="font-mono text-[8px] tracking-widest uppercase text-[#1A1A1A]/35">{zh ? '已收' : 'Collected'}</p>
-          <p className="font-mono text-[14px] font-bold text-[#4F77AC]">¥{totalPaid}</p>
-        </div>
-        <div>
-          <p className="font-mono text-[8px] tracking-widest uppercase text-[#1A1A1A]/35">{zh ? '待收' : 'Pending'}</p>
-          <p className="font-mono text-[14px] font-bold text-amber-600/80">¥{Math.max(0, totalPending)}</p>
-        </div>
-        <div className="ml-auto">
-          <p className="font-mono text-[8px] tracking-widest uppercase text-[#1A1A1A]/35">{zh ? '订单数' : 'Orders'}</p>
-          <p className="font-mono text-[14px] font-bold text-[#1A1A1A]/60">{orders.length}</p>
-        </div>
+    <div className="flex flex-col h-full overflow-hidden bg-[#F8F9FA]">
+
+      {/* 汇总卡片 */}
+      <div className="flex gap-4 px-6 py-5 shrink-0">
+        <StatCard label={zh ? '🐱 已收款' : '🐱 Collected'} value={`¥${totalPaid.toLocaleString()}`} sub={zh ? '生效 + 部分付款' : 'Active + Partial'} />
+        <StatCard label={zh ? '待收款' : 'Outstanding'} value={`¥${totalPending.toLocaleString()}`} sub={zh ? '尚未结清' : 'Unpaid balance'} />
+        <StatCard label={zh ? '订单总数' : 'Total Orders'} value={String(orders.length)} sub={zh ? `${filtered.length} 条结果` : `${filtered.length} results`} />
       </div>
 
-      {/* 筛选 */}
-      <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-[#1A1A1A]/[0.05]">
+      {/* 筛选 chips */}
+      <div className="flex items-center gap-2 px-6 pb-4 shrink-0">
         {FILTERS.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={`px-2 py-0.5 rounded-[2px] font-mono text-[9px] tracking-wide transition-all ${
+          <button key={f.key} onClick={() => setFilter(f.key)}
+            className={`px-3 py-1 rounded-full text-[12px] font-sans font-medium transition-all ${
               filter === f.key
-                ? 'bg-[#1A1A1A] text-[#F4F2EE]'
-                : 'bg-[#1A1A1A]/[0.05] text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/[0.09]'
-            }`}
-          >
+                ? 'bg-[#1A73E8] text-white'
+                : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'
+            }`}>
             {zh ? f.zh : f.en}
           </button>
         ))}
       </div>
 
-      {/* 列表 */}
-      <div className="flex-1 overflow-y-auto">
-        {filtered.length === 0 ? (
-          <div className="flex items-center justify-center py-16">
-            <p className="font-mono text-[10px] text-[#1A1A1A]/30 tracking-widest uppercase">
-              {zh ? '该分类暂无订单' : 'No orders in this category'}
-            </p>
-          </div>
-        ) : (
-          filtered.map(order => <OrderRow key={order.id} order={order} lang={lang} />)
-        )}
+      {/* 表格 */}
+      <div className="flex-1 overflow-y-auto px-6 pb-6">
+        <div className="bg-white rounded-lg border border-[#DADCE0] overflow-hidden">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b border-[#E8EAED] bg-[#F8F9FA]">
+                <th className="py-3 pl-6 pr-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '客户' : 'Customer'}</th>
+                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '服务' : 'Service'}</th>
+                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '日期' : 'Date'}</th>
+                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '状态' : 'Status'}</th>
+                <th className="py-3 pl-3 pr-6 text-right text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '金额' : 'Amount'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">{zh ? '该分类暂无订单' : 'No orders in this category'}</td></tr>
+              ) : (
+                filtered.map(order => <OrderRow key={order.id} order={order} lang={lang} />)
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
     </div>
   );
 }

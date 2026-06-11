@@ -128,7 +128,7 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-6 text-[#1A1A1A] font-sans animate-fadeIn">
+    <div className="flex flex-col h-full text-[#1A1A1A] font-sans animate-fadeIn">
 
       {/* Toast */}
       {notification && (
@@ -138,18 +138,23 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
         </div>
       )}
 
-      {/* Toolbar — 模块身份由顶栏 logo 区承担，此处不再重复标题 */}
-      <ScheduleToolbar
-        total={events.length} active={activeFilteredList.length}
-        selectedDate={selectedDate}
-        onNavigateToday={handleNavigateToday} onNavigate={handleNavigateDiff}
-        lang={lang}
-        viewMode={viewMode} setViewMode={setViewMode}
-        searchText={searchText} setSearchText={setSearchText}
-        isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}
-        showAddForm={showAddForm} setShowAddForm={setShowAddForm}
-        onClearAll={handleClearAll}
-      />
+      {/* Toolbar strip */}
+      <div className="relative shrink-0 h-[52px] flex items-center px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE]">
+        <ScheduleToolbar
+          total={events.length} active={activeFilteredList.length}
+          selectedDate={selectedDate}
+          onNavigateToday={handleNavigateToday} onNavigate={handleNavigateDiff}
+          lang={lang}
+          viewMode={viewMode} setViewMode={setViewMode}
+          searchText={searchText} setSearchText={setSearchText}
+          isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}
+          showAddForm={showAddForm} setShowAddForm={setShowAddForm}
+          onClearAll={handleClearAll}
+        />
+      </div>
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-8 pt-0 pb-10 space-y-6">
 
       {/* Add form drawer */}
       {showAddForm && (
@@ -215,6 +220,8 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
           )}
         </section>
       </div>
+
+      </div>{/* /Body */}
 
       {/* Event detail / edit modal */}
       {selectedEventForView && (

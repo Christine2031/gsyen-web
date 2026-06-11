@@ -1,7 +1,7 @@
 /** KanbanModule — 每个 Chat Session 对应独立看板工作流 */
 import React, { useState, useEffect } from 'react';
 import { CheckCircle2, Plus, Search, PanelLeft, MessageSquare, Trash2, Send } from 'lucide-react';
-import { KanbanIcon } from '../gsyen-designer';
+import { categoryMap } from '../config/scheduleConfig';
 
 import { EventItem, ColumnId } from '../types/schedule';
 import { StoredSession }       from '../types/chat';
@@ -124,17 +124,36 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         </div>
       )}
 
-      {/* 全宽通栏 */}
-      <div className="shrink-0 px-8 py-3.5 border-b border-[#1A1A1A]/10 bg-[#F4F2EE] flex items-center font-mono text-[9px] tracking-widest text-[#1A1A1A]/55 font-bold uppercase">
-        <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarOpen(o => !o)} className={`p-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
-            <PanelLeft className="w-3.5 h-3.5" />
-          </button>
-          <button onClick={handleNewSession} className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
-            <Plus className="w-3 h-3" /><span>NEW</span>
-          </button>
+      {/* Toolbar */}
+      <div className="relative shrink-0 h-[52px] flex items-center gap-2 px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE]">
+        <button onClick={() => setSidebarOpen(o => !o)} className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all shrink-0 ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
+          <PanelLeft className="w-4 h-4" />
+        </button>
+        <button onClick={handleNewSession} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 shrink-0">
+          <Plus className="w-3 h-3" /><span>NEW</span>
+        </button>
+        <div className="flex-1" />
+        <div className="relative shrink-0">
+          <Search className="w-3.5 h-3.5 absolute left-2.5 top-2 text-[#1A1A1A]/40" />
+          <input type="text" placeholder={lang === 'zh' ? '搜索卡片…' : 'Search cards…'}
+            value={searchText} onChange={e => setSearchText(e.target.value)}
+            className="w-44 pl-8 pr-3 py-1.5 text-xs border border-[#1A1A1A]/10 bg-transparent focus:bg-white focus:outline-none focus:border-[#1A1A1A]/30 transition-colors" />
         </div>
+        <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
+          className="py-1.5 px-2 border border-[#1A1A1A]/10 text-[10px] font-mono bg-transparent text-[#1A1A1A] cursor-pointer shrink-0">
+          <option value="all">{lang === 'zh' ? '全部' : 'All'}</option>
+          {Object.entries(categoryMap).map(([key, val]) => (
+            <option key={key} value={key}>{lang === 'zh' ? val.zhLabel : val.enLabel}</option>
+          ))}
+        </select>
+        <button onClick={handleClearAll} className="px-3 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all shrink-0">
+          {lang === 'zh' ? '清空' : 'Clear'}
+        </button>
+        <button onClick={() => openAddForm()} className="px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[10px] font-bold font-mono tracking-widest uppercase flex items-center gap-1.5 hover:bg-[#1A1A1A]/80 transition-all shrink-0">
+          <Plus className="w-3.5 h-3.5" />{lang === 'zh' ? '新建卡片' : 'New Card'}
+        </button>
       </div>
+
 
       {/* 主体 */}
       <div className="flex flex-row flex-1 min-h-0 overflow-hidden">
@@ -181,45 +200,12 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
 
         {/* 右侧主内容 */}
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          <div className="shrink-0 px-8 pt-6 pb-4 space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-serif text-[#1A1A1A] font-bold tracking-tight flex items-center gap-2">
-                  <span className="p-1.5 bg-[#1A1A1A] text-white"><KanbanIcon className="w-4 h-4" /></span>
-                  <span>{lang === 'zh' ? '项目看板' : 'Project Board'}</span>
-                </h2>
-                <p className="text-xs text-[#1A1A1A]/40 font-mono uppercase tracking-widest mt-1">
-                  {columns.length} {lang === 'zh' ? '列' : 'lists'} · {events.length} {lang === 'zh' ? '卡片' : 'cards'}
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="relative">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#1A1A1A]/40" />
-                  <input type="text" placeholder={lang === 'zh' ? '搜索卡片…' : 'Search cards…'}
-                    value={searchText} onChange={e => setSearchText(e.target.value)}
-                    className="w-48 pl-9 pr-4 py-1.5 text-xs border border-[#1A1A1A]/10 bg-[#F9F8F6]/40 focus:bg-white focus:outline-none focus:border-[#1A1A1A]/40 transition-colors" />
-                </div>
-                <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-                  className="p-1.5 px-2 border border-[#1A1A1A]/10 text-xs font-mono uppercase bg-transparent text-[#1A1A1A] cursor-pointer">
-                  <option value="all">■ {lang === 'zh' ? '全部' : 'All'}</option>
-                  <option value="creative">{lang === 'zh' ? '创意' : 'Creative'}</option>
-                  <option value="finance">{lang === 'zh' ? '资产' : 'Finance'}</option>
-                  <option value="secure">{lang === 'zh' ? '保密' : 'Secure'}</option>
-                  <option value="strategy">{lang === 'zh' ? '战略' : 'Strategy'}</option>
-                </select>
-                <button onClick={handleClearAll} className="px-3 py-1.5 text-[9px] font-mono tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all">
-                  {lang === 'zh' ? '清空' : 'Clear'}
-                </button>
-                <button onClick={() => openAddForm()} className="px-4 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[10px] font-bold font-mono tracking-widest uppercase flex items-center gap-1.5 hover:bg-[#1A1A1A]/80 transition-all">
-                  <Plus className="w-3.5 h-3.5" />{lang === 'zh' ? '新建卡片' : 'New Card'}
-                </button>
-              </div>
-            </div>
-            {showAddForm && (
+          {showAddForm && (
+            <div className="shrink-0 px-8 pt-4">
               <ScheduleAddForm lang={lang} todayString={todayString} initialStatus={addFormInitialStatus}
                 columns={columns} onAdd={handleAddEvent} onClose={() => setShowAddForm(false)} />
-            )}
-          </div>
+            </div>
+          )}
 
           <div className="flex-1 min-h-0 overflow-hidden px-8">
             <ScheduleKanbanView

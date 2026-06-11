@@ -24,9 +24,9 @@ export default function MailModule({ lang }: MailModuleProps) {
   useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
 
   return (
-    <div className="space-y-6 text-[#1A1A1A] font-sans">
-      {/* Control strip — 透明单行，与日历工具栏风格统一 */}
-      <div className="flex flex-row items-center justify-between gap-3 flex-nowrap">
+    <div className="flex flex-col h-full text-[#1A1A1A] font-sans">
+      {/* Toolbar strip */}
+      <div className="relative shrink-0 h-[52px] flex flex-row items-center justify-between gap-3 flex-nowrap px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE]">
         <div className="flex items-center gap-3 shrink-0">
           <button onClick={() => store.setIsSidebarCollapsed(!store.isSidebarCollapsed)}
             className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all flex items-center justify-center ${!store.isSidebarCollapsed ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'bg-transparent text-[#1A1A1A]/70'}`}
@@ -71,6 +71,11 @@ export default function MailModule({ lang }: MailModuleProps) {
           </button>
         </div>
       </div>
+
+      {/* ── DEBUG BASELINE ── */}
+
+      {/* Body */}
+      <div className="flex-1 overflow-y-auto px-8 pt-0 pb-10 space-y-4">
 
       {/* Advanced filters form */}
       <AnimatePresence>
@@ -152,6 +157,7 @@ export default function MailModule({ lang }: MailModuleProps) {
           </AnimatePresence>
         </div>
       </div>
+      </div>{/* /Body */}
 
       {/* Floating compose */}
       <AnimatePresence>

@@ -56,8 +56,11 @@ export default function PasswordModule({ lang }: PasswordModuleProps) {
   }, []);
 
   return (
-    <div className="space-y-6">
-      {/* 模块身份由顶栏 logo 区承担，此处不再重复标题 */}
+    <div className="flex flex-col h-full">
+      {/* Empty toolbar strip — 对齐其他模块的 toolbar 高度 */}
+      <div className="relative shrink-0 h-[52px] px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE]">
+      </div>
+      <div className="flex-1 overflow-y-auto px-8 pt-0 pb-10 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         <div className="lg:col-span-5 space-y-4">
           <PasswordGeneratorPanel lang={lang} onGeneratedChange={setGeneratedPass} />
@@ -73,6 +76,7 @@ export default function PasswordModule({ lang }: PasswordModuleProps) {
           <CredentialTable lang={lang} credentials={credentials} onDelete={handleDelete} />
         </div>
       </div>
+      </div>{/* /Body */}
     </div>
   );
 }

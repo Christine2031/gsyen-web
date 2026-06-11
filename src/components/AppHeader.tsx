@@ -27,7 +27,7 @@ function ReportMoneyIcon({ className, strokeWidth = 1.5 }: GsIconProps) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor"
       strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <g transform="translate(0,-1)">
+      <g>
         <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
         <path d="M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2" />
         <path d="M14 11h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" />
@@ -50,6 +50,7 @@ function ShieldLockIcon({ className, strokeWidth = 1.5 }: GsIconProps) {
     </svg>
   );
 }
+
 
 /** Prism icon — 等腰三角形，底角 70°，顶角 40°（viewBox 24 与全系一致，笔触等宽） */
 function PrismIcon({ className, strokeWidth = 1.5 }: GsIconProps) {
@@ -95,9 +96,9 @@ const SPACES: SpaceTab[] = [
   { value: 'mail',     Icon: Mail,             iconClass: 'scale-90',                     zh: '工作邮件',     en: 'Mailbox',        shortZh: '邮件', shortEn: 'Mail',   subtitle: 'Hermes · 极雅私密邮件信道' },
   { value: 'schedule', Icon: KanbanIcon,       iconClass: 'animate-pulse scale-[1.3]',   zh: '项目看板',     en: 'Kanban',         shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
   { value: 'calendar', Icon: CalendarDateIcon, iconClass: 'scale-90',                     zh: '日程日历',     en: 'Calendar',       shortZh: '日历', shortEn: 'Cal',    subtitle: 'Chronos · 极速格栅日程空间' },
-  { value: 'finance',  Icon: ReportMoneyIcon,  iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger', shortZh: '财务', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
-  { value: 'password', Icon: ShieldLockIcon,   iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
-  { value: 'brand',    Icon: PrismIcon,        iconClass: '',                             zh: '品牌实验室',   en: 'Brand Lab',      shortZh: '品牌', shortEn: 'Brand',  subtitle: 'Prism · 品牌基因折射实验室' },
+  { value: 'finance',  Icon: ReportMoneyIcon,  iconClass: '',                             zh: '复试账簿',   en: 'Atelier Ledger', shortZh: '账簿', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
+  { value: 'password', Icon: ShieldLockIcon,   iconClass: '',                             zh: '军工密钥',   en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
+  { value: 'brand',    Icon: PrismIcon,        iconClass: '',                             zh: 'PRISM实验',  en: 'Brand Lab',      shortZh: '品牌', shortEn: 'Brand',  subtitle: 'Prism · 品牌基因折射实验室' },
 ];
 
 interface AppHeaderProps {
@@ -130,8 +131,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
 
   return (
     <>
-      <header className={`relative bg-[#F9F8F6]/90 backdrop-blur-md sticky top-0 z-40 py-6 flex items-start justify-between ${isMac ? 'pl-20 pr-8' : 'px-8'}`} id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
-        <div className="flex items-center gap-4" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+      <header className={`relative bg-[#F4F2EE] sticky top-0 z-40 py-6 flex items-start justify-between ${isMac ? 'pl-20 pr-8' : 'px-8'}`} id="app-header" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}>
+        <div className="flex items-center gap-4 w-[200px] shrink-0 overflow-hidden" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
           {(() => {
             const space = SPACES.find(s => s.value === activeSpace);
             const isHome = activeSpace === 'chat';
@@ -156,7 +157,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
                     <span className="text-xl md:text-2xl font-black font-serif-sc tracking-[0.12em] text-[#111111] leading-none select-none">疆域</span>
                     <span className="font-cinzel text-xs md:text-[14px] font-bold tracking-[0.22em] text-[#111111]/85 uppercase leading-none select-none ml-0.5">GSYEN</span>
                   </div>
-                  <p className="text-[7.5px] md:text-[8px] text-[#1A1A1A]/50 font-serif-sc tracking-[0.22em] font-medium leading-none uppercase mt-2.5">
+                  <p className="text-[7.5px] md:text-[8px] text-[#1A1A1A]/50 font-serif-sc tracking-[0.22em] font-medium leading-none uppercase mt-2.5 truncate">
                     {isHome ? t.headerSubtitle : space?.subtitle}
                   </p>
                 </div>
@@ -171,8 +172,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
             <button
               key={value}
               onClick={() => setActiveSpace(value)}
-              className={`px-3.5 py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                activeSpace === value ? 'bg-[#1A1A1A] text-[#F9F8F6] shadow-sm font-bold' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
+              className={`w-[80px] py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
+                activeSpace === value ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
               }`}
             >
               <Icon strokeWidth={1.5} className={`${compact ? 'w-4 h-4' : 'w-3.5 h-3.5'} ${iconClass}`} />

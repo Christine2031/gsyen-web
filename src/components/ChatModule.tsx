@@ -177,16 +177,16 @@ export default function ChatModule({ lang }: ChatModuleProps) {
       )}
 
       {/* Status bar */}
-      <div className="px-8 py-3.5 border-b border-[#1A1A1A]/10 bg-[#F4F2EE] flex items-center justify-between font-mono text-[9px] tracking-widest text-[#1A1A1A]/55 font-bold uppercase">
+      <div className="relative shrink-0 h-[52px] px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE] flex items-center justify-between font-mono text-[9px] tracking-widest text-[#1A1A1A]/55 font-bold uppercase">
         <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarOpen(o => !o)} className={`p-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
-            <PanelLeft className="w-3.5 h-3.5" />
+          <button onClick={() => setSidebarOpen(o => !o)} className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
+            <PanelLeft className="w-4 h-4" />
           </button>
-          <button onClick={newChat} className="flex items-center gap-1 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
+          <button onClick={newChat} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
             <Plus className="w-3 h-3" /><span>NEW</span>
           </button>
           <button onClick={openCreativeKingdom}
-            className="flex items-center gap-2 px-2 py-1 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[#1A1A1A]/70">
+            className="flex items-center gap-2 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
             <MessageSquare className="w-3.5 h-3.5" />
             <span>{lang === 'zh' ? '疆域灵感创意国度' : 'GSYEN Muse'}</span>
           </button>
@@ -212,6 +212,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
           </span>
         </div>
       </div>
+
 
       {/* Body: sidebar + chat */}
       <div className="flex-grow flex flex-col md:flex-row min-h-0">
