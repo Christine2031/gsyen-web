@@ -38,7 +38,6 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
 
   // ── UI State ──────────────────────────────────────────────────────────────
   const [viewMode,          setViewMode]          = useState<ViewMode>('month');
-  const [filterCategory,    setFilterCategory]    = useState('all');
   const [searchText,        setSearchText]        = useState('');
   const [isSidebarOpen,     setIsSidebarOpen]     = useState(true);
   const [selectedDate,      setSelectedDate]      = useState<Date>(new Date());
@@ -69,9 +68,8 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
   const activeFilteredList = events.filter(item => {
     const matchSearch   = item.title.toLowerCase().includes(searchText.toLowerCase()) ||
                           item.subtitle.toLowerCase().includes(searchText.toLowerCase());
-    const matchCategory = filterCategory === 'all' || item.category === filterCategory;
-    const matchVisible  = visibleCategories[item.category] !== false;
-    return matchSearch && matchCategory && matchVisible;
+    const matchVisible  = visibleCategories[item.category] !== false;  // 分类筛选由侧栏开关承担
+    return matchSearch && matchVisible;
   });
 
   // ── Handlers ──────────────────────────────────────────────────────────────
@@ -148,7 +146,6 @@ export default function ScheduleModule({ lang }: ScheduleModuleProps) {
         lang={lang}
         viewMode={viewMode} setViewMode={setViewMode}
         searchText={searchText} setSearchText={setSearchText}
-        filterCategory={filterCategory} setFilterCategory={setFilterCategory}
         isSidebarOpen={isSidebarOpen} setIsSidebarOpen={setIsSidebarOpen}
         showAddForm={showAddForm} setShowAddForm={setShowAddForm}
         onClearAll={handleClearAll}

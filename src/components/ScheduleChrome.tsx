@@ -1,5 +1,6 @@
 // ScheduleModule 的工具栏（单例 UI 外壳，从协调器拆出以保持精简）。
-// 布局参考 Google Calendar：主操作 + 今天/翻页/日期标题左置，视图切换 / 筛选 / 搜索归右。
+// 布局参考 Google Calendar：主操作 + 今天/翻页/日期标题左置，视图切换 / 搜索归右。
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Search, X, PanelLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export type ViewMode = 'month' | 'week' | 'day';
@@ -10,8 +11,6 @@ interface ToolbarProps {
   setViewMode: (m: ViewMode) => void;
   searchText: string;
   setSearchText: (s: string) => void;
-  filterCategory: string;
-  setFilterCategory: (c: string) => void;
   isSidebarOpen: boolean;
   setIsSidebarOpen: (fn: (o: boolean) => boolean) => void;
   showAddForm: boolean;
@@ -26,6 +25,9 @@ interface ToolbarProps {
 
 export function ScheduleToolbar(p: ToolbarProps) {
   const { lang } = p;
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { if (searchOpen) searchRef.current?.focus(); }, [searchOpen]);
   const dateLabel = p.viewMode === 'day'
     ? p.selectedDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : p.selectedDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { year: 'numeric', month: 'long' });
@@ -74,19 +76,22 @@ export function ScheduleToolbar(p: ToolbarProps) {
             </button>
           ))}
         </div>
-        <select value={p.filterCategory} onChange={e => p.setFilterCategory(e.target.value)}
-          className="p-1 px-3 py-1.5 border border-[#1A1A1A]/10 rounded-none text-[10px] font-mono uppercase tracking-wider bg-transparent text-[#1A1A1A] cursor-pointer">
-          <option value="all">■ {lang === 'zh' ? '全领域分流' : 'ALL CATEGORIES'}</option>
-          <option value="creative">{lang === 'zh' ? '创意与排版' : 'CREATIVE & DESIGN'}</option>
-          <option value="finance">{lang === 'zh' ? '资产与发票' : 'CAPITAL & FLOWS'}</option>
-          <option value="secure">{lang === 'zh' ? '保密机制' : 'SECURITY SCHEMES'}</option>
-          <option value="strategy">{lang === 'zh' ? '战略圆桌' : 'STRATEGIC ROUND'}</option>
-        </select>
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[#1A1A1A]/40" />
-          <input type="text" placeholder={lang === 'zh' ? '搜索文书卡片...' : 'Filter schedule archives...'}
+        {/* Google 式搜索：平时只有放大镜，点击展开 */}
+        <div className="flex items-center">
+          <button onClick={() => setSearchOpen(o => !o)}
+            className="p-1.5 hover:bg-[#1A1A1A]/5 text-[#1A1A1A]/60 hover:text-[#1A1A1A] transition rounded-none"
+            title={lang === 'zh' ? '搜索' : 'Search'}>
+            <Search className="w-4 h-4" />
+          </button>
+          <input ref={searchRef} type="text"
+            placeholder={lang === 'zh' ? '搜索文书卡片...' : 'Filter schedule archives...'}
             value={p.searchText} onChange={e => p.setSearchText(e.target.value)}
-            className="w-44 xl:w-56 pl-9 pr-4 py-1.5 text-xs border border-[#1A1A1A]/10 rounded-none bg-[#F9F8F6]/40 focus:bg-white focus:outline-none focus:border-[#1A1A1A]/40 transition-colors text-[#1A1A1A]" />
+            onBlur={() => { if (!p.searchText) setSearchOpen(false); }}
+            className={`transition-all duration-300 ease-out text-xs rounded-none bg-transparent focus:outline-none text-[#1A1A1A] ${
+              searchOpen
+                ? 'w-52 opacity-100 px-3 py-1.5 border-b border-[#1A1A1A]/30 focus:border-[#1A1A1A]'
+                : 'w-0 opacity-0 p-0 border-0 pointer-events-none'
+            }`} />
         </div>
         <button onClick={p.onClearAll}
           className="px-3 py-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all rounded-none">
