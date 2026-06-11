@@ -16,8 +16,10 @@ export default function ScheduleKanbanView({
 
   const [draggingColId, setDraggingColId] = useState<string | null>(null);
   const [colDragOver,   setColDragOver]   = useState<string | null>(null);
+  const [squishColId,   setSquishColId]   = useState<string | null>(null);
   const lastReorderPair  = useRef('');
   const reorderTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draggingColRef   = useRef<string | null>(null);
 
   const boardRef   = useRef<HTMLDivElement>(null);
   const isPanning  = useRef(false);
@@ -66,8 +68,8 @@ export default function ScheduleKanbanView({
 
         return (
           <div key={col.id} draggable
-            onDragStart={e => { e.dataTransfer.setData('col-id', col.id); e.dataTransfer.effectAllowed = 'move'; setDraggingColId(col.id); lastReorderPair.current = ''; if (reorderTimer.current) clearTimeout(reorderTimer.current); }}
-            onDragEnd={() => { if (reorderTimer.current) clearTimeout(reorderTimer.current); setDraggingColId(null); setColDragOver(null); lastReorderPair.current = ''; onDragEnd(); }}
+            onDragStart={e => { e.dataTransfer.setData('col-id', col.id); e.dataTransfer.effectAllowed = 'move'; setDraggingColId(col.id); draggingColRef.current = col.id; lastReorderPair.current = ''; if (reorderTimer.current) clearTimeout(reorderTimer.current); }}
+            onDragEnd={() => { if (reorderTimer.current) clearTimeout(reorderTimer.current); setDraggingColId(null); draggingColRef.current = null; setColDragOver(null); setSquishColId(null); lastReorderPair.current = ''; onDragEnd(); }}
             onDragOver={e => {
               e.preventDefault(); setColDragOver(col.id);
               if (e.dataTransfer.types.includes('col-id') && draggingColId && draggingColId !== col.id) {
@@ -75,17 +77,22 @@ export default function ScheduleKanbanView({
                 if (lastReorderPair.current !== pair) {
                   lastReorderPair.current = pair;
                   if (reorderTimer.current) clearTimeout(reorderTimer.current);
-                  const fromId = draggingColId, toId = col.id;
-                  reorderTimer.current = setTimeout(() => onReorderColumn(fromId, toId), 300);
+                  const fromId = draggingColRef.current!;
+                  reorderTimer.current = setTimeout(() => {
+                    onReorderColumn(fromId, col.id);
+                    setColDragOver(null);
+                    setSquishColId(fromId);
+                    setTimeout(() => setSquishColId(null), 400);
+                  }, 50);
                 }
               } else if (!e.dataTransfer.types.includes('col-id')) { onDragOverColumn(e, col.id); }
             }}
             onDrop={e => { const cid = e.dataTransfer.getData('col-id'); if (!cid) onDropColumn(e, col.id); }}
             style={{
-              transform: isColOver
+              transform: squishColId === col.id
                 ? 'scaleX(0.965) scaleY(1.012)'
                 : draggingColId === col.id ? 'scaleX(0.97)' : 'scale(1)',
-              transition: isColOver
+              transition: squishColId === col.id
                 ? 'transform 90ms cubic-bezier(0.34,36,0.64,1), opacity 150ms, border-color 150ms, background 150ms'
                 : 'transform 100ms ease-out, opacity 150ms, border-color 150ms, background 150ms',
               transformOrigin: 'center top',
