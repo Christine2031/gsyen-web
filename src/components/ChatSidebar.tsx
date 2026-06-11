@@ -82,7 +82,7 @@ export function ChatSidebar({
         <div onClick={onNewChat}
           className={`group flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${currentSessionId === null ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug">Default Session</p>
+            <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug">Default Message</p>
             <div className="flex items-center gap-2">
               <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
               <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">ETHAN</span>
