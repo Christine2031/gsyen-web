@@ -3,7 +3,7 @@ import { Sparkles, Mail, Globe } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
-import { WinCtrlButton } from '../gsyen-designer';
+import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import { useAuth, type UserTier } from '../auth/useAuth';
@@ -93,7 +93,7 @@ interface SpaceTab {
 const SPACES: SpaceTab[] = [
   { value: 'chat',     Icon: Sparkles,         iconClass: 'text-amber-500 animate-pulse', zh: '疆域灵阁',     en: 'GSYEN Muse',     shortZh: '灵阁', shortEn: 'Muse',   subtitle: '' },
   { value: 'mail',     Icon: Mail,             iconClass: 'scale-90',                     zh: '工作邮件',     en: 'Mailbox',        shortZh: '邮件', shortEn: 'Mail',   subtitle: 'Hermes · 极雅私密邮件信道' },
-  { value: 'schedule', Icon: KanbanOutlineIcon, iconClass: 'animate-pulse',              zh: '项目看板',     en: 'Kanban',         shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
+  { value: 'schedule', Icon: KanbanIcon,       iconClass: 'animate-pulse scale-[1.3]',   zh: '项目看板',     en: 'Kanban',         shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
   { value: 'calendar', Icon: CalendarDateIcon, iconClass: 'scale-90',                     zh: '日程日历',     en: 'Calendar',       shortZh: '日历', shortEn: 'Cal',    subtitle: 'Chronos · 极速格栅日程空间' },
   { value: 'finance',  Icon: ReportMoneyIcon,  iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger', shortZh: '财务', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
   { value: 'password', Icon: ShieldLockIcon,   iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
@@ -135,7 +135,8 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
           {(() => {
             const space = SPACES.find(s => s.value === activeSpace);
             const isHome = activeSpace === 'chat';
-            const Icon = space?.Icon;
+            // Google Material 惯例：大尺寸 logo 用 outline，小尺寸 tab 用 filled
+            const Icon = activeSpace === 'schedule' ? KanbanOutlineIcon : space?.Icon;
             return (
               <>
                 <div
