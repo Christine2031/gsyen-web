@@ -25,6 +25,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   offFullscreenChange: ()   => ipcRenderer.removeAllListeners('fullscreen:change'),
   getAppPath: () => ipcRenderer.invoke('app:getPath'),
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  v2ray: {
+    getNodes:  ()      => ipcRenderer.invoke('v2ray:getNodes'),
+    getStatus: ()      => ipcRenderer.invoke('v2ray:getStatus'),
+    switch:    (index) => ipcRenderer.invoke('v2ray:switch', index),
+  },
   isElectron: true,
   platform: process.platform,
 });

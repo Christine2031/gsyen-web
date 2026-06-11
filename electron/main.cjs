@@ -3,6 +3,7 @@ const { autoUpdater } = require('electron-updater');
 const Sentry = require('@sentry/electron/main');
 const path = require('path');
 const fs   = require('fs');
+const { startV2ray, stopV2ray, switchNode, getNodes, getStatus } = require('./v2ray.cjs');
 
 Sentry.init({
   dsn: 'https://a7b7176417e2f24b54156ef4ff01e8b2@o4511541959720960.ingest.us.sentry.io/4511541969551360',
@@ -132,6 +133,12 @@ function setupAutoUpdater() {
 ipcMain.handle('updater:install', () => autoUpdater.quitAndInstall(true, true));
 ipcMain.handle('updater:check',   () => autoUpdater.checkForUpdates());
 
+// ── v2ray IPC ─────────────────────────────────────────────────────────────────
+
+ipcMain.handle('v2ray:getNodes',  ()      => getNodes());
+ipcMain.handle('v2ray:getStatus', ()      => getStatus());
+ipcMain.handle('v2ray:switch',    (_, i)  => switchNode(i));
+
 // ── 文件系统 IPC ──────────────────────────────────────────────────────────────
 
 ipcMain.handle('canvas:readAll', () => {
@@ -233,6 +240,7 @@ function createWindow() {
 app.whenReady().then(() => {
   createWindow();
   try { createTray(); } catch (e) { console.error('tray init failed:', e); }
+  startV2ray(app);
 
   // F11 全平台；Mac 另加 Ctrl+Cmd+F（系统惯例）
   globalShortcut.register('F11', () => { if (win) toggleFullscreen(win); });
@@ -256,4 +264,4 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 
-app.on('before-quit', () => { forceQuit = true; });
+app.on('before-quit', () => { forceQuit = true; stopV2ray(); });

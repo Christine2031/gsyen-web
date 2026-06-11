@@ -11,8 +11,9 @@ import BrandCollateral from './BrandCollateral';
 import BrandExpert from './BrandExpert';
 import BrandOrders from './BrandOrders';
 import BrandContacts from './BrandContacts';
+import PrismRoutes from './PrismRoutes';
 
-type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders' | 'contacts';
+type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders' | 'contacts' | 'routes';
 
 const DEFAULT_CONFIG: LogoConfig = {
   brandName: 'GSYEN',
@@ -79,13 +80,14 @@ export default function BrandLab({ lang }: BrandLabProps) {
           {tabBtn('expert', t.creativeAssistant)}
           {tabBtn('studio', t.studioCanvas)}
           {tabBtn('collateral', t.collateralMockups)}
+          {tabBtn('routes', lang === 'zh' ? '穹弯算筹' : 'Halfsphere')}
         </div>
       </div>
 
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-studio-workspace">
-        {/* 左侧控制面板 — 订单/往来页时隐藏 */}
-        {activeTab !== 'orders' && activeTab !== 'contacts' && (
+        {/* 左侧控制面板 — 订单/往来/线路页时隐藏 */}
+        {activeTab !== 'orders' && activeTab !== 'contacts' && activeTab !== 'routes' && (
           <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] px-6 pb-6 pt-0 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
             <BrandControlsIdentity lang={lang} config={config} setConfig={setConfig} />
             <hr className="border-[#1A1A1A]/10" />
@@ -117,6 +119,9 @@ export default function BrandLab({ lang }: BrandLabProps) {
             )}
             {activeTab === 'contacts' && (
               <BrandContacts key="contacts" lang={lang} />
+            )}
+            {activeTab === 'routes' && (
+              <PrismRoutes key="routes" />
             )}
           </AnimatePresence>
 
