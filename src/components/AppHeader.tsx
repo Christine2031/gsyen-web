@@ -1,5 +1,5 @@
 import React, { ComponentType, useState, useEffect } from 'react';
-import { Sparkles, Mail, DollarSign, Lock, Globe } from 'lucide-react';
+import { Sparkles, Mail, DollarSign, Globe } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
@@ -7,6 +7,18 @@ import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import { useAuth, type UserTier } from '../auth/useAuth';
+
+/** ShieldLock icon — 护盾 + 挂锁，密钥库专用 */
+function ShieldLockIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2L3 6v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V6L12 2z" />
+      <rect x="9.5" y="13.5" width="5" height="4" rx="0.8" />
+      <path d="M10.5 13.5v-1.8a1.5 1.5 0 0 1 3 0v1.8" />
+    </svg>
+  );
+}
 
 /** Prism icon — 等腰三角形，底角 70°，顶角 40° */
 function PrismIcon({ className }: { className?: string }) {
@@ -53,7 +65,7 @@ const SPACES: SpaceTab[] = [
   { value: 'schedule', Icon: KanbanIcon,       iconClass: 'animate-pulse',               zh: '项目看板',     en: 'Kanban',         shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
   { value: 'calendar', Icon: CalendarDateIcon, iconClass: '',                             zh: '日程日历',     en: 'Calendar',       shortZh: '日历', shortEn: 'Cal',    subtitle: 'Chronos · 极速格栅日程空间' },
   { value: 'finance',  Icon: DollarSign,       iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger', shortZh: '财务', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
-  { value: 'password', Icon: Lock,             iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
+  { value: 'password', Icon: ShieldLockIcon,   iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
   { value: 'brand',    Icon: PrismIcon,        iconClass: '',                             zh: '品牌实验室',   en: 'Brand Lab',      shortZh: '品牌', shortEn: 'Brand',  subtitle: 'Prism · 品牌基因折射实验室' },
 ];
 
