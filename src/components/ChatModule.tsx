@@ -23,11 +23,11 @@ import { ChatMessage, ActionCard } from '../types/chat';
 import { ModelId, MODELS } from '../config/models';
 import { useChatSession } from '../hooks/useChatSession';
 import { useChatStream } from '../hooks/useChatStream';
-import { useModelHealth } from '../hooks/useModelHealth';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatEmptyState } from './ChatEmptyState';
 import { CanvasEditorContent } from './CanvasEditorContent';
+import { ModelStatusLight } from './ModelStatusLight';
 import { canvasStore } from '../stores/canvasStore';
 
 interface ChatModuleProps { lang: 'zh' | 'en' }
@@ -40,8 +40,6 @@ export default function ChatModule({ lang }: ChatModuleProps) {
   const [selectedModel, setSelectedModel] = useState<ModelId>('ethan');
   const [toast, setToast]             = useState<string | null>(null);
   const [creativeDocId, setCreativeDocId] = useState<string | null>(null);
-  const isAlive = useModelHealth();
-
   // 创意国度：直接建文档 → 开全屏编辑器
   const openCreativeKingdom = () => {
     const now = new Date().toISOString();
@@ -203,14 +201,7 @@ export default function ChatModule({ lang }: ChatModuleProps) {
               ))}
             </div>
           </div>
-          <span className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full transition-all"
-              style={isAlive
-                ? { background: 'radial-gradient(circle at 50% 50%, #86efac 40%, #16a34a 60%, #14532d)', boxShadow: 'inset -1px -1px 0px rgba(0,0,0,0.5), 0 0 8px rgba(74,222,128,0.9), 0 0 16px rgba(74,222,128,0.3)', border: '1px solid rgba(74,222,128,0.6)', animation: 'gsyen-breathe 2.4s ease-in-out infinite' }
-                : { background: 'radial-gradient(circle at 38% 32%, #aaa 0%, #777 45%, #555 100%)', border: '2px solid rgba(255,255,255,0.7)', boxShadow: '0 0 6px rgba(255,255,255,0.2), 0 0 3px rgba(150,150,150,0.3), inset 0 1px 1px rgba(255,255,255,0.08)' }
-              } />
-            {isAlive ? 'SYSTEM GATEWAY IS ALIVE' : 'GSYEN MODEL OFFLINE'}
-          </span>
+          <ModelStatusLight selectedModel={selectedModel} />
         </div>
       </div>
 

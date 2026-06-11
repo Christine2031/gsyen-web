@@ -46,10 +46,19 @@ async function startServer() {
       const r = await fetch(`${ollamaBase}/api/tags`, { signal: AbortSignal.timeout(5000) });
       ollamaAlive = r.ok;
     } catch {}
-    const configured = Object.fromEntries(
-      Object.entries(MODEL_ROUTES).map(([k, v]) => [k, !!process.env[v.envKey]])
-    );
-    res.json({ status: 'ok', ollamaAlive, models: configured });
+
+    const models: Record<string, any> = {};
+    for (const [modelId, route] of Object.entries(MODEL_ROUTES)) {
+      const hasKey = !!process.env[route.envKey];
+      if (modelId === 'ethan' || modelId === 'fast') {
+        models[modelId] = { available: ollamaAlive };
+        if (!ollamaAlive) models[modelId].error = 'MODEL UNAVAILABLE';
+      } else {
+        models[modelId] = { available: hasKey };
+        if (!hasKey) models[modelId].error = 'API KEY MISSING';
+      }
+    }
+    res.json({ status: 'ok', ollamaAlive, models });
   });
 
   // Chat proxy — model-agnostic
