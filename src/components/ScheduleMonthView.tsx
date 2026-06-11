@@ -60,8 +60,8 @@ export default function ScheduleMonthView({
         ).map(d => <div key={d}>{d}</div>)}
       </div>
 
-      {/* 42-slot grid */}
-      <div className="grid grid-cols-7 xl:grid-rows-6 auto-rows-fr border-t border-l border-[#1A1A1A]/10 bg-neutral-100/10 min-h-[550px]">
+      {/* Month grid */}
+      <div className="grid grid-cols-7 auto-rows-fr border-t border-l border-[#1A1A1A]/10 bg-neutral-100/10 min-h-[550px]">
         {mainCalendarGridDays.map((cell, index) => {
           const dayEvents = activeFilteredList.filter(e => isEventOnDate(e, cell.dateString));
           return (

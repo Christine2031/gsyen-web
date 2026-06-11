@@ -61,7 +61,7 @@ export function useMiniCalendarDays(
   }, [selectedDate, today]);
 }
 
-/** 42-slot main grid (6 complete weeks) */
+/** Dynamic main grid (35 or 42 slots — 5 or 6 weeks) */
 export function useMainCalendarDays(
   selectedDate: Date,
   events: EventItem[]
@@ -90,8 +90,9 @@ export function useMainCalendarDays(
       const ds = `${year}-${curPad}-${String(i).padStart(2, '0')}`;
       days.push({ dayNum: i, dateString: ds, isCurrentMonth: true, isToday: ds === today, hasEvents: events.some(e => isEventOnDate(e, ds)) });
     }
-    // Next month overflow (fill to 42)
-    const padding = 42 - days.length;
+    // Next month overflow (fill to 35 or 42 depending on whether month fits in 5 weeks)
+    const totalSlots = days.length <= 35 ? 35 : 42;
+    const padding = totalSlots - days.length;
     for (let i = 1; i <= padding; i++) {
       const nextM = month === 11 ? 0 : month + 1;
       const nextY = month === 11 ? year + 1 : year;
