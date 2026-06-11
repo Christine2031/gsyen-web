@@ -24,9 +24,9 @@ interface ToolbarProps {
 export function ScheduleToolbar(p: ToolbarProps) {
   const { lang } = p;
   return (
-    <div className="bg-white border border-[#1A1A1A]/10 p-3 flex flex-col xl:flex-row items-center justify-between gap-4">
+    <div className="flex flex-row items-center justify-between gap-3 flex-nowrap">
       {/* 左：目录开关 + 签发事件（主操作，Gmail Compose 惯例） */}
-      <div className="flex items-center gap-3 w-full xl:w-auto">
+      <div className="flex items-center gap-3 shrink-0">
         <button onClick={() => p.setIsSidebarOpen(o => !o)}
           className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all flex items-center justify-center ${p.isSidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'bg-transparent text-[#1A1A1A]/70'}`}>
           <PanelLeft className="w-4 h-4" />
@@ -39,7 +39,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
       </div>
 
       {/* 右：统计 + 视图切换 + 分流筛选 + 搜索 + 清空 */}
-      <div className="flex items-center justify-end w-full xl:w-auto gap-3 flex-wrap">
+      <div className="flex items-center gap-3 flex-nowrap min-w-0">
         <div className="hidden sm:flex gap-3 items-center px-3 py-1 border border-[#1A1A1A]/10 text-[9px] font-mono text-[#1A1A1A]/70 uppercase tracking-widest rounded-none">
           <div>{lang === 'zh' ? '总日程:' : 'TOTAL:'} <strong className="text-amber-800 font-bold">{p.total}</strong></div>
           <div className="w-[1px] h-3 bg-[#1A1A1A]/10" />
