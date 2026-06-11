@@ -1,5 +1,5 @@
 import React, { ComponentType, useState, useEffect } from 'react';
-import { Sparkles, Mail, DollarSign, Globe } from 'lucide-react';
+import { Sparkles, Mail, Globe } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
@@ -7,6 +7,19 @@ import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import { useAuth, type UserTier } from '../auth/useAuth';
+
+/** ReportMoney icon — 精确复刻 Tabler ti-report-money（账簿 + $） */
+function ReportMoneyIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor"
+      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 5h-2a2 2 0 0 0 -2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-12a2 2 0 0 0 -2 -2h-2" />
+      <path d="M9 5a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2a2 2 0 0 1 -2 2h-2a2 2 0 0 1 -2 -2" />
+      <path d="M14 11h-2.5a1.5 1.5 0 0 0 0 3h1a1.5 1.5 0 0 1 0 3h-2.5" />
+      <path d="M12 17v1m0 -8v1" />
+    </svg>
+  );
+}
 
 /** ShieldLock icon — 精确复刻 Tabler ti-shield-lock（护盾 + 钥匙孔） */
 function ShieldLockIcon({ className }: { className?: string }) {
@@ -64,7 +77,7 @@ const SPACES: SpaceTab[] = [
   { value: 'mail',     Icon: Mail,             iconClass: '',                             zh: '工作邮件',     en: 'Mailbox',        shortZh: '邮件', shortEn: 'Mail',   subtitle: 'Hermes · 极雅私密邮件信道' },
   { value: 'schedule', Icon: KanbanIcon,       iconClass: 'animate-pulse',               zh: '项目看板',     en: 'Kanban',         shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
   { value: 'calendar', Icon: CalendarDateIcon, iconClass: '',                             zh: '日程日历',     en: 'Calendar',       shortZh: '日历', shortEn: 'Cal',    subtitle: 'Chronos · 极速格栅日程空间' },
-  { value: 'finance',  Icon: DollarSign,       iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger', shortZh: '财务', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
+  { value: 'finance',  Icon: ReportMoneyIcon,  iconClass: '',                             zh: '复式财务账簿', en: 'Atelier Ledger', shortZh: '财务', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },
   { value: 'password', Icon: ShieldLockIcon,   iconClass: '',                             zh: '军事级密钥库', en: 'Citadel Key',    shortZh: '密钥', shortEn: 'Keys',   subtitle: 'Citadel · 军事级密匙生成与保管箱' },
   { value: 'brand',    Icon: PrismIcon,        iconClass: '',                             zh: '品牌实验室',   en: 'Brand Lab',      shortZh: '品牌', shortEn: 'Brand',  subtitle: 'Prism · 品牌基因折射实验室' },
 ];
