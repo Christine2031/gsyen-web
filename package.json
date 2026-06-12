@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.73.56",
+  "version": "2.73.57",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -29,12 +29,6 @@
     "files": [
       "dist/**/*",
       "electron/**/*"
-    ],
-    "extraResources": [
-      {
-        "from": "public/icon.ico",
-        "to": "icon.ico"
-      }
     ],
     "win": {
       "target": [
