@@ -53,11 +53,11 @@ export function useAuth() {
              : Promise.resolve(NOT_CONFIGURED);
 
   const signInWithEmail = (email: string, password: string) =>
-    supabase ? supabase.auth.signInWithPassword({ email, password })
+    supabase ? supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
              : Promise.resolve(NOT_CONFIGURED);
 
   const signUpWithEmail = (email: string, password: string) =>
-    supabase ? supabase.auth.signUp({ email, password })
+    supabase ? supabase.auth.signUp({ email: email.trim().toLowerCase(), password })
              : Promise.resolve(NOT_CONFIGURED);
 
   const signOut = () =>
