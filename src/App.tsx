@@ -14,29 +14,33 @@ import ChatModule from './components/ChatModule';
 import KanbanModule from './components/KanbanModule';
 import LandingHero from './components/LandingHero';
 import AppHeader, { ActiveSpace } from './components/AppHeader';
-import BrandLab from './components/brand/BrandLab';
+import BrandLab, { type BrandTab } from './components/brand/BrandLab';
 import { FullscreenFade } from './components/FullscreenFade';
-import { useAuth } from './auth/useAuth';
+import { supabase } from './auth/supabaseClient';
 
 /**
  * App — 工作坊外壳：语言/落地页/当前空间，外加顶栏导航与空间路由。
  * Brand Lab（标识设计器）已抽到 components/brand/BrandLab；各业务模块各自管自己的状态。
  */
 export default function App() {
-  const { user } = useAuth();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const [showLanding, setShowLanding] = useState(!isElectron);
   const [activeSpace, setActiveSpace] = useState<ActiveSpace>('chat');
+  const [brandTab, setBrandTab] = useState<BrandTab | undefined>(undefined);
 
-  // 用户登录后，自动关闭 Landing
+  const handleMemberClick = () => {
+    setActiveSpace('brand');
+    setBrandTab('member');
+  };
+
   useEffect(() => {
-    console.log('[App] useEffect triggered: user =', user ? user.email : null);
-    if (user) {
-      console.log('[App] Setting showLanding = false');
-      setShowLanding(false);
-    }
-  }, [user]);
+    if (!supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setShowLanding(!session?.user);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   return (
     <div className="h-screen overflow-y-hidden overflow-x-visible bg-[#F9F8F6] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F8F6]" id="logo-designer-root">
@@ -44,11 +48,11 @@ export default function App() {
         {showLanding && <LandingHero lang={lang} onEnter={() => setShowLanding(false)} />}
       </AnimatePresence>
 
-      <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={setActiveSpace} />
+      <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={setActiveSpace} onMemberClick={handleMemberClick} />
       <FullscreenFade />
 
       {activeSpace === 'brand' ? (
-        <BrandLab lang={lang} />
+        <BrandLab lang={lang} requestedTab={brandTab} onTabConsumed={() => setBrandTab(undefined)} />
       ) : (
         <main className="flex-grow flex flex-col justify-between bg-[#F9F8F6] min-h-0">
           <div className="flex-grow flex flex-col min-h-0 overflow-hidden">

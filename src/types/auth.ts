@@ -1,7 +1,7 @@
 import type { User, Session } from '@supabase/supabase-js';
 
 /** 用户层级（会员体系） */
-export type UserTier = 'free_unverified' | 'free' | 'pro_month' | 'pro_year' | 'enterprise';
+export type UserTier = 'free_unverified' | 'free' | 'pro_month' | 'pro_year' | 'enterprise' | 'admin' | 'owner';
 
 /** OAuth 提供商 */
 export type OAuthProvider = 'google' | 'github';

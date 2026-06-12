@@ -13,8 +13,9 @@ import BrandOrders from './BrandOrders';
 import BrandContacts from './BrandContacts';
 import BrandTeam from './BrandTeam';
 import PrismRoutes from './PrismRoutes';
+import BrandMember from './BrandMember';
 
-type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders' | 'contacts' | 'team' | 'routes';
+type BrandTab = 'studio' | 'collateral' | 'expert' | 'orders' | 'contacts' | 'team' | 'routes' | 'member';
 
 const DEFAULT_CONFIG: LogoConfig = {
   brandName: 'GSYEN',
@@ -36,19 +37,30 @@ const DEFAULT_CONFIG: LogoConfig = {
   contrastMode: false,
 };
 
+export type { BrandTab };
+
 interface BrandLabProps {
   lang: 'zh' | 'en';
+  requestedTab?: BrandTab;
+  onTabConsumed?: () => void;
 }
 
 /**
  * Brand Lab — 标识美学设计器（从 App.tsx 抽出）。
  * 自持 LogoConfig 状态与子标签，派生调色板/SVG，编排侧栏控件与预览三视图。
  */
-export default function BrandLab({ lang }: BrandLabProps) {
+export default function BrandLab({ lang, requestedTab, onTabConsumed }: BrandLabProps) {
   const t = translations[lang];
   const [config, setConfig] = useState<LogoConfig>(DEFAULT_CONFIG);
-  const [activeTab, setActiveTab] = useState<BrandTab>('studio');
+  const [activeTab, setActiveTab] = useState<BrandTab>(requestedTab ?? 'studio');
   const [isCopied, setIsCopied] = useState(false);
+
+  React.useEffect(() => {
+    if (requestedTab) {
+      setActiveTab(requestedTab);
+      onTabConsumed?.();
+    }
+  }, [requestedTab]);
 
   const activePalette = useMemo(() => getActivePalette(config.colorPaletteId), [config.colorPaletteId]);
   const colors = useMemo(() => resolvePaletteColors(activePalette, config.contrastMode), [activePalette, config.contrastMode]);
@@ -82,13 +94,14 @@ export default function BrandLab({ lang }: BrandLabProps) {
           {tabBtn('studio', t.studioCanvas)}
           {tabBtn('collateral', t.collateralMockups)}
           {tabBtn('routes', lang === 'zh' ? '穹弯算筹' : 'Halfsphere')}
+          {tabBtn('member', lang === 'zh' ? '会员中心' : 'Membership')}
         </div>
       </div>
 
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0" id="main-studio-workspace">
         {/* 左侧控制面板 — 订单/往来/线路页时隐藏 */}
-        {activeTab !== 'orders' && activeTab !== 'contacts' && activeTab !== 'team' && activeTab !== 'routes' && (
+        {activeTab !== 'orders' && activeTab !== 'contacts' && activeTab !== 'team' && activeTab !== 'routes' && activeTab !== 'member' && (
           <aside className="w-full lg:w-[420px] border-r border-[#1A1A1A]/10 bg-[#F4F2EE] px-6 pb-6 pt-0 overflow-y-auto space-y-7 flex-shrink-0" id="design-control-sidebar">
             <BrandControlsIdentity lang={lang} config={config} setConfig={setConfig} />
             <hr className="border-[#1A1A1A]/10" />
@@ -126,6 +139,9 @@ export default function BrandLab({ lang }: BrandLabProps) {
             )}
             {activeTab === 'routes' && (
               <PrismRoutes key="routes" />
+            )}
+            {activeTab === 'member' && (
+              <BrandMember key="member" lang={lang} />
             )}
           </AnimatePresence>
 

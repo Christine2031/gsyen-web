@@ -6,7 +6,8 @@ import VintageCar from './VintageCar';
 import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
-import { useAuth, type UserTier } from '../auth/useAuth';
+import { useAuth } from '../auth/useAuth';
+import { TierBadge } from './AppHeaderTierBadge';
 
 /** 自定义 icon 公共 props — strokeWidth 按渲染尺寸反算可保持 1.5px 实际笔触 */
 interface GsIconProps { className?: string; strokeWidth?: number }
@@ -106,10 +107,11 @@ interface AppHeaderProps {
   setLang: (l: 'zh' | 'en') => void;
   activeSpace: ActiveSpace;
   setActiveSpace: (s: ActiveSpace) => void;
+  onMemberClick?: () => void;
 }
 
 /** 顶部导航栏 + 移动端横向标签条 */
-export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }: AppHeaderProps) {
+export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, onMemberClick }: AppHeaderProps) {
   const t = translations[lang];
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
@@ -215,7 +217,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
               <span className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 whitespace-nowrap shrink-0 font-mono">
                 {user.email?.split('@')[0]}
               </span>
-              <TierBadge tier={tier} emailVerified={emailVerified} />
+              <TierBadge tier={tier} onClick={onMemberClick} />
               <button
                 onClick={signOut}
                 className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-[9px] font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
@@ -254,37 +256,3 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace }
   );
 }
 
-/* ── 会员等级徽章 ── */
-const TIER_CFG: Record<string, { label: string; cls: string }> = {
-  owner: { label: 'OWNER', cls: 'border-amber-400/60 text-amber-600 bg-amber-50'          },
-  admin: { label: 'ADMIN', cls: 'border-[#1A1A1A]/30 text-[#1A1A1A]/70 bg-[#1A1A1A]/5'  },
-  user:  { label: 'PRO',   cls: 'border-[#1A1A1A]/20 text-[#1A1A1A]/50 bg-transparent'   },
-  guest: { label: 'GUEST', cls: 'border-[#1A1A1A]/10 text-[#1A1A1A]/30 bg-transparent'   },
-};
-
-function TierBadge({ tier, emailVerified }: { tier: UserTier | null; emailVerified: boolean }) {
-  if (!tier) return null;
-
-  // owner / admin — 固定徽章
-  if (tier === 'owner') return (
-    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-amber-400/60 text-amber-600 bg-amber-50">
-      OWNER
-    </span>
-  );
-  if (tier === 'admin') return (
-    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/30 text-[#1A1A1A]/70 bg-[#1A1A1A]/5">
-      ADMIN
-    </span>
-  );
-
-  // 普通会员：已验证 vs 未验证
-  return emailVerified ? (
-    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/25 text-[#1A1A1A]/60">
-      MEMBER
-    </span>
-  ) : (
-    <span className="px-1.5 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono shrink-0 border-[#1A1A1A]/12 text-[#1A1A1A]/30">
-      MEMBER · UNVERIFIED
-    </span>
-  );
-}
