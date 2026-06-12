@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, ShieldCheck, ChevronRight } from 'lucide-react';
 
 const api = (window as any).electronAPI?.v2ray as {
-  setKey:    (key: string) => Promise<{ ok: boolean; count?: number; name?: string; error?: string }>;
-  setSub:    (url: string) => Promise<{ ok: boolean; count?: number; name?: string; error?: string }>;
-  getSubUrl: ()            => Promise<string | null>;
+  setKey:         (key: string)  => Promise<{ ok: boolean; count?: number; name?: string; error?: string }>;
+  setSub:         (url: string)  => Promise<{ ok: boolean; count?: number; name?: string; error?: string }>;
+  getSubUrl:      ()             => Promise<string | null>;
+  getGatewayMode: ()             => Promise<string>;
+  setGatewayMode: (mode: string) => Promise<{ ok: boolean; mode: string }>;
 } | undefined;
 
 interface Props {
@@ -14,15 +16,24 @@ interface Props {
 }
 
 export default function PrismKeyInput({ connected, count, onActivated }: Props) {
-  const [expanded,  setExpanded]  = useState(!connected);
-  const [input,     setInput]     = useState('');
-  const [subUrl,    setSubUrl]    = useState<string | null>(null);
-  const [busy,      setBusy]      = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
+  const [expanded,     setExpanded]     = useState(!connected);
+  const [input,        setInput]        = useState('');
+  const [subUrl,       setSubUrl]       = useState<string | null>(null);
+  const [gatewayMode,  setGatewayModeS] = useState<string>('full');
+  const [busy,         setBusy]         = useState(false);
+  const [error,        setError]        = useState<string | null>(null);
 
   useEffect(() => {
     api?.getSubUrl().then(url => setSubUrl(url));
+    api?.getGatewayMode().then(m => setGatewayModeS(m));
   }, [connected]);
+
+  async function toggleGateway() {
+    if (!api) return;
+    const next = gatewayMode === 'llm' ? 'full' : 'llm';
+    await api.setGatewayMode(next);
+    setGatewayModeS(next);
+  }
 
   if (!api) return null;
 
@@ -45,24 +56,47 @@ export default function PrismKeyInput({ connected, count, onActivated }: Props) 
     }
   }
 
-  // 已激活且收起 → 一行状态条
+  // 已激活且收起 → 状态卡（订阅行 + 钟馗行）
   if (connected && !expanded) {
     const displayUrl = subUrl
       ? new URL(subUrl).hostname
       : `${count} 条节点`;
+    const llmOnly = gatewayMode === 'llm';
     return (
-      <div className="flex items-center justify-between bg-white rounded-xl border border-[#DADCE0] px-5 py-3.5">
-        <div className="flex items-center gap-2.5">
-          <ShieldCheck className="w-4 h-4 text-[#137333]" strokeWidth={1.8} />
-          <span className="text-[12px] text-[#202124] font-medium font-sans">订阅已激活</span>
-          <span className="text-[11px] font-mono text-[#9AA0A6]">· {displayUrl}</span>
+      <div className="bg-white rounded-xl border border-[#DADCE0] px-5 py-3.5 flex flex-col gap-3">
+        {/* 订阅状态行 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-[#137333]" strokeWidth={1.8} />
+            <span className="text-[12px] text-[#202124] font-medium font-sans">订阅已激活</span>
+            <span className="text-[11px] font-mono text-[#9AA0A6]">· {displayUrl}</span>
+          </div>
+          <button
+            onClick={() => setExpanded(true)}
+            className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-colors"
+          >
+            更换
+          </button>
         </div>
-        <button
-          onClick={() => setExpanded(true)}
-          className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-colors"
-        >
-          更换
-        </button>
+        {/* 钟馗开关行 */}
+        <div className="flex items-center justify-between border-t border-[#F0F0F0] pt-3">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono font-bold text-[#1A1A1A]/50">⚔ 钟馗</span>
+            <span className="text-[11px] font-mono text-[#9AA0A6]">
+              {llmOnly ? '仅限大模型通道' : '全局代理'}
+            </span>
+          </div>
+          <button
+            onClick={toggleGateway}
+            className={`px-3 py-1 text-[10px] font-mono font-bold tracking-widest uppercase rounded-none transition-all ${
+              llmOnly
+                ? 'bg-[#1A1A1A] text-[#F9F8F6]'
+                : 'border border-[#1A1A1A]/15 text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'
+            }`}
+          >
+            {llmOnly ? '已开启' : '关闭'}
+          </button>
+        </div>
       </div>
     );
   }

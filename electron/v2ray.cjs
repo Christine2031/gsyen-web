@@ -35,7 +35,57 @@ function loadNodes() {
   try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return []; }
 }
 
-function buildConfig(node) {
+// 钟馗模式持久化
+function gatewayModePath() {
+  return path.join(appRef.getPath('userData'), 'v2ray-gateway-mode.txt');
+}
+
+function getGatewayMode() {
+  try {
+    const p = gatewayModePath();
+    return fs.existsSync(p) ? fs.readFileSync(p, 'utf8').trim() : 'full';
+  } catch { return 'full'; }
+}
+
+async function setGatewayMode(mode) {
+  try { fs.writeFileSync(gatewayModePath(), mode); } catch {}
+  // 重启 v2ray 以应用新路由规则
+  if (v2rayProc) {
+    const nodes = loadNodes();
+    if (nodes[activeIndex]) {
+      stopV2ray();
+      await new Promise(r => setTimeout(r, 300));
+      launch(nodes[activeIndex]);
+    }
+  }
+  return { ok: true, mode };
+}
+
+const LLM_DOMAINS = [
+  'api.anthropic.com', 'anthropic.com',
+  'api.openai.com',    'openai.com',
+  'generativelanguage.googleapis.com',
+  'api.deepseek.com',  'api.moonshot.cn',
+];
+
+function buildConfig(node, llmOnly = false) {
+  const routing = llmOnly
+    ? {
+        domainStrategy: 'AsIs',
+        rules: [
+          { type: 'field', domain: LLM_DOMAINS, outboundTag: 'proxy'  },
+          { type: 'field', network: 'tcp,udp',  outboundTag: 'direct' },
+        ],
+      }
+    : {
+        domainStrategy: 'IPIfNonMatch',
+        rules: [
+          { type: 'field', ip:     ['ext:geoip-only-cn-private.dat:private'], outboundTag: 'direct' },
+          { type: 'field', domain: ['geosite:cn'],                           outboundTag: 'direct' },
+          { type: 'field', ip:     ['ext:geoip-only-cn-private.dat:cn'],      outboundTag: 'direct' },
+        ],
+      };
+
   return {
     log: { loglevel: 'warning' },
     inbounds: [
@@ -51,18 +101,10 @@ function buildConfig(node) {
           realitySettings: { serverName: node.serverName, fingerprint: node.fingerprint || 'chrome', publicKey: node.publicKey, shortId: node.shortId || '' },
         },
       },
-      { tag: 'direct', protocol: 'freedom'   },
-      { tag: 'block',  protocol: 'blackhole'  },
+      { tag: 'direct', protocol: 'freedom'  },
+      { tag: 'block',  protocol: 'blackhole' },
     ],
-    routing: {
-      domainStrategy: 'IPIfNonMatch',
-      rules: [
-        // 精简 IP 库（geoip-only-cn-private.dat，224KB），省去 23MB 全球库
-        { type: 'field', ip:     ['ext:geoip-only-cn-private.dat:private'], outboundTag: 'direct' },
-        { type: 'field', domain: ['geosite:cn'],                           outboundTag: 'direct' },
-        { type: 'field', ip:     ['ext:geoip-only-cn-private.dat:cn'],      outboundTag: 'direct' },
-      ],
-    },
+    routing,
   };
 }
 
@@ -72,7 +114,7 @@ function launch(node) {
   if (!node?.address)       { console.warn('[v2ray] node has no address, skipping'); return false; }
 
   const cfgPath = path.join(appRef.getPath('userData'), 'v2ray-active.json');
-  fs.writeFileSync(cfgPath, JSON.stringify(buildConfig(node), null, 2));
+  fs.writeFileSync(cfgPath, JSON.stringify(buildConfig(node, getGatewayMode() === 'llm'), null, 2));
 
   // 让 v2ray 在 binary 同目录找 geoip/geosite 资源（ext: 引用依赖此路径）
   const assetDir = path.dirname(bin);
@@ -186,4 +228,4 @@ function getSubUrl() {
   } catch { return null; }
 }
 
-module.exports = { startV2ray, stopV2ray, switchNode, getNodes, getStatus, setKey, setSub, getSubUrl };
+module.exports = { startV2ray, stopV2ray, switchNode, getNodes, getStatus, setKey, setSub, getSubUrl, getGatewayMode, setGatewayMode };
