@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PrismQuota from './PrismQuota';
 import PrismStability, { RouteHealth, DEMO_HEALTH } from './PrismStability';
+import PrismKeyInput from './PrismKeyInput';
 
 interface NodeInfo {
   index:      number;
@@ -34,10 +35,14 @@ function mergeHealth(nodes: NodeInfo[]): RouteHealth[] {
 export default function PrismRoutes() {
   const [health,    setHealth]    = useState<RouteHealth[]>(DEMO_HEALTH);
   const [switching, setSwitching] = useState<number | null>(null);
+  const [realCount, setRealCount] = useState(0); // 真实已配置线路数（密钥激活后 > 0）
 
   const refresh = useCallback(async () => {
     if (!api) return;
-    setHealth(mergeHealth(await api.getNodes()));
+    const nodes = await api.getNodes();
+    setRealCount(nodes.filter(n => n.configured).length);
+    // 真实节点为空（如未粘贴密钥）时，保留演示数据，面板不空
+    if (nodes.length) setHealth(mergeHealth(nodes));
   }, []);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -50,9 +55,18 @@ export default function PrismRoutes() {
     setSwitching(null);
   }
 
+  const connected = realCount > 0;
+
   return (
     <div className="flex-1 overflow-y-auto pt-6 pb-8 min-h-0">
       <div className="flex flex-col gap-8 max-w-[760px]">
+        {/* 军工密钥激活入口 — 仅 Electron 渲染；连接态变化时重挂以重置展开状态 */}
+        <PrismKeyInput
+          key={connected ? 'on' : 'off'}
+          connected={connected}
+          count={realCount}
+          onActivated={refresh}
+        />
         <PrismQuota />
         <PrismStability
           data={health}

@@ -3,7 +3,7 @@ const { autoUpdater } = require('electron-updater');
 const Sentry = require('@sentry/electron/main');
 const path = require('path');
 const fs   = require('fs');
-const { startV2ray, stopV2ray, switchNode, getNodes, getStatus } = require('./v2ray.cjs');
+const { startV2ray, stopV2ray, switchNode, getNodes, getStatus, setKey, setSub, getSubUrl } = require('./v2ray.cjs');
 
 Sentry.init({
   dsn: 'https://a7b7176417e2f24b54156ef4ff01e8b2@o4511541959720960.ingest.us.sentry.io/4511541969551360',
@@ -135,9 +135,12 @@ ipcMain.handle('updater:check',   () => autoUpdater.checkForUpdates());
 
 // ── v2ray IPC ─────────────────────────────────────────────────────────────────
 
-ipcMain.handle('v2ray:getNodes',  ()      => getNodes());
-ipcMain.handle('v2ray:getStatus', ()      => getStatus());
-ipcMain.handle('v2ray:switch',    (_, i)  => switchNode(i));
+ipcMain.handle('v2ray:getNodes',  ()        => getNodes());
+ipcMain.handle('v2ray:getStatus', ()        => getStatus());
+ipcMain.handle('v2ray:switch',    (_, i)    => switchNode(i));
+ipcMain.handle('v2ray:setKey',    (_, key)  => setKey(key));
+ipcMain.handle('v2ray:setSub',    (_, url)  => setSub(url));
+ipcMain.handle('v2ray:getSubUrl', ()        => getSubUrl());
 
 // ── 文件系统 IPC ──────────────────────────────────────────────────────────────
 

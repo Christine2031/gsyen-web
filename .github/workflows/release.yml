@@ -21,6 +21,20 @@ jobs:
 
       - run: npm ci
 
+      - name: Bundle v2ray-core (Windows)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri "https://github.com/v2fly/v2ray-core/releases/download/v5.49.0/v2ray-windows-64.zip" -OutFile v2ray.zip
+          Expand-Archive -Path v2ray.zip -DestinationPath electron/v2ray-core -Force
+          # 精简：删掉 23MB 全球 geoip，只保留 224KB 的 CN+内网精简库（配置已用 ext: 引用它）
+          Remove-Item electron/v2ray-core/geoip.dat -Force -ErrorAction SilentlyContinue
+          if (-not (Test-Path electron/v2ray-core/geoip-only-cn-private.dat)) {
+            Invoke-WebRequest -Uri "https://github.com/v2fly/geoip/releases/latest/download/geoip-only-cn-private.dat" -OutFile electron/v2ray-core/geoip-only-cn-private.dat
+          }
+          Set-Content -Path electron/v2ray-nodes.json -Value $env:V2RAY_NODES -NoNewline
+        env:
+          V2RAY_NODES: ${{ secrets.V2RAY_NODES }}
+
       - name: Build Windows
         run: npm run electron:build
         env:
