@@ -62,12 +62,14 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
         const msg = err.message?.toLowerCase() ?? '';
         if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
           setNotFound(true);
+        } else if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+          setError(zh ? `邮箱尚未验证，请检查 ${email} 的收件箱，点击验证链接后再登录` : `Email not verified. Check ${email} for the confirmation link.`);
         } else { setError(err.message); }
       } else { onClose(); }
     } else {
       const { error: err } = await signUpWithEmail(email, password);
       if (err) setError(err.message);
-      else { onClose(); }
+      else { setVerifyMsg(zh ? `注册成功！请检查 ${email} 的收件箱，点击验证链接后即可登录。` : `Account created! Check ${email} for the confirmation link.`); }
     }
     setBusy(false);
   };
@@ -177,8 +179,24 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
             </div>
           )}
 
+          {/* ── 注册成功，等待验证 ── */}
+          {verifyMsg && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 22, color: 'rgba(249,248,246,0.8)', marginBottom: 16 }}>✓</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.18em', color: 'rgba(249,248,246,0.7)', textTransform: 'uppercase', marginBottom: 10 }}>
+                {zh ? '注册成功' : 'ACCOUNT CREATED'}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: 10, color: 'rgba(249,248,246,0.38)', lineHeight: 1.7, marginBottom: 22 }}>
+                {verifyMsg}
+              </div>
+              <span onClick={onClose} style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.2em', color: 'rgba(249,248,246,0.3)', textTransform: 'uppercase', cursor: 'pointer' }}>
+                ESC {zh ? '关闭' : 'CLOSE'}
+              </span>
+            </div>
+          )}
+
           {/* ── 正常登录/注册模式 ── */}
-          {mode === 'auth' && (
+          {mode === 'auth' && !verifyMsg && (
             <>
               <div style={{ display: 'flex', border: '1px solid rgba(249,248,246,0.15)', marginBottom: 26 }}>
                 {(['login', 'register'] as const).map(t => (
@@ -238,7 +256,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
             </>
           )}
 
-          {mode === 'auth' && (
+          {mode === 'auth' && !verifyMsg && (
             <div style={{ textAlign: 'center', marginTop: 18 }}>
               <span onClick={onClose} style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.22em', color: 'rgba(249,248,246,0.28)', textTransform: 'uppercase', cursor: 'pointer' }}>
                 ESC {zh ? '关闭' : 'CLOSE'}
