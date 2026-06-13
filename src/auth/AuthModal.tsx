@@ -60,10 +60,10 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
       const { error: err } = await signInWithEmail(email, password);
       if (err) {
         const msg = err.message?.toLowerCase() ?? '';
-        if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
-          setError(zh ? `请先验证邮箱，检查 ${email} 的收件箱，点击验证链接后再登录` : `Please verify your email. Check ${email} for the verification link.`);
-        } else if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
+        if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
           setNotFound(true);
+        } else if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+          setError(zh ? `账号和密码正确，但邮箱尚未验证。请检查 ${email} 的收件箱，点击验证链接后再登录` : `Credentials correct, but email not verified. Check ${email} for the verification link.`);
         } else { setError(err.message); }
       } else { onClose(); }
     } else {
