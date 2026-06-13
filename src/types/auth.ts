@@ -17,6 +17,7 @@ export interface AuthState {
   emailVerified: boolean;
   loginProvider: LoginProvider | null;
   loading: boolean;
+  isPasswordRecovery: boolean;
 }
 
 /** 认证错误 */

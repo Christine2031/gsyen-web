@@ -1,36 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from './useAuth';
-
-function RegisterCTABadge({ onClick }: { onClick: () => void }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <motion.span
-      onClick={onClick}
-      onHoverStart={() => setHovered(true)}
-      onHoverEnd={() => setHovered(false)}
-      className="inline-flex items-center px-3 py-1 text-[9px] font-bold tracking-[0.2em] uppercase border font-mono cursor-pointer select-none"
-      style={{ borderColor: 'rgba(26,110,204,0.55)', color: '#4A90D9' }}
-      animate={hovered
-        ? { backgroundColor: '#1A6ECC', color: '#FFFFFF', y: -2, scale: 1.06,
-            borderColor: '#1A6ECC',
-            boxShadow: '0 4px 16px rgba(26,110,204,0.5), 0 1px 4px rgba(26,110,204,0.3)' }
-        : { backgroundColor: 'rgba(26,110,204,0.07)', color: '#4A90D9', y: 0, scale: 1,
-            borderColor: 'rgba(26,110,204,0.55)',
-            boxShadow: '0 0px 0px rgba(26,110,204,0)' }
-      }
-      whileTap={{ scale: 0.93, y: 1 }}
-      transition={{ type: 'spring', stiffness: 280, damping: 28 }}
-    >
-      <motion.span
-        animate={hovered ? { textShadow: '0 1px 0 rgba(0,40,100,0.45), 0 2px 8px rgba(26,110,204,0.35)' } : { textShadow: 'none' }}
-        transition={{ duration: 0.15 }}
-      >
-        还没账号？立即注册 →
-      </motion.span>
-    </motion.span>
-  );
-}
+import { RegisterCTABadge } from './RegisterCTABadge';
 
 interface Props {
   lang: 'zh' | 'en';
@@ -51,55 +22,62 @@ const GoogleIcon = () => (
 
 export default function AuthModal({ lang, initialTab = 'login', onClose }: Props) {
   const [tab, setTab]           = useState<'login' | 'register'>(initialTab);
+  const [mode, setMode]         = useState<'auth' | 'forgot' | 'forgot-sent'>('auth');
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
   const [error, setError]       = useState('');
   const [notFound, setNotFound] = useState(false);
-  const [info, setInfo]         = useState('');
   const [busy, setBusy]         = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
-  const { signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth();
+  const { signInWithOAuth, signInWithEmail, signUpWithEmail, resetPasswordForEmail } = useAuth();
 
-  useEffect(() => { emailRef.current?.focus(); }, [tab]);
+  useEffect(() => { emailRef.current?.focus(); }, [tab, mode]);
   useEffect(() => {
     const fn = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
   }, [onClose]);
 
-  const reset = () => { setError(''); setInfo(''); setNotFound(false); };
-
-  const switchToRegister = () => { reset(); setTab('register'); };
+  const reset = () => { setError(''); setNotFound(false); };
+  const switchToRegister = () => { reset(); setTab('register'); setMode('auth'); };
 
   const handleGoogle = async () => {
     reset(); setBusy(true);
-    const { error: e } = await signInWithGoogle();
-    if (e) setError(e.message);
+    const { error: err } = await signInWithOAuth('google');
+    if (err) setError(err.message);
     setBusy(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); reset();
+  const handleSubmit = async (ev: React.FormEvent) => {
+    ev.preventDefault(); reset();
     if (!email || !password) { setError(lang === 'zh' ? '请填写邮箱和密码' : 'Email and password required'); return; }
     if (tab === 'register' && password !== confirm) { setError(lang === 'zh' ? '两次密码不一致' : 'Passwords do not match'); return; }
     setBusy(true);
     if (tab === 'login') {
-      const { error: e } = await signInWithEmail(email, password);
-      if (e) {
-        const msg = e.message?.toLowerCase() ?? '';
+      const { error: err } = await signInWithEmail(email, password);
+      if (err) {
+        const msg = err.message?.toLowerCase() ?? '';
         if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
           setNotFound(true);
-        } else {
-          setError(e.message);
-        }
+        } else { setError(err.message); }
       } else { onClose(); }
     } else {
-      const { error: e } = await signUpWithEmail(email, password);
-      if (e) setError(e.message);
+      const { error: err } = await signUpWithEmail(email, password);
+      if (err) setError(err.message);
       else { onClose(); }
     }
+    setBusy(false);
+  };
+
+  const handleForgot = async (ev: React.FormEvent) => {
+    ev.preventDefault(); reset();
+    if (!email) { setError(lang === 'zh' ? '请填写邮箱地址' : 'Email required'); return; }
+    setBusy(true);
+    const { error: err } = await resetPasswordForEmail(email);
+    if (err) setError(err.message);
+    else setMode('forgot-sent');
     setBusy(false);
   };
 
@@ -117,7 +95,6 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
 
   return (
     <>
-      {/* ── Overlay ── */}
       <motion.div
         key="overlay"
         variants={{
@@ -130,12 +107,10 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
         style={{
           position: 'fixed', inset: 0, zIndex: 9999,
           background: 'rgba(4,4,4,0.05)',
-          backdropFilter: 'blur(1px)',
-          WebkitBackdropFilter: 'blur(1px)',
+          backdropFilter: 'blur(1px)', WebkitBackdropFilter: 'blur(1px)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}
       >
-        {/* ── Card ── */}
         <motion.div
           key="card"
           variants={{
@@ -145,136 +120,129 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
           }}
           initial="hidden" animate="visible" exit="exit"
           onClick={e => e.stopPropagation()}
-          style={{
-            width: 380, background: '#111111',
-            border: '1px solid rgba(249,248,246,0.16)',
-            padding: '42px 38px 34px',
-          }}
+          style={{ width: 380, background: '#111111', border: '1px solid rgba(249,248,246,0.16)', padding: '42px 38px 34px' }}
         >
-          {/* placeholder 亮度 — 只注入一次 */}
           <style>{`.gd-ad-inp::placeholder{color:rgba(249,248,246,0.38)}`}</style>
 
           {/* Brand */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{
-              fontFamily: CINZEL, fontSize: 11, fontWeight: 700,
-              letterSpacing: '0.4em', color: 'rgba(249,248,246,0.94)',
-              textTransform: 'uppercase', marginBottom: 7,
-            }}>GSYEN</div>
-            <div style={{
-              fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.3em',
-              color: 'rgba(249,248,246,0.38)', textTransform: 'uppercase',
-            }}>
+            <div style={{ fontFamily: CINZEL, fontSize: 11, fontWeight: 700, letterSpacing: '0.4em', color: 'rgba(249,248,246,0.94)', textTransform: 'uppercase', marginBottom: 7 }}>GSYEN</div>
+            <div style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.3em', color: 'rgba(249,248,246,0.38)', textTransform: 'uppercase' }}>
               {zh ? '星瀚矢量工作坊' : 'SIRIUS VECTOR ATELIER'}
             </div>
           </div>
 
           <div style={{ height: 1, background: 'rgba(249,248,246,0.1)', marginBottom: 26 }} />
 
-          {/* Tabs */}
-          <div style={{ display: 'flex', border: '1px solid rgba(249,248,246,0.15)', marginBottom: 26 }}>
-            {(['login', 'register'] as const).map(t => (
-              <button key={t} onClick={() => { setTab(t); reset(); }}
-                style={{
-                  flex: 1, padding: '9px 0', fontFamily: 'monospace',
-                  fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase',
-                  fontWeight: 700, border: 'none', cursor: 'pointer',
-                  transition: 'background 0.22s, color 0.22s',
-                  background: tab === t ? 'rgba(249,248,246,0.93)' : 'rgba(249,248,246,0.07)',
-                  color:      tab === t ? '#111111'                 : 'rgba(249,248,246,0.42)',
-                }}>
-                {t === 'login' ? (zh ? '登录' : 'LOGIN') : (zh ? '注册' : 'REGISTER')}
-              </button>
-            ))}
-          </div>
-
-          {/* Google */}
-          <button onClick={handleGoogle} disabled={busy}
-            style={{
-              width: '100%', padding: '11px',
-              border: '1px solid rgba(249,248,246,0.22)',
-              background: 'transparent', color: 'rgba(249,248,246,0.72)',
-              fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.2em',
-              textTransform: 'uppercase', display: 'flex', alignItems: 'center',
-              justifyContent: 'center', gap: 9, cursor: 'pointer', marginBottom: 18,
-              transition: 'border-color 0.22s, color 0.22s',
-            }}>
-            <GoogleIcon />
-            {zh ? '使用 Google 继续' : 'CONTINUE WITH GOOGLE'}
-          </button>
-
-          {/* OR */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
-            <div style={{ flex: 1, height: 1, background: 'rgba(249,248,246,0.11)' }} />
-            <span style={{
-              fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.22em',
-              color: 'rgba(249,248,246,0.3)', textTransform: 'uppercase',
-            }}>or</span>
-            <div style={{ flex: 1, height: 1, background: 'rgba(249,248,246,0.11)' }} />
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
-            <input ref={emailRef} type="email" value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder={zh ? '邮箱地址' : 'Email address'}
-              className="gd-ad-inp"
-              style={{ ...inp, marginBottom: 10 }} />
-            <input type="password" value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder={zh ? '密码' : 'Password'}
-              className="gd-ad-inp"
-              style={{ ...inp, marginBottom: tab === 'register' ? 10 : 22 }} />
-            {tab === 'register' && (
-              <input type="password" value={confirm}
-                onChange={e => setConfirm(e.target.value)}
-                placeholder={zh ? '确认密码' : 'Confirm password'}
-                className="gd-ad-inp"
-                style={{ ...inp, marginBottom: 22 }} />
-            )}
-
-            {notFound && (
-              <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.06em',
-                  color: 'rgba(249,248,246,0.38)' }}>
-                  邮箱或密码有误
-                </span>
-                <RegisterCTABadge onClick={switchToRegister} />
+          {/* ── 忘记密码模式 ── */}
+          {mode === 'forgot' && (
+            <form onSubmit={handleForgot}>
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', color: 'rgba(249,248,246,0.45)', marginBottom: 10 }}>
+                  {zh ? '重置密码' : 'RESET PASSWORD'}
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.04em', color: 'rgba(249,248,246,0.5)', lineHeight: 1.6 }}>
+                  {zh ? '输入账户邮箱，我们将发送重置链接' : 'Enter your email to receive a reset link'}
+                </div>
               </div>
-            )}
-            {error && (
-              <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10,
-                letterSpacing: '0.05em', color: '#C42B1C' }}>{error}</div>
-            )}
-            {info && (
-              <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10,
-                letterSpacing: '0.06em', color: 'rgba(249,248,246,0.55)' }}>{info}</div>
-            )}
+              <input ref={emailRef} type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder={zh ? '邮箱地址' : 'Email address'} className="gd-ad-inp"
+                style={{ ...inp, marginBottom: 16 }} />
+              {error && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: '#C42B1C' }}>{error}</div>}
+              <button type="submit" disabled={busy} style={{ width: '100%', padding: 12, background: busy ? 'rgba(249,248,246,0.5)' : 'rgba(249,248,246,0.93)', color: '#111111', fontFamily: 'monospace', fontSize: 9, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', border: 'none', cursor: busy ? 'default' : 'pointer', marginBottom: 14 }}>
+                {busy ? '···' : (zh ? '发送重置邮件 →' : 'SEND RESET EMAIL →')}
+              </button>
+              <div style={{ textAlign: 'center' }}>
+                <span onClick={() => { reset(); setMode('auth'); }} style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.2em', color: 'rgba(249,248,246,0.35)', textTransform: 'uppercase', cursor: 'pointer' }}>
+                  ← {zh ? '返回登录' : 'BACK TO LOGIN'}
+                </span>
+              </div>
+            </form>
+          )}
 
-            <button type="submit" disabled={busy}
-              style={{
-                width: '100%', padding: 12,
-                background: busy ? 'rgba(249,248,246,0.5)' : 'rgba(249,248,246,0.93)',
-                color: '#111111', fontFamily: 'monospace', fontSize: 9, fontWeight: 700,
-                letterSpacing: '0.3em', textTransform: 'uppercase',
-                border: 'none', cursor: busy ? 'default' : 'pointer',
-                transition: 'background 0.22s',
-              }}>
-              {busy ? '···' : tab === 'login'
-                ? (zh ? '进入工作坊 →' : 'ENTER ATELIER →')
-                : (zh ? '创建账号 →' : 'CREATE ACCOUNT →')}
-            </button>
-          </form>
+          {/* ── 已发送 ── */}
+          {mode === 'forgot-sent' && (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: 22, color: 'rgba(249,248,246,0.8)', marginBottom: 16 }}>✓</div>
+              <div style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.18em', color: 'rgba(249,248,246,0.7)', textTransform: 'uppercase', marginBottom: 10 }}>
+                {zh ? '重置邮件已发送' : 'RESET EMAIL SENT'}
+              </div>
+              <div style={{ fontFamily: 'monospace', fontSize: 10, color: 'rgba(249,248,246,0.38)', lineHeight: 1.7, marginBottom: 22 }}>
+                {zh ? `请检查 ${email} 的收件箱，点击邮件中的链接设置新密码。` : `Check ${email} for the reset link.`}
+              </div>
+              <span onClick={onClose} style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.2em', color: 'rgba(249,248,246,0.3)', textTransform: 'uppercase', cursor: 'pointer' }}>
+                ESC {zh ? '关闭' : 'CLOSE'}
+              </span>
+            </div>
+          )}
 
-          <div style={{ textAlign: 'center', marginTop: 18 }}>
-            <span onClick={onClose}
-              style={{
-                fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.22em',
-                color: 'rgba(249,248,246,0.28)', textTransform: 'uppercase', cursor: 'pointer',
-              }}>
-              ESC {zh ? '关闭' : 'CLOSE'}
-            </span>
-          </div>
+          {/* ── 正常登录/注册模式 ── */}
+          {mode === 'auth' && (
+            <>
+              <div style={{ display: 'flex', border: '1px solid rgba(249,248,246,0.15)', marginBottom: 26 }}>
+                {(['login', 'register'] as const).map(t => (
+                  <button key={t} onClick={() => { setTab(t); reset(); }}
+                    style={{ flex: 1, padding: '9px 0', fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.25em', textTransform: 'uppercase', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'background 0.22s, color 0.22s', background: tab === t ? 'rgba(249,248,246,0.93)' : 'rgba(249,248,246,0.07)', color: tab === t ? '#111111' : 'rgba(249,248,246,0.42)' }}>
+                    {t === 'login' ? (zh ? '登录' : 'LOGIN') : (zh ? '注册' : 'REGISTER')}
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={handleGoogle} disabled={busy} style={{ width: '100%', padding: '11px', border: '1px solid rgba(249,248,246,0.22)', background: 'transparent', color: 'rgba(249,248,246,0.72)', fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9, cursor: 'pointer', marginBottom: 18 }}>
+                <GoogleIcon />
+                {zh ? '使用 Google 继续' : 'CONTINUE WITH GOOGLE'}
+              </button>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 18 }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(249,248,246,0.11)' }} />
+                <span style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.22em', color: 'rgba(249,248,246,0.3)', textTransform: 'uppercase' }}>or</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(249,248,246,0.11)' }} />
+              </div>
+
+              <form onSubmit={handleSubmit}>
+                <input ref={emailRef} type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder={zh ? '邮箱地址' : 'Email address'} className="gd-ad-inp"
+                  style={{ ...inp, marginBottom: 10 }} />
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder={zh ? '密码' : 'Password'} className="gd-ad-inp"
+                  style={{ ...inp, marginBottom: tab === 'register' ? 10 : 6 }} />
+
+                {tab === 'login' && (
+                  <div style={{ textAlign: 'right', marginBottom: 16 }}>
+                    <span onClick={() => { reset(); setMode('forgot'); }} style={{ fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.15em', color: 'rgba(249,248,246,0.3)', textTransform: 'uppercase', cursor: 'pointer' }}>
+                      {zh ? '忘记密码？' : 'FORGOT PASSWORD?'}
+                    </span>
+                  </div>
+                )}
+
+                {tab === 'register' && (
+                  <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+                    placeholder={zh ? '确认密码' : 'Confirm password'} className="gd-ad-inp"
+                    style={{ ...inp, marginBottom: 22 }} />
+                )}
+
+                {notFound && (
+                  <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                    <span style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.06em', color: 'rgba(249,248,246,0.38)' }}>邮箱或密码有误</span>
+                    <RegisterCTABadge onClick={switchToRegister} />
+                  </div>
+                )}
+                {error && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: '#C42B1C' }}>{error}</div>}
+
+                <button type="submit" disabled={busy} style={{ width: '100%', padding: 12, background: busy ? 'rgba(249,248,246,0.5)' : 'rgba(249,248,246,0.93)', color: '#111111', fontFamily: 'monospace', fontSize: 9, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', border: 'none', cursor: busy ? 'default' : 'pointer', transition: 'background 0.22s' }}>
+                  {busy ? '···' : tab === 'login' ? (zh ? '进入工作坊 →' : 'ENTER ATELIER →') : (zh ? '创建账号 →' : 'CREATE ACCOUNT →')}
+                </button>
+              </form>
+            </>
+          )}
+
+          {mode === 'auth' && (
+            <div style={{ textAlign: 'center', marginTop: 18 }}>
+              <span onClick={onClose} style={{ fontFamily: 'monospace', fontSize: 8, letterSpacing: '0.22em', color: 'rgba(249,248,246,0.28)', textTransform: 'uppercase', cursor: 'pointer' }}>
+                ESC {zh ? '关闭' : 'CLOSE'}
+              </span>
+            </div>
+          )}
         </motion.div>
       </motion.div>
     </>

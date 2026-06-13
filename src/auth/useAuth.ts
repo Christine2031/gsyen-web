@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
-import { initializeUserData, upgradeTierToFree, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut } from './authService';
+import { initializeUserData, upgradeTierToFree, resetPasswordForEmail, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut } from './authService';
 import type { AuthState, OAuthProvider, UserTier, LoginProvider } from '../types/auth';
 
 const DEFAULT_AUTH_STATE: AuthState = {
@@ -11,6 +11,7 @@ const DEFAULT_AUTH_STATE: AuthState = {
   emailVerified: false,
   loginProvider: null,
   loading: true,
+  isPasswordRecovery: false,
 };
 
 export function useAuth() {
@@ -54,6 +55,7 @@ export function useAuth() {
           emailVerified: !!user?.email_confirmed_at,
           loginProvider: (user?.user_metadata?.provider ?? null) as LoginProvider | null,
           loading: false,
+          isPasswordRecovery: false,
         });
       } catch {
         if (!cancelled) setState(s => ({ ...s, loading: false }));
@@ -80,6 +82,7 @@ export function useAuth() {
         loginProvider: (user?.user_metadata?.provider ?? null) as LoginProvider | null,
         loading: false,
         tier: null,
+        isPasswordRecovery: _event === 'PASSWORD_RECOVERY',
       }));
 
       if (user) {
@@ -114,12 +117,22 @@ export function useAuth() {
     return signOut();
   }, []);
 
+  const resetPasswordHandler = useCallback(async (email: string) => {
+    return resetPasswordForEmail(email);
+  }, []);
+
+  const clearPasswordRecovery = useCallback(() => {
+    setState(s => ({ ...s, isPasswordRecovery: false }));
+  }, []);
+
   return {
     ...state,
     signInWithEmail: signInEmailHandler,
     signUpWithEmail: signUpEmailHandler,
     signInWithOAuth: signInOAuthHandler,
     signOut: signOutHandler,
+    resetPasswordForEmail: resetPasswordHandler,
+    clearPasswordRecovery,
   };
 }
 

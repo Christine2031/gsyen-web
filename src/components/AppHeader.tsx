@@ -6,6 +6,7 @@ import VintageCar from './VintageCar';
 import { WinCtrlButton, KanbanIcon } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
+import ResetPasswordModal from '../auth/ResetPasswordModal';
 import { useAuth } from '../auth/useAuth';
 import { TierBadge } from './AppHeaderTierBadge';
 
@@ -116,7 +117,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  const { user, tier, emailVerified, signOut } = useAuth();
+  const { user, tier, emailVerified, signOut, isPasswordRecovery, clearPasswordRecovery } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
 
@@ -250,6 +251,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
       {showAbout && <AboutDialog lang={lang} onClose={() => setShowAbout(false)} />}
       <AnimatePresence>
         {authModal && <AuthModal key="auth-modal" lang={lang} initialTab={authModal} onClose={() => setAuthModal(null)} />}
+        {isPasswordRecovery && <ResetPasswordModal key="reset-modal" lang={lang} onDone={clearPasswordRecovery} />}
       </AnimatePresence>
 
     </>

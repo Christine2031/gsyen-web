@@ -168,6 +168,22 @@ export async function signInWithOAuth(provider: OAuthProvider): Promise<AuthResu
 }
 
 /**
+ * 发送密码重置邮件
+ */
+export async function resetPasswordForEmail(email: string): Promise<AuthResult> {
+  if (!supabase) return { success: false, error: { message: 'Supabase not initialized' } };
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: window.location.origin,
+    });
+    if (error) return { success: false, error: formatAuthError(error, 'resetPasswordForEmail') };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: { message: '发送失败，请检查网络连接' } };
+  }
+}
+
+/**
  * 邮箱验证后升级 tier：free_unverified → free
  */
 export async function upgradeTierToFree(userId: string): Promise<void> {
