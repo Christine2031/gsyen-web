@@ -2,6 +2,36 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from './useAuth';
 
+function RegisterCTABadge({ onClick }: { onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <motion.span
+      onClick={onClick}
+      onHoverStart={() => setHovered(true)}
+      onHoverEnd={() => setHovered(false)}
+      className="inline-flex items-center px-2 py-0.5 text-[7px] font-bold tracking-[0.22em] uppercase border font-mono cursor-pointer select-none"
+      style={{ borderColor: 'rgba(26,110,204,0.55)', color: '#4A90D9' }}
+      animate={hovered
+        ? { backgroundColor: '#1A6ECC', color: '#FFFFFF', y: -2, scale: 1.07,
+            borderColor: '#1A6ECC',
+            boxShadow: '0 4px 14px rgba(26,110,204,0.45), 0 1px 3px rgba(26,110,204,0.3)' }
+        : { backgroundColor: 'rgba(26,110,204,0.07)', color: '#4A90D9', y: 0, scale: 1,
+            borderColor: 'rgba(26,110,204,0.55)',
+            boxShadow: '0 0px 0px rgba(26,110,204,0)' }
+      }
+      whileTap={{ scale: 0.95, y: 0 }}
+      transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+    >
+      <motion.span
+        animate={hovered ? { textShadow: '0 1px 0 rgba(0,40,100,0.45), 0 2px 8px rgba(26,110,204,0.35)' } : { textShadow: 'none' }}
+        transition={{ duration: 0.15 }}
+      >
+        还没账号？立即注册 →
+      </motion.span>
+    </motion.span>
+  );
+}
+
 interface Props {
   lang: 'zh' | 'en';
   initialTab?: 'login' | 'register';
@@ -25,6 +55,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
   const [error, setError]       = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [info, setInfo]         = useState('');
   const [busy, setBusy]         = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -38,7 +69,9 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     return () => window.removeEventListener('keydown', fn);
   }, [onClose]);
 
-  const reset = () => { setError(''); setInfo(''); };
+  const reset = () => { setError(''); setInfo(''); setNotFound(false); };
+
+  const switchToRegister = () => { reset(); setTab('register'); };
 
   const handleGoogle = async () => {
     reset(); setBusy(true);
@@ -54,7 +87,14 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     setBusy(true);
     if (tab === 'login') {
       const { error: e } = await signInWithEmail(email, password);
-      if (e) setError(e.message); else onClose();
+      if (e) {
+        const msg = e.message?.toLowerCase() ?? '';
+        if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
+          setNotFound(true);
+        } else {
+          setError(e.message);
+        }
+      } else { onClose(); }
     } else {
       const { error: e } = await signUpWithEmail(email, password);
       if (e) setError(e.message);
@@ -193,6 +233,15 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
                 style={{ ...inp, marginBottom: 22 }} />
             )}
 
+            {notFound && (
+              <div style={{ marginBottom: 14, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                <span style={{ fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.06em',
+                  color: 'rgba(249,248,246,0.38)' }}>
+                  邮箱或密码有误
+                </span>
+                <RegisterCTABadge onClick={switchToRegister} />
+              </div>
+            )}
             {error && (
               <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10,
                 letterSpacing: '0.05em', color: '#C42B1C' }}>{error}</div>
