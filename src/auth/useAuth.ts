@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
-import { initializeUserData, upgradeTierToFree, resetPasswordForEmail, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut } from './authService';
+import { initializeUserData, resetPasswordForEmail, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut } from './authService';
 import type { AuthState, OAuthProvider, UserTier, LoginProvider } from '../types/auth';
 
 const DEFAULT_AUTH_STATE: AuthState = {
@@ -41,18 +41,13 @@ export function useAuth() {
         if (user) {
           tier = await initializeUserData(user.id, user.user_metadata?.provider ?? 'email');
           if (cancelled) return;
-          if (user.email_confirmed_at && tier === 'free_unverified') {
-            await upgradeTierToFree(user.id);
-            if (cancelled) return;
-            tier = 'free';
-          }
         }
 
         setState({
           user,
           session: data.session,
           tier,
-          emailVerified: !!user?.email_confirmed_at,
+          emailVerified: tier !== 'free_unverified' && tier !== null,
           loginProvider: (user?.user_metadata?.provider ?? null) as LoginProvider | null,
           loading: false,
           isPasswordRecovery: false,
@@ -78,7 +73,7 @@ export function useAuth() {
         ...s,
         user,
         session,
-        emailVerified: !!user?.email_confirmed_at,
+        emailVerified: false,
         loginProvider: (user?.user_metadata?.provider ?? null) as LoginProvider | null,
         loading: false,
         tier: null,
@@ -87,13 +82,8 @@ export function useAuth() {
 
       if (user) {
         initializeUserData(user.id, user.user_metadata?.provider ?? 'email')
-          .then(async (tier) => {
-            let finalTier = tier;
-            if (user.email_confirmed_at && tier === 'free_unverified') {
-              await upgradeTierToFree(user.id);
-              finalTier = 'free';
-            }
-            setState(s => s.user?.id === user.id ? { ...s, tier: finalTier } : s);
+          .then((tier) => {
+            setState(s => s.user?.id === user.id ? { ...s, tier, emailVerified: tier !== 'free_unverified' && tier !== null } : s);
           });
       }
     });
