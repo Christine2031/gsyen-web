@@ -1,1 +1,1 @@
-{"version":"0.0.1","configurations":[{"name":"gsyen-web Dev Server","runtimeExecutable":"npm","runtimeArgs":["run","dev"],"port":3000,"autoPort":false,"reused":true}]}
+{"version":"0.0.1","configurations":[{"name":"gsyen-web Dev Server","runtimeExecutable":"bash","runtimeArgs":["-c","cd /Users/Ethan/Desktop/Projects/gsyen/gsyen-web && npm run dev"],"port":3000,"autoPort":false,"reused":false}]}

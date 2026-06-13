@@ -27,6 +27,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
   const [error, setError]       = useState('');
+  const [verifyMsg, setVerifyMsg] = useState('');
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy]         = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -40,7 +41,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     return () => window.removeEventListener('keydown', fn);
   }, [onClose]);
 
-  const reset = () => { setError(''); setNotFound(false); };
+  const reset = () => { setError(''); setVerifyMsg(''); setNotFound(false); };
   const switchToRegister = () => { reset(); setTab('register'); setMode('auth'); };
 
   const handleGoogle = async () => {
@@ -59,14 +60,16 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
       const { error: err } = await signInWithEmail(email, password);
       if (err) {
         const msg = err.message?.toLowerCase() ?? '';
-        if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
+        if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+          setError(zh ? `请先验证邮箱，检查 ${email} 的收件箱，点击验证链接后再登录` : `Please verify your email. Check ${email} for the verification link.`);
+        } else if (msg.includes('invalid login') || msg.includes('invalid credentials') || msg.includes('user not found') || msg.includes('no user found')) {
           setNotFound(true);
         } else { setError(err.message); }
       } else { onClose(); }
     } else {
       const { error: err } = await signUpWithEmail(email, password);
       if (err) setError(err.message);
-      else { onClose(); }
+      else { setVerifyMsg(zh ? `注册成功！请检查 ${email} 的收件箱，点击验证链接完成验证后即可登录` : `Account created! Check ${email} for the verification link.`); }
     }
     setBusy(false);
   };
@@ -227,7 +230,8 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
                     <RegisterCTABadge onClick={switchToRegister} />
                   </div>
                 )}
-                {error && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: '#C42B1C' }}>{error}</div>}
+                {error && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: '#C42B1C', lineHeight: 1.6 }}>{error}</div>}
+                {verifyMsg && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: 'rgba(249,248,246,0.62)', lineHeight: 1.6 }}>{verifyMsg}</div>}
 
                 <button type="submit" disabled={busy} style={{ width: '100%', padding: 12, background: busy ? 'rgba(249,248,246,0.5)' : 'rgba(249,248,246,0.93)', color: '#111111', fontFamily: 'monospace', fontSize: 9, fontWeight: 700, letterSpacing: '0.3em', textTransform: 'uppercase', border: 'none', cursor: busy ? 'default' : 'pointer', transition: 'background 0.22s' }}>
                   {busy ? '···' : tab === 'login' ? (zh ? '进入工作坊 →' : 'ENTER ATELIER →') : (zh ? '创建账号 →' : 'CREATE ACCOUNT →')}

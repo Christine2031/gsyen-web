@@ -11,3 +11,4 @@ dist-electron/
 electron/v2ray-config.json
 electron/v2ray-nodes.json
 electron/v2ray-core*
+.env*.local
