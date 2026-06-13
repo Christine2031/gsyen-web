@@ -19,8 +19,8 @@ function RegisterCTABadge({ onClick }: { onClick: () => void }) {
             borderColor: 'rgba(26,110,204,0.55)',
             boxShadow: '0 0px 0px rgba(26,110,204,0)' }
       }
-      whileTap={{ scale: 0.91, y: 2 }}
-      transition={{ type: 'spring', stiffness: 480, damping: 18 }}
+      whileTap={{ scale: 0.93, y: 1 }}
+      transition={{ type: 'spring', stiffness: 280, damping: 28 }}
     >
       <motion.span
         animate={hovered ? { textShadow: '0 1px 0 rgba(0,40,100,0.45), 0 2px 8px rgba(26,110,204,0.35)' } : { textShadow: 'none' }}
