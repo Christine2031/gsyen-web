@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
 import { initializeUserData, resetPasswordForEmail, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut, upgradeTierToFree } from './authService';
@@ -16,6 +16,12 @@ const DEFAULT_AUTH_STATE: AuthState = {
 
 export function useAuth() {
   const [state, setState] = useState<AuthState>(DEFAULT_AUTH_STATE);
+  const [justVerified, setJustVerified] = useState(false);
+  // 同步捕获 hash，Supabase 处理前就存下来
+  const magicLinkRef = useRef(
+    typeof window !== 'undefined' &&
+    (window.location.hash.includes('type=magiclink') || window.location.hash.includes('type=email'))
+  );
 
   // Effect 1: 初始化 session，cancelled 标志防 StrictMode 竞态
   useEffect(() => {
@@ -81,12 +87,12 @@ export function useAuth() {
       }));
 
       if (user) {
-        // 检测魔法链接验证回调（type=magiclink），升级 tier
-        const hash = window.location.hash;
-        const isMagicLink = hash.includes('type=magiclink') || hash.includes('type=email');
-        if (isMagicLink) {
+        if (magicLinkRef.current) {
+          magicLinkRef.current = false;
           window.history.replaceState(null, '', window.location.pathname);
-          upgradeTierToFree(user.id).catch(() => {});
+          upgradeTierToFree(user.id)
+            .then(() => setJustVerified(true))
+            .catch(() => {});
         }
 
         initializeUserData(user.id, user.user_metadata?.provider ?? 'email')
@@ -123,8 +129,12 @@ export function useAuth() {
     setState(s => ({ ...s, isPasswordRecovery: false }));
   }, []);
 
+  const clearJustVerified = useCallback(() => setJustVerified(false), []);
+
   return {
     ...state,
+    justVerified,
+    clearJustVerified,
     signInWithEmail: signInEmailHandler,
     signUpWithEmail: signUpEmailHandler,
     signInWithOAuth: signInOAuthHandler,
