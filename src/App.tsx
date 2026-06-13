@@ -34,6 +34,11 @@ export default function App() {
     setBrandTab('member');
   };
 
+  const handleSpaceChange = (space: ActiveSpace) => {
+    setActiveSpace(space);
+    if (space === 'brand') setBrandTab('contacts');
+  };
+
   useEffect(() => {
     if (!supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -48,7 +53,7 @@ export default function App() {
         {showLanding && <LandingHero lang={lang} onEnter={() => setShowLanding(false)} />}
       </AnimatePresence>
 
-      <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={setActiveSpace} onMemberClick={handleMemberClick} />
+      <AppHeader lang={lang} setLang={setLang} activeSpace={activeSpace} setActiveSpace={handleSpaceChange} onMemberClick={handleMemberClick} />
       <FullscreenFade />
 
       {activeSpace === 'brand' ? (

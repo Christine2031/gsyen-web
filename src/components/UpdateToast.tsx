@@ -65,7 +65,11 @@ export function UpdateToast() {
             position: 'fixed', bottom: 28, left: 28, zIndex: 9998,
             width: 300,
             background: '#111111',
-            border: `1px solid ${IV(0.18)}`,
+            borderTop:    `1px solid rgba(0,0,0,0.55)`,
+            borderLeft:   `1px solid rgba(0,0,0,0.35)`,
+            borderRight:  `1px solid rgba(0,0,0,0.35)`,
+            borderBottom: `1px solid ${IV(0.12)}`,
+            boxShadow: `inset 0 2px 6px rgba(0,0,0,0.45), inset 0 1px 0 rgba(0,0,0,0.3), 0 1px 0 ${IV(0.06)}`,
           }}
         >
           <Corner pos="tl" /><Corner pos="tr" />
