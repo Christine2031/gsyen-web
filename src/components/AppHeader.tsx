@@ -177,7 +177,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
             <button
               key={value}
               onClick={() => setActiveSpace(value)}
-              className={`w-[80px] py-1.5 rounded-none fs-sm font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`min-w-[80px] px-3 py-1.5 rounded-none fs-sm font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
                 activeSpace === value ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
               }`}
             >

@@ -72,7 +72,7 @@ export default function App() {
             {activeSpace === 'password' && <div className="h-full overflow-hidden"><PasswordModule lang={lang} /></div>}
           </div>
 
-          <footer className="mt-auto pt-6 border-t border-[#1A1A1A]/10 text-[9px] text-[#1A1A1A]/40 font-mono uppercase tracking-widest flex flex-col sm:flex-row items-center justify-between gap-4" id="app-footer-other">
+          <footer className="mt-auto pt-2 pb-1 border-t border-[#1A1A1A]/10 text-[9px] text-[#1A1A1A]/40 font-mono uppercase tracking-widest flex flex-row items-center justify-between gap-4" id="app-footer-other">
             <p>
               {lang === 'zh'
                 ? '© 2026 雅致全功能套件。高精密、本地沙盒保存、防泄露隔离运行。'
