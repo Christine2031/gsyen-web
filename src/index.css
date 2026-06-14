@@ -134,15 +134,15 @@
   --animate-scaleUp: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 字号档位 — zoom 挂在 html 层，vh/vw 单位随之缩放，h-screen 不会留白或溢出 */
-html[data-font="compact"] { zoom: 0.85; }
-html[data-font="large"] {
+/* 字号档位 — zoom 挂在 body 层，html 保持铺满视口，不留底部空白 */
+html[data-font="compact"] body { zoom: 0.85; }
+html[data-font="large"] body {
   zoom: 1.15;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
 }
-html[data-font="ji"] {
+html[data-font="ji"] body {
   zoom: 1.30;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
