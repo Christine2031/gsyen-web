@@ -149,62 +149,98 @@ export function ChatSidebar({
           </div>
         )}
 
-        {/* 底部：有更新时显示 Art Deco 更新卡，否则显示存储状态 */}
+        {/* 底部：有更新时显示更新卡，否则显示存储状态 */}
         {phase !== 'idle' && (
           <div className="shrink-0" style={{
             position: 'relative', width: '100%',
-            background: '#0D0D0D',
-            backgroundImage: 'radial-gradient(rgba(249,248,246,0.04) 1px, transparent 1px)',
-            backgroundSize: '8px 8px',
-            boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.6), inset 0 0 0 1px rgba(0,0,0,0.45), 0 -2px 6px rgba(0,0,0,0.18)',
+            background: '#0C0C0C',
+            // 极细网格线 — 比点阵更精致
+            backgroundImage: 'linear-gradient(rgba(249,248,246,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(249,248,246,0.035) 1px, transparent 1px)',
+            backgroundSize: '20px 20px',
+            // 深度凹陷 + 向上压入侧边栏
+            boxShadow: 'inset 0 6px 16px rgba(0,0,0,0.7), inset 0 1px 0 rgba(0,0,0,0.5), 0 -3px 8px rgba(0,0,0,0.22)',
           }}>
-            {/* amber 顶线 — 低调工业感 */}
-            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1.5, background: 'rgba(245,158,11,0.38)' }} />
-            {/* 四角装饰 */}
+            {/* 顶部渐变遮罩 — 把卡片"压"进侧边栏 */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 10,
+              background: 'linear-gradient(to bottom, rgba(244,242,238,0.12), transparent)',
+              pointerEvents: 'none',
+            }} />
+            {/* amber 顶边缘光 */}
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1,
+              background: 'linear-gradient(90deg, transparent, rgba(245,158,11,0.55) 30%, rgba(245,158,11,0.55) 70%, transparent)',
+            }} />
+            {/* L 形角标 — 2px，更建筑感 */}
             {(['tl','tr','bl','br'] as const).map(p => (
-              <div key={p} style={{ position: 'absolute', width: 8, height: 8,
-                ...(p.includes('t') ? { top: 5 } : { bottom: 5 }),
-                ...(p.includes('l') ? { left: 5 } : { right: 5 }),
-                borderTop:    p.includes('t') ? '1px solid rgba(249,248,246,0.22)' : undefined,
-                borderBottom: p.includes('b') ? '1px solid rgba(249,248,246,0.22)' : undefined,
-                borderLeft:   p.includes('l') ? '1px solid rgba(249,248,246,0.22)' : undefined,
-                borderRight:  p.includes('r') ? '1px solid rgba(249,248,246,0.22)' : undefined,
+              <div key={p} style={{ position: 'absolute', width: 10, height: 10,
+                ...(p.includes('t') ? { top: 6 } : { bottom: 6 }),
+                ...(p.includes('l') ? { left: 6 } : { right: 6 }),
+                borderTop:    p.includes('t') ? '2px solid rgba(249,248,246,0.3)' : undefined,
+                borderBottom: p.includes('b') ? '2px solid rgba(249,248,246,0.3)' : undefined,
+                borderLeft:   p.includes('l') ? '2px solid rgba(249,248,246,0.3)' : undefined,
+                borderRight:  p.includes('r') ? '2px solid rgba(249,248,246,0.3)' : undefined,
               }} />
             ))}
-            <div style={{ padding: '8px 12px' }}>
-              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 6, letterSpacing: '0.35em', textTransform: 'uppercase', color: 'rgba(249,248,246,0.22)', marginBottom: 2 }}>
+
+            <div style={{ padding: '10px 14px 12px' }}>
+              {/* 标签行 */}
+              <div style={{
+                fontFamily: '"Cinzel",Georgia,serif', fontSize: 6.5,
+                letterSpacing: '0.5em', textTransform: 'uppercase',
+                color: 'rgba(249,248,246,0.28)', marginBottom: 4,
+              }}>
                 {phase === 'downloading' ? 'Downloading Update' : 'Update Ready'}
               </div>
-              <div style={{ fontFamily: '"Cinzel",Georgia,serif', fontSize: 11, fontWeight: 700, color: 'rgba(249,248,246,0.65)', letterSpacing: '0.08em', marginBottom: 6 }}>
+              {/* 版本号 */}
+              <div style={{
+                fontFamily: '"Cinzel",Georgia,serif', fontSize: 12, fontWeight: 700,
+                color: 'rgba(249,248,246,0.78)', letterSpacing: '0.1em', marginBottom: 10,
+              }}>
                 GSYEN{version ? ` v${version}` : ''}
               </div>
+
               {phase === 'downloading' && (
-                <div style={{
-                  width: '100%', height: 14, position: 'relative', overflow: 'hidden',
-                  border: '1px solid rgba(249,248,246,0.08)',
-                  background: 'repeating-linear-gradient(-45deg,rgba(245,158,11,0.08) 0px,rgba(245,158,11,0.08) 5px,rgba(0,0,0,0.28) 5px,rgba(0,0,0,0.28) 10px)',
-                }}>
+                <div style={{ position: 'relative' }}>
+                  {/* 轨道 */}
                   <div style={{
-                    position: 'absolute', left: 0, top: 0, bottom: 0,
-                    width: `${pct}%`, transition: 'width 0.4s linear',
-                    background: 'repeating-linear-gradient(-45deg,rgba(245,158,11,0.72) 0px,rgba(245,158,11,0.72) 5px,rgba(160,90,0,0.55) 5px,rgba(160,90,0,0.55) 10px)',
-                  }} />
-                  <span style={{
-                    position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
-                    fontFamily: 'monospace', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em',
-                    color: 'rgba(249,248,246,0.75)',
-                    textShadow: '0 1px 3px rgba(0,0,0,0.95)',
-                  }}>{pct}%</span>
+                    width: '100%', height: 3, background: 'rgba(249,248,246,0.08)',
+                    position: 'relative', overflow: 'visible',
+                  }}>
+                    {/* 填充条 */}
+                    <div style={{
+                      position: 'absolute', left: 0, top: 0, bottom: 0,
+                      width: `${pct}%`, transition: 'width 0.5s cubic-bezier(0.4,0,0.2,1)',
+                      background: 'rgba(245,158,11,0.85)',
+                    }} />
+                    {/* 右侧发光点 */}
+                    {pct > 2 && (
+                      <div style={{
+                        position: 'absolute', top: '50%', transform: 'translateY(-50%)',
+                        left: `calc(${pct}% - 1px)`,
+                        width: 6, height: 6, borderRadius: '50%',
+                        background: 'rgba(245,158,11,1)',
+                        boxShadow: '0 0 8px 3px rgba(245,158,11,0.6)',
+                        transition: 'left 0.5s cubic-bezier(0.4,0,0.2,1)',
+                      }} />
+                    )}
+                  </div>
+                  {/* 百分比 */}
+                  <div style={{
+                    marginTop: 6,
+                    fontFamily: 'monospace', fontSize: 9, letterSpacing: '0.12em',
+                    color: 'rgba(245,158,11,0.7)', textAlign: 'right',
+                  }}>{pct}%</div>
                 </div>
               )}
+
               {phase === 'ready' && (
                 <button onClick={() => api?.install()} style={{
-                  width: '100%', padding: '7px 0', background: 'transparent',
-                  border: '1px solid rgba(249,248,246,0.15)', color: 'rgba(249,248,246,0.45)',
+                  width: '100%', padding: '8px 0', background: 'transparent',
+                  border: '1px solid rgba(245,158,11,0.35)', color: 'rgba(245,158,11,0.7)',
                   fontFamily: '"Cinzel",Georgia,serif', fontSize: 8, fontWeight: 700,
-                  letterSpacing: '0.3em', textTransform: 'uppercase', cursor: 'pointer',
+                  letterSpacing: '0.35em', textTransform: 'uppercase', cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}>
-                  {lang === 'zh' ? '重启升级 →' : 'Restart →'}
+                  {lang === 'zh' ? 'Restart to Update' : 'Restart to Update'}
                 </button>
               )}
             </div>
