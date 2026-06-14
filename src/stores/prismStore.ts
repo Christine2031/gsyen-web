@@ -102,7 +102,7 @@ async function _deleteCorpus(id: string) {
 async function _pull(userId: string) {
   if (!supabase) return;
   const [{ data: profile }, { data: corpus }] = await Promise.all([
-    supabase.from('gsyen_prism_profile').select('*').eq('user_id', userId).single(),
+    supabase.from('gsyen_prism_profile').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('gsyen_prism_corpus').select('*').eq('user_id', userId),
   ]);
   if (profile) {
