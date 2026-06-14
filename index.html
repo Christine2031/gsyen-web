@@ -65,3 +65,7 @@
   </body>
 </html>
 
+// 故意写个未定义的变量调用，100% 崩掉
+let user = undefined;
+console.log(user.profile.name);
+
