@@ -108,12 +108,28 @@ async function _pull(userId: string) {
   const merged = [...remote, ...localOnly];
   writeRaw(merged);
   syncRegistry(merged);
+  window.dispatchEvent(new CustomEvent('ledger-updated'));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _rt: any = null;
+
+function _subscribeRealtime(uid: string) {
+  _rt?.unsubscribe();
+  _rt = supabase!
+    .channel(`gsyen_transactions:${uid}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'gsyen_transactions', filter: `user_id=eq.${uid}` },
+      () => _pull(uid)
+    )
+    .subscribe();
 }
 
 // 登录时自动拉云端数据，logout 时清除 uid
 supabase?.auth.onAuthStateChange((_e, session) => {
   _uid = session?.user?.id ?? null;
-  if (_uid) _pull(_uid);
+  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
+  else { _rt?.unsubscribe(); _rt = null; }
 });
 
 export const ledgerStore = {

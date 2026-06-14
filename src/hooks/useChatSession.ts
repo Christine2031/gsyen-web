@@ -35,6 +35,13 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
 
+  // Realtime cross-device sync: another device wrote → store dispatches event → re-load sessions
+  useEffect(() => {
+    const handler = () => setSessions(chatSessionStore.loadAll());
+    window.addEventListener('chat-sessions-updated', handler);
+    return () => window.removeEventListener('chat-sessions-updated', handler);
+  }, []);
+
   const setMessages = useCallback((msgs: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
     setMessagesState(msgs);
   }, []);

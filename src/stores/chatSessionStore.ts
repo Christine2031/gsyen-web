@@ -35,11 +35,27 @@ async function _pull(userId: string) {
   for (const s of localOnly) await _upsert(s);
   const merged = [...remote, ...localOnly].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(merged));
+  window.dispatchEvent(new CustomEvent('chat-sessions-updated'));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _rt: any = null;
+
+function _subscribeRealtime(uid: string) {
+  _rt?.unsubscribe();
+  _rt = supabase!
+    .channel(`gsyen_chat_sessions:${uid}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'gsyen_chat_sessions', filter: `user_id=eq.${uid}` },
+      () => _pull(uid)
+    )
+    .subscribe();
 }
 
 supabase?.auth.onAuthStateChange((_ev, session) => {
   _uid = session?.user?.id ?? null;
-  if (_uid) _pull(_uid);
+  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
+  else { _rt?.unsubscribe(); _rt = null; }
 });
 
 export const chatSessionStore = {

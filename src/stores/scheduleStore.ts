@@ -236,9 +236,25 @@ async function _pull(userId: string) {
   const merged = sortByDateTime([...remote, ...localOnly]);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
   syncRegistry(merged);
+  window.dispatchEvent(new CustomEvent('schedule-updated'));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _rt: any = null;
+
+function _subscribeRealtime(uid: string) {
+  _rt?.unsubscribe();
+  _rt = supabase!
+    .channel(`gsyen_events:${uid}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'gsyen_events', filter: `user_id=eq.${uid}` },
+      () => _pull(uid)
+    )
+    .subscribe();
 }
 
 supabase?.auth.onAuthStateChange((_ev, session) => {
   _uid = session?.user?.id ?? null;
-  if (_uid) _pull(_uid);
+  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
+  else { _rt?.unsubscribe(); _rt = null; }
 });

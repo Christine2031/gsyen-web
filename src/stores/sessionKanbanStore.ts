@@ -46,11 +46,26 @@ async function _pull(userId: string) {
         category: r.category, completed: r.completed, time: '09:00' } as EventItem);
     });
     Object.entries(bySid).forEach(([sid, cs]) => localStorage.setItem(cardKey(sid), JSON.stringify(cs)));
+    window.dispatchEvent(new CustomEvent('schedule-updated'));
   }
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _rt: any = null;
+
+function _subscribeRealtime(uid: string) {
+  _rt?.unsubscribe();
+  _rt = supabase!
+    .channel(`gsyen_kanban:${uid}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gsyen_kanban_cols',  filter: `user_id=eq.${uid}` }, () => _pull(uid))
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gsyen_kanban_cards', filter: `user_id=eq.${uid}` }, () => _pull(uid))
+    .subscribe();
+}
+
 supabase?.auth.onAuthStateChange((_ev, session) => {
   _uid = session?.user?.id ?? null;
-  if (_uid) _pull(_uid);
+  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
+  else { _rt?.unsubscribe(); _rt = null; }
 });
 
 const DEFAULT_COLS: KanbanColumn[] = [

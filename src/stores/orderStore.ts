@@ -8,6 +8,7 @@
 import { cardRegistry } from './cardRegistry';
 import { CardRecord } from '../types/card';
 import { ledgerStore } from './ledgerStore';
+import { supabase } from '../lib/supabase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,14 +16,14 @@ export type OrderStatus = 'pending' | 'partial' | 'active' | 'expired';
 
 export interface Order {
   id:          string;
-  service:     string;        // 服务名，如「疆域」「三元楼」
-  plan:        string;        // 套餐，如「月会员」「年会员」
-  customer:    string;        // 客户名
-  amount:      number;        // 总金额
+  service:     string;
+  plan:        string;
+  customer:    string;
+  amount:      number;
   currency:    'CNY' | 'USD';
-  paidAmount:  number;        // 已付金额
+  paidAmount:  number;
   status:      OrderStatus;
-  startDate:   string;        // ISO date string
+  startDate:   string;
   expireDate?: string;
   notes?:      string;
 }
@@ -48,10 +49,10 @@ function broadcast(): void {
 // ─── CardRegistry ─────────────────────────────────────────────────────────────
 
 const STATUS_COLOR: Record<OrderStatus, string> = {
-  active:  '#4F77AC',  // Regatta 蓝（已生效）
-  partial: '#7A6B4F',  // 暖棕（部分付款）
-  pending: '#9B8C7A',  // 浅棕灰（待付款）
-  expired: '#6B6258',  // 暗灰（已到期）
+  active:  '#4F77AC',
+  partial: '#7A6B4F',
+  pending: '#9B8C7A',
+  expired: '#6B6258',
 };
 
 function toCardRecord(o: Order): CardRecord {
@@ -88,7 +89,7 @@ export const orderStore = {
     writeRaw(updated);
     syncRegistry(updated);
     broadcast();
-    // 有订单一定要记账——自动写入 LEDGER income 流水
+    void _upsert(order);
     if (order.paidAmount > 0) {
       ledgerStore.add({
         id:          `order-ledger-${order.id}`,
@@ -105,15 +106,16 @@ export const orderStore = {
   },
 
   update(id: string, changes: Partial<Omit<Order, 'id'>>): void {
-    const prev = readRaw().find(o => o.id === id);
+    const prev    = readRaw().find(o => o.id === id);
     const updated = readRaw().map(o => o.id === id ? { ...o, ...changes } : o);
     writeRaw(updated);
     syncRegistry(updated);
     broadcast();
-    // 如果 paidAmount 增加了，补记一笔 LEDGER
+    const item = updated.find(o => o.id === id);
+    if (item) void _upsert(item);
     if (prev && changes.paidAmount !== undefined && changes.paidAmount > prev.paidAmount) {
       const delta = changes.paidAmount - prev.paidAmount;
-      const order = updated.find(o => o.id === id)!;
+      const order = item!;
       ledgerStore.add({
         id:          `order-ledger-${order.id}-${Date.now()}`,
         description: `${order.customer} · ${order.service}${order.plan}（补款）`,
@@ -133,6 +135,7 @@ export const orderStore = {
     writeRaw(updated);
     syncRegistry(updated);
     broadcast();
+    void _remove(id);
   },
 
   getRecent(n = 5): Order[] { return readRaw().slice(0, n); },
@@ -140,3 +143,66 @@ export const orderStore = {
 
 // 启动即对账——把已存在的订单收编进卡片集
 syncRegistry(readRaw());
+
+// ── Supabase 双写同步 ─────────────────────────────────────────────────────────
+let _uid: string | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _rt: any = null;
+
+function _row(o: Order) {
+  return {
+    id: o.id, user_id: _uid!, service: o.service, plan: o.plan,
+    customer: o.customer, amount: o.amount, currency: o.currency,
+    paid_amount: o.paidAmount, status: o.status, start_date: o.startDate,
+    expire_date: o.expireDate ?? null, notes: o.notes ?? null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function _upsert(o: Order) {
+  if (!supabase || !_uid) return;
+  await supabase.from('gsyen_orders').upsert(_row(o));
+}
+
+async function _remove(id: string) {
+  if (!supabase || !_uid) return;
+  await supabase.from('gsyen_orders').delete().eq('id', id).eq('user_id', _uid);
+}
+
+async function _pull(userId: string) {
+  if (!supabase) return;
+  const { data } = await supabase.from('gsyen_orders').select('*').eq('user_id', userId);
+  if (!data) return;
+  const remote: Order[] = data.map((r: any) => ({
+    id: r.id, service: r.service, plan: r.plan, customer: r.customer,
+    amount: r.amount, currency: r.currency as 'CNY' | 'USD',
+    paidAmount: r.paid_amount, status: r.status as OrderStatus,
+    startDate: r.start_date, expireDate: r.expire_date ?? undefined,
+    notes: r.notes ?? undefined,
+  }));
+  const local     = readRaw();
+  const remIds    = new Set(remote.map(r => r.id));
+  const localOnly = local.filter(o => !remIds.has(o.id));
+  for (const o of localOnly) await _upsert(o);
+  const merged = [...remote, ...localOnly];
+  writeRaw(merged);
+  syncRegistry(merged);
+  broadcast();
+}
+
+function _subscribeRealtime(uid: string) {
+  _rt?.unsubscribe();
+  _rt = supabase!
+    .channel(`gsyen_orders:${uid}`)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'gsyen_orders', filter: `user_id=eq.${uid}` },
+      () => _pull(uid)
+    )
+    .subscribe();
+}
+
+supabase?.auth.onAuthStateChange((_ev, session) => {
+  _uid = session?.user?.id ?? null;
+  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
+  else { _rt?.unsubscribe(); _rt = null; }
+});
