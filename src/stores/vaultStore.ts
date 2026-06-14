@@ -32,7 +32,9 @@ export const vaultStore = {
   },
 
   remove(id: string) {
-    save(load().filter(r => r.id !== id));
+    const before = load();
+    console.log('[vault] remove id:', id, '| local ids:', before.map(r => r.id));
+    save(before.filter(r => r.id !== id));
     void _delete(id);
   },
 
@@ -63,7 +65,9 @@ async function _delete(id: string) {
   if (!supabase || !_uid) return;
   _pendingDeletes.add(id);
   try {
-    await supabase.from('gsyen_vault').delete().eq('id', id).eq('user_id', _uid);
+    const { error } = await supabase.from('gsyen_vault').delete().eq('id', id).eq('user_id', _uid);
+    if (error) console.error('[vault] _delete error', id, error);
+    else console.log('[vault] _delete ok', id);
   } finally {
     _pendingDeletes.delete(id);
   }
@@ -97,13 +101,19 @@ function _subscribeRealtime(uid: string) {
 }
 
 supabase?.auth.onAuthStateChange((_ev, session) => {
-  _uid = session?.user?.id ?? null;
-  if (_uid) { _pull(_uid); _subscribeRealtime(_uid); }
-  else {
+  const newUid = session?.user?.id ?? null;
+  if (newUid && newUid !== _uid) {
+    _uid = newUid;
+    _pull(_uid);
+    _subscribeRealtime(_uid);
+  } else if (!newUid && _uid) {
+    _uid = null;
     _rt?.unsubscribe();
     _rt = null;
     localStorage.removeItem(LOCAL_STORAGE_KEY);
     localStorage.removeItem(SYNCED_KEY);
     window.dispatchEvent(new Event('vault-updated'));
+  } else {
+    _uid = newUid;
   }
 });

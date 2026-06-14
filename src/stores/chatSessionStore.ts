@@ -74,18 +74,22 @@ function _subscribeRealtime(uid: string) {
 }
 
 supabase?.auth.onAuthStateChange((_ev, session) => {
-  _uid = session?.user?.id ?? null;
-  if (_uid) {
+  const newUid = session?.user?.id ?? null;
+  if (newUid && newUid !== _uid) {
+    _uid = newUid;
     if (_ev === 'SIGNED_IN') window.dispatchEvent(new CustomEvent('gsyen-user-signed-in'));
     _pull(_uid);
     _subscribeRealtime(_uid);
-  } else {
+  } else if (!newUid && _uid) {
+    _uid = null;
     _rt?.unsubscribe();
     _rt = null;
     localStorage.removeItem(SESSIONS_KEY);
     localStorage.removeItem(CURRENT_CHAT_KEY);
     localStorage.removeItem(SYNCED_KEY);
     window.dispatchEvent(new CustomEvent('chat-sessions-updated'));
+  } else {
+    _uid = newUid;
   }
 });
 
