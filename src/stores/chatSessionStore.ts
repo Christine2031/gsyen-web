@@ -8,11 +8,13 @@ const CURRENT_CHAT_KEY = 'atelier_ai_chat';
 let _uid: string | null = null;
 
 async function _upsert(s: StoredSession) {
-  if (!supabase || !_uid) return;
-  await supabase.from('gsyen_chat_sessions').upsert({
+  if (!supabase || !_uid) { console.warn('[sync] _upsert skipped: no supabase or uid', { supabase: !!supabase, uid: _uid }); return; }
+  const { error } = await supabase.from('gsyen_chat_sessions').upsert({
     id: s.id, user_id: _uid, title: s.title, model: s.model,
     messages: s.messages, updated_at: new Date(s.updatedAt).toISOString(),
   });
+  if (error) console.error('[sync] _upsert error', error);
+  else console.log('[sync] _upsert ok', s.id);
 }
 
 async function _removeRemote(id: string) {
@@ -21,9 +23,11 @@ async function _removeRemote(id: string) {
 }
 
 async function _pull(userId: string) {
-  if (!supabase) return;
-  const { data } = await supabase.from('gsyen_chat_sessions')
+  if (!supabase) { console.warn('[sync] _pull skipped: no supabase'); return; }
+  const { data, error } = await supabase.from('gsyen_chat_sessions')
     .select('*').eq('user_id', userId).order('updated_at', { ascending: false });
+  if (error) { console.error('[sync] _pull error', error); return; }
+  console.log('[sync] _pull got', data?.length, 'rows');
   if (!data) return;
   const remote: StoredSession[] = data.map((r: any) => ({
     id: r.id, title: r.title, model: r.model,
