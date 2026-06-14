@@ -13,11 +13,6 @@ const OPTIONS: FontSize[] = ['compact', 'normal', 'large', 'ji'];
 const ZH: Record<FontSize, string> = { compact: '紧凑', normal: '正常', large: '舒适', ji: '极' };
 const EN: Record<FontSize, string> = { compact: 'Compact', normal: 'Normal', large: 'Comfort', ji: 'Ultra' };
 
-function applyDataFont(v: FontSize) {
-  const el = document.documentElement;
-  if (v === 'normal') el.removeAttribute('data-font');
-  else el.setAttribute('data-font', v);
-}
 
 export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
   const pickerRef  = useRef<HTMLDivElement>(null);
@@ -62,19 +57,9 @@ export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
     return () => window.removeEventListener('resize', onResize);
   }, [value]);
 
-  const handleEnter = (i: number) => {
-    syncHover(i);
-    applyDataFont(OPTIONS[i]);
-  };
-
-  const handleLeave = () => {
-    syncHover(null);
-    applyDataFont(value);
-  };
-
-  const handleClick = (i: number) => {
-    onChange(OPTIONS[i]);
-  };
+  const handleEnter = (i: number) => { syncHover(i); };
+  const handleLeave = () => { syncHover(null); };
+  const handleClick = (i: number) => { onChange(OPTIONS[i]); };
 
   return (
     <div className="flex flex-col gap-2">
