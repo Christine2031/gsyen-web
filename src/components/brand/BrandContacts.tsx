@@ -2,7 +2,7 @@
  * BrandContacts — Google Contacts 风格联系人管理
  */
 import { useState } from 'react';
-import { Users, Phone, Mail, Shield, TrendingUp, Heart, Zap, Globe } from 'lucide-react';
+import { Users, Phone } from 'lucide-react';
 import { useAuth } from '../../auth/useAuth';
 import { useBrandTeams } from '../../hooks/useBrandTeams';
 import { createTeam } from '../../hooks/useTeams';
@@ -31,16 +31,12 @@ const FILTERS: { key: Filter; zh: string; en: string }[] = [
   { key: 'team',     zh: '团队',   en: 'Teams'    },
 ];
 
-function StatCard({ label, value, icon: Icon }: { label: string; value: string; icon: React.ElementType }) {
+function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="flex-1 bg-white rounded-lg border border-[#DADCE0] px-5 py-4 min-w-0 flex items-center gap-4">
-      <div className="w-10 h-10 rounded-full bg-[#E8F0FE] flex items-center justify-center shrink-0">
-        <Icon className="w-5 h-5 text-[#1A73E8]" strokeWidth={1.5} />
-      </div>
-      <div>
-        <p className="fs-md text-[#5F6368] font-sans">{label}</p>
-        <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
-      </div>
+    <div className="flex-1 bg-white rounded-lg border border-[#DADCE0] px-5 py-4 min-w-0">
+      <p className="fs-md text-[#5F6368] font-sans mb-1">{label}</p>
+      <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
+      {sub && <p className="fs-md text-[#5F6368] mt-1">{sub}</p>}
     </div>
   );
 }
@@ -75,10 +71,10 @@ export default function BrandContacts({ lang }: Props) {
 
       {/* 汇总卡片 */}
       <div className="flex gap-4 px-6 py-5 shrink-0">
-        <StatCard label={zh ? '联系人总数' : 'Total Contacts'} value={String(DEMO_CONTACTS.length)} icon={Users} />
-        <StatCard label={zh ? `客户 ${clients} · 供应商 ${suppliers}` : `${clients} Clients · ${suppliers} Suppliers`} value={String(clients + suppliers)} icon={Phone} />
-        <StatCard label={zh ? '合作伙伴' : 'Partners'} value={String(partners)} icon={Mail} />
-        <StatCard label={zh ? '我的团队' : 'My Teams'} value={String(teams.length)} icon={Shield} />
+        <StatCard label={zh ? '联系人总数' : 'Total Contacts'} value={String(DEMO_CONTACTS.length)} />
+        <StatCard label={zh ? '客户 · 供应商' : 'Clients · Suppliers'} value={String(clients + suppliers)} sub={zh ? `客户 ${clients} · 供应商 ${suppliers}` : `${clients} clients · ${suppliers} suppliers`} />
+        <StatCard label={zh ? '合作伙伴' : 'Partners'} value={String(partners)} />
+        <StatCard label={zh ? '我的团队' : 'My Teams'} value={String(teams.length)} />
       </div>
 
       {/* 往来 + 筛选 chips + 搜索 */}
