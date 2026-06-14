@@ -35,6 +35,7 @@ export const vaultStore = {
 
 // ── Supabase 双写同步（整行作为 jsonb，HTTPS 传输） ─────────────────────────
 let _uid: string | null = null;
+const _pendingDeletes = new Set<string>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _rt: any = null;
 
@@ -47,14 +48,21 @@ async function _upsert(row: CredentialRow) {
 
 async function _delete(id: string) {
   if (!supabase || !_uid) return;
-  await supabase.from('gsyen_vault').delete().eq('id', id).eq('user_id', _uid);
+  _pendingDeletes.add(id);
+  try {
+    await supabase.from('gsyen_vault').delete().eq('id', id).eq('user_id', _uid);
+  } finally {
+    _pendingDeletes.delete(id);
+  }
 }
 
 async function _pull(userId: string) {
   if (!supabase) return;
   const { data } = await supabase.from('gsyen_vault').select('*').eq('user_id', userId);
   if (!data) return;
-  const remote: CredentialRow[] = data.map((r: any) => r.data as CredentialRow);
+  const remote: CredentialRow[] = data
+    .map((r: any) => r.data as CredentialRow)
+    .filter(r => !_pendingDeletes.has(r.id));
   const local     = load();
   const remIds    = new Set(remote.map(r => r.id));
   const localOnly = local.filter(r => !remIds.has(r.id));
