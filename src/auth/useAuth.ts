@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from './supabaseClient';
+import { authProxy } from './gsyenApiProxy';
 import { initializeUserData, resetPasswordForEmail, signInWithEmail, signUpWithEmail, signInWithOAuth, signOut, upgradeTierToFree } from './authService';
 import type { AuthState, OAuthProvider, UserTier, LoginProvider } from '../types/auth';
 
@@ -23,7 +24,7 @@ export function useAuth() {
     (window.location.hash.includes('type=magiclink') || window.location.hash.includes('type=email'))
   );
 
-  // Effect 1: 初始化 session，cancelled 标志防 StrictMode 竞态
+  // Effect 1: Boot — 优先从 HttpOnly cookie (gsyen_rt) 恢复 session
   useEffect(() => {
     if (!supabase) {
       setState(s => ({ ...s, loading: false }));
@@ -34,30 +35,29 @@ export function useAuth() {
 
     (async () => {
       try {
-        const { data, error } = await supabase.auth.getSession();
+        // Step 1: try to restore from gsyen-api HttpOnly cookie
+        const me = await authProxy.me();
         if (cancelled) return;
 
-        if (error) {
+        if (me.ok) {
+          // Sets the in-memory session; triggers onAuthStateChange(SIGNED_IN)
+          await supabase.auth.setSession({
+            access_token: me.access_token,
+            refresh_token: me.refresh_token,
+          });
+          return; // onAuthStateChange handles the rest
+        }
+
+        // Step 2: no HttpOnly cookie — check URL hash (OAuth redirect)
+        // detectSessionInUrl:true means Supabase already processed it;
+        // getSession() returns the result.
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+
+        if (!data.session) {
           setState(s => ({ ...s, loading: false }));
-          return;
         }
-
-        const user = data.session?.user ?? null;
-        let tier: UserTier | null = null;
-        if (user) {
-          tier = await initializeUserData(user.id, user.user_metadata?.provider ?? 'email');
-          if (cancelled) return;
-        }
-
-        setState({
-          user,
-          session: data.session,
-          tier,
-          emailVerified: tier !== 'free_unverified' && tier !== null,
-          loginProvider: (user?.user_metadata?.provider ?? null) as LoginProvider | null,
-          loading: false,
-          isPasswordRecovery: false,
-        });
+        // If session exists from URL hash, onAuthStateChange already fired
       } catch {
         if (!cancelled) setState(s => ({ ...s, loading: false }));
       }
@@ -66,7 +66,8 @@ export function useAuth() {
     return () => { cancelled = true; };
   }, []);
 
-  // Effect 2: 监听后续认证变化，同步写入 user/session，tier 异步补
+  // Effect 2: 监听所有认证变化，同步 state + tier；顺手把 refresh_token
+  // 存进 gsyen-api HttpOnly cookie（覆盖更新，保持 cookie 最新）
   useEffect(() => {
     if (!supabase) return;
 
@@ -74,6 +75,12 @@ export function useAuth() {
       const user = session?.user ?? null;
 
       console.log(`[Auth] Auth state changed: event=${_event}, user=${user?.email ?? 'none'}`);
+
+      // Persist the latest refresh_token to the HttpOnly cookie
+      // Covers: OAuth login, magic link, token auto-refresh
+      if (session?.refresh_token) {
+        authProxy.saveSession(session.refresh_token).catch(() => {});
+      }
 
       setState(s => ({
         ...s,
