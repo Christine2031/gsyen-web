@@ -41,6 +41,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_GSYEN_API_URL: ${{ secrets.VITE_GSYEN_API_URL }}
 
       - name: Upload Windows to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -77,6 +78,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_GSYEN_API_URL: ${{ secrets.VITE_GSYEN_API_URL }}
 
       - name: Upload Mac to GitHub Release
         uses: softprops/action-gh-release@v2

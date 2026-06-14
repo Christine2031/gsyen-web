@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient';
+import { authProxy } from './gsyenApiProxy';
 import { formatAuthError } from './authUtils';
 import type { UserTier, OAuthProvider, AuthResult } from '../types/auth';
 
@@ -59,77 +60,63 @@ export async function initializeUserData(userId: string, provider: string = 'ema
 }
 
 /**
- * 邮箱 + 密码登录
+ * 邮箱 + 密码登录（通过 gsyen-api 代理，refresh_token 存入 HttpOnly cookie）
  */
 export async function signInWithEmail(email: string, password: string): Promise<AuthResult> {
   if (!supabase) {
     return { success: false, error: { message: 'Supabase not initialized' } };
   }
 
-  try {
-    console.log(`[Auth] Signing in with email: ${email}`);
+  console.log(`[Auth] Signing in with email: ${email}`);
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: formatAuthError(error, 'signInWithEmail'),
-      };
-    }
-
-    return {
-      success: true,
-      user: data.user,
-      session: data.session,
-    };
-  } catch (err) {
-    console.error('[Auth] Exception in signInWithEmail:', err);
-    return {
-      success: false,
-      error: { message: '登录失败，请检查网络连接' },
-    };
+  const result = await authProxy.login(email, password);
+  if (!result.ok) {
+    return { success: false, error: { message: result.error ?? 'login failed' } };
   }
+
+  // Sync the in-memory Supabase client session so onAuthStateChange fires
+  const { data, error } = await supabase.auth.setSession({
+    access_token: result.access_token!,
+    refresh_token: result.refresh_token ?? '',
+  });
+
+  if (error) {
+    return { success: false, error: formatAuthError(error, 'setSession') };
+  }
+
+  return { success: true, user: data.user, session: data.session };
 }
 
 /**
- * 邮箱 + 密码注册
+ * 邮箱 + 密码注册（通过 gsyen-api 代理）
  */
 export async function signUpWithEmail(email: string, password: string): Promise<AuthResult> {
   if (!supabase) {
     return { success: false, error: { message: 'Supabase not initialized' } };
   }
 
-  try {
-    console.log(`[Auth] Signing up with email: ${email}`);
+  console.log(`[Auth] Signing up with email: ${email}`);
 
-    const { data, error } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-    });
-
-    if (error) {
-      return {
-        success: false,
-        error: formatAuthError(error, 'signUpWithEmail'),
-      };
-    }
-
-    return {
-      success: true,
-      user: data.user,
-      session: data.session,
-    };
-  } catch (err) {
-    console.error('[Auth] Exception in signUpWithEmail:', err);
-    return {
-      success: false,
-      error: { message: '注册失败，请检查网络连接' },
-    };
+  const result = await authProxy.signup(email, password);
+  if (!result.ok) {
+    return { success: false, error: { message: result.error ?? 'signup failed' } };
   }
+
+  // If email verification is required, no session yet
+  if (result.needsVerification || !result.access_token) {
+    return { success: true, user: result.user, session: null };
+  }
+
+  // Auto-confirmed (dev env) — sync the Supabase client
+  const { data, error } = await supabase.auth.setSession({
+    access_token: result.access_token!,
+    refresh_token: '',
+  });
+  if (error) {
+    return { success: false, error: formatAuthError(error, 'setSession') };
+  }
+
+  return { success: true, user: data.user, session: data.session };
 }
 
 /**
@@ -201,31 +188,23 @@ export async function upgradeTierToFree(userId: string): Promise<void> {
 }
 
 /**
- * 登出
+ * 登出（清除 gsyen-api HttpOnly cookie + 本地 Supabase session）
  */
 export async function signOut(): Promise<AuthResult> {
   if (!supabase) {
     return { success: false, error: { message: 'Supabase not initialized' } };
   }
 
-  try {
-    console.log('[Auth] Signing out');
+  console.log('[Auth] Signing out');
 
-    const { error } = await supabase.auth.signOut();
+  // Clear HttpOnly cookie on gsyen-api first
+  await authProxy.logout();
 
-    if (error) {
-      return {
-        success: false,
-        error: formatAuthError(error, 'signOut'),
-      };
-    }
-
-    return { success: true };
-  } catch (err) {
-    console.error('[Auth] Exception in signOut:', err);
-    return {
-      success: false,
-      error: { message: '登出失败' },
-    };
+  // Clear in-memory Supabase session
+  const { error } = await supabase.auth.signOut();
+  if (error) {
+    return { success: false, error: formatAuthError(error, 'signOut') };
   }
+
+  return { success: true };
 }
