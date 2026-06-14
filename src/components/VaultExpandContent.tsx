@@ -102,20 +102,20 @@ export function VaultExpandContent({
                 { label: zh ? '密钥'   : 'Secret',   val: eSecret,   set: setESecret },
               ].map(({ label, val, set }) => (
                 <div key={label} className={`flex items-center gap-4 border-b ${C.panelBorder} py-2`}>
-                  <span className={`text-[8px] font-mono uppercase tracking-widest w-14 shrink-0 text-right ${C.panelLabel}`}>{label}</span>
+                  <span className={`text-(--fs-2xs) font-mono uppercase tracking-widest w-14 shrink-0 text-right ${C.panelLabel}`}>{label}</span>
                   <input type={label === (zh ? '密钥' : 'Secret') ? 'text' : 'text'}
                     value={val} onChange={e => set(e.target.value)}
-                    className={`flex-1 text-[12px] bg-transparent border-none outline-none ${C.panelText} placeholder:opacity-30`} />
+                    className={`flex-1 text-(--fs-base) bg-transparent border-none outline-none ${C.panelText} placeholder:opacity-30`} />
                 </div>
               ))}
 
               {/* 分类选择 */}
               <div className={`flex items-center gap-2 border-b ${C.panelBorder} py-2`}>
-                <span className={`text-[8px] font-mono uppercase tracking-widest w-14 shrink-0 text-right ${C.panelLabel}`}>{zh ? '分类' : 'Type'}</span>
+                <span className={`text-(--fs-2xs) font-mono uppercase tracking-widest w-14 shrink-0 text-right ${C.panelLabel}`}>{zh ? '分类' : 'Type'}</span>
                 <div className="flex flex-wrap gap-1">
                   {CATEGORIES.map(c => (
                     <button key={c.key} type="button" onClick={() => setECategory(c.key)}
-                      className={`px-2 py-1 text-[8px] font-mono uppercase tracking-widest rounded transition ${eCategory === c.key ? C.btnPrimary : C.btnGhost}`}>
+                      className={`px-2 py-1 text-(--fs-2xs) font-mono uppercase tracking-widest rounded transition ${eCategory === c.key ? C.btnPrimary : C.btnGhost}`}>
                       {c[lang]}
                     </button>
                   ))}
@@ -124,11 +124,11 @@ export function VaultExpandContent({
 
               <div className={`flex items-center justify-end gap-2 pt-2 border-t ${C.panelBorder}`}>
                 <button type="button" onClick={() => setEditing(false)}
-                  className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnGhost}`}>
+                  className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnGhost}`}>
                   {zh ? '取消' : 'Cancel'}
                 </button>
                 <button type="button" onClick={saveEdit}
-                  className={`px-4 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
+                  className={`px-4 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
                   {zh ? '保存' : 'Save'}
                 </button>
               </div>
@@ -138,17 +138,17 @@ export function VaultExpandContent({
             <>
               <div className="flex items-start justify-between gap-2">
                 <div className="space-y-0.5 min-w-0">
-                  <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '服务' : 'SERVICE'}</p>
-                  <p className={`text-[13px] font-semibold truncate ${C.panelText}`}>{service}</p>
+                  <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '服务' : 'SERVICE'}</p>
+                  <p className={`text-(--fs-body) font-semibold truncate ${C.panelText}`}>{service}</p>
                 </div>
-                <span className={`shrink-0 mt-3 text-[8px] font-mono uppercase tracking-widest px-2 py-1 rounded ${C.tag}`}>{catLabel(catKey, lang)}</span>
+                <span className={`shrink-0 mt-3 text-(--fs-2xs) font-mono uppercase tracking-widest px-2 py-1 rounded ${C.tag}`}>{catLabel(catKey, lang)}</span>
               </div>
 
               {username && (
                 <div className={`flex items-center justify-between py-2 border-t ${C.panelBorder}`}>
                   <div className="space-y-0.5 min-w-0 mr-2">
-                    <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '用户名' : 'USERNAME'}</p>
-                    <p className={`text-[11px] font-mono truncate ${C.panelText}`}>{username}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '用户名' : 'USERNAME'}</p>
+                    <p className={`text-(--fs-md) font-mono truncate ${C.panelText}`}>{username}</p>
                   </div>
                   <button type="button" onClick={() => copyText(username, 'user')}
                     className={`shrink-0 p-1.5 rounded transition ${C.btnGhost}`}>
@@ -159,8 +159,8 @@ export function VaultExpandContent({
 
               <div className={`flex items-center justify-between py-2 border-t ${C.panelBorder}`}>
                 <div className="space-y-0.5 flex-1 min-w-0 mr-2">
-                  <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '密钥' : 'SECRET'}</p>
-                  <p className={`text-[11px] font-mono truncate ${C.panelText} ${!revealed ? 'opacity-50 tracking-[0.25em]' : ''}`}>
+                  <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '密钥' : 'SECRET'}</p>
+                  <p className={`text-(--fs-md) font-mono truncate ${C.panelText} ${!revealed ? 'opacity-50 tracking-[0.25em]' : ''}`}>
                     {revealed ? (secretVal || '—') : '* * * * * * * *'}
                   </p>
                 </div>
@@ -179,7 +179,7 @@ export function VaultExpandContent({
               </div>
 
               {updated && (
-                <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel} border-t ${C.panelBorder} pt-2`}>
+                <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel} border-t ${C.panelBorder} pt-2`}>
                   {zh ? '更新于' : 'UPDATED'} {updated}
                 </p>
               )}
@@ -188,7 +188,7 @@ export function VaultExpandContent({
                 <div className="flex gap-1.5">
                   {(['self', 'shared'] as const).map(s => (
                     <button key={s} type="button" onClick={() => onScopeChange(s)}
-                      className={`px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${scope === s ? C.btnPrimary : C.btnGhost}`}>
+                      className={`px-3 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${scope === s ? C.btnPrimary : C.btnGhost}`}>
                       {s === 'self' ? (zh ? '个人' : 'Personal') : (zh ? '团队' : 'Team')}
                     </button>
                   ))}

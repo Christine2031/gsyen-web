@@ -47,7 +47,7 @@ export default function ScheduleWeekView({
             >
               {/* Day header */}
               <div className="pb-2 border-b border-dashed border-[#1A1A1A]/10 flex items-center justify-between">
-                <span className="text-[9px] font-mono text-neutral-400 uppercase tracking-widest">{day.label}</span>
+                <span className="text-(--fs-xs) font-mono text-neutral-400 uppercase tracking-widest">{day.label}</span>
                 <span className={`text-xs font-mono font-bold w-6 h-6 flex items-center justify-center ${
                   day.isToday ? 'bg-[#1A1A1A] text-[#F9F8F6] rounded-none' : 'text-[#1A1A1A]'
                 }`}>
@@ -59,7 +59,7 @@ export default function ScheduleWeekView({
               <div className="flex-1 mt-3 space-y-[3px] overflow-y-auto max-h-[400px]">
                 {dayEventsList.length === 0 ? (
                   <div className="h-32 border border-dashed border-[#1A1A1A]/10 flex items-center justify-center p-2 text-center">
-                    <span className="text-[8px] font-mono text-neutral-400 uppercase tracking-wider">
+                    <span className="text-(--fs-2xs) font-mono text-neutral-400 uppercase tracking-wider">
                       {lang === 'zh' ? '暂无安排' : 'EMPTY CELL'}
                     </span>
                   </div>
@@ -73,13 +73,13 @@ export default function ScheduleWeekView({
                       onDragStart={e => onDragStart(e, item.id)}
                       onDragEnd={onDragEnd}
                       onClick={() => onOpenEvent(item)}
-                      className={`p-2.5 transition-all text-left text-[10px] cursor-grab active:cursor-grabbing space-y-1 rounded-none shadow-xs ${
+                      className={`p-2.5 transition-all text-left text-(--fs-sm) cursor-grab active:cursor-grabbing space-y-1 rounded-none shadow-xs ${
                         isCrossDay
                           ? `border ${catInfo.solidBg}`
                           : `border-y border-r border-l-[4px] ${catInfo.pastelBg} ${catInfo.borderColor} hover:bg-[#1A1A1A] hover:text-[#F9F8F6]`
                       }`}
                     >
-                      <div className="flex items-center justify-between text-[8px] font-mono uppercase tracking-wider">
+                      <div className="flex items-center justify-between text-(--fs-2xs) font-mono uppercase tracking-wider">
                         <span className={`flex items-center gap-1 ${isCrossDay ? 'text-[#F9F8F6]/85' : 'text-neutral-400'}`}>
                           <Clock className="w-2.5 h-2.5 text-[#1A1A1A]/50" />{item.time}
                         </span>

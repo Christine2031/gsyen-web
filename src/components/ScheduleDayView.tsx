@@ -34,10 +34,10 @@ export default function ScheduleDayView({
             <h2 className="text-xl font-serif text-[#1A1A1A] font-bold italic uppercase tracking-tight">
               {selectedDate.toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </h2>
-            <p className="text-[9px] font-mono text-[#1A1A1A]/50 uppercase tracking-widest">CHRONOS REGISTRY HOUR LOGS</p>
+            <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/50 uppercase tracking-widest">CHRONOS REGISTRY HOUR LOGS</p>
           </div>
           {dateKey === todayString && (
-            <span className="bg-red-800 text-[#F9F8F6] px-2.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest animate-pulse">TODAY</span>
+            <span className="bg-red-800 text-[#F9F8F6] px-2.5 py-0.5 font-mono text-(--fs-xs) font-bold uppercase tracking-widest animate-pulse">TODAY</span>
           )}
         </div>
 
@@ -47,7 +47,7 @@ export default function ScheduleDayView({
               <span className="text-xs font-serif italic text-neutral-400">
                 {lang === 'zh' ? '这个特定日期暂无下发的信条或战略工作。' : 'Silence and solitude on this calendar index.'}
               </span>
-              <p className="text-[9px] font-mono text-neutral-400 uppercase tracking-wider">
+              <p className="text-(--fs-xs) font-mono text-neutral-400 uppercase tracking-wider">
                 {lang === 'zh' ? '点击侧边栏的 "+写新事件" 键以部署' : 'Use the "+ Bespoke Task" button to schedule something.'}
               </p>
             </div>
@@ -61,17 +61,17 @@ export default function ScheduleDayView({
                   <p className="text-xs font-bold text-[#1A1A1A]/80 flex items-center gap-1 justify-center">
                     <Clock className="w-3.5 h-3.5 text-amber-800" /><span>{item.time}</span>
                   </p>
-                  <span className="text-[8px] text-neutral-400 uppercase tracking-wider block mt-1">
+                  <span className="text-(--fs-2xs) text-neutral-400 uppercase tracking-wider block mt-1">
                     {isRange ? <span>{item.date.substring(5)} ~ {item.endDate!.substring(5)}</span> : item.date.substring(5)}
                   </span>
                 </div>
                 <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`text-[8px] font-mono uppercase px-2 py-0.5 border ${catInfo.color}`}>
+                    <span className={`text-(--fs-2xs) font-mono uppercase px-2 py-0.5 border ${catInfo.color}`}>
                       {lang === 'zh' ? catInfo.zhLabel : catInfo.enLabel}
                     </span>
                     <span className="text-neutral-400 text-xs font-mono">•</span>
-                    <span className="text-[9px] text-[#1A1A1A]/60 font-mono tracking-widest uppercase flex items-center gap-1">
+                    <span className="text-(--fs-xs) text-[#1A1A1A]/60 font-mono tracking-widest uppercase flex items-center gap-1">
                       <MapPin className="w-2.5 h-2.5" /><span>{item.location}</span>
                     </span>
                   </div>
@@ -79,7 +79,7 @@ export default function ScheduleDayView({
                   <p className="text-xs font-serif italic text-[#1A1A1A]/60 leading-relaxed">{item.subtitle}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
-                  <span className={`text-[9px] font-mono px-2 py-0.5 border uppercase ${
+                  <span className={`text-(--fs-xs) font-mono px-2 py-0.5 border uppercase ${
                     item.status === 'done'     ? 'bg-emerald-50 text-emerald-800 border-emerald-200' :
                     item.status === 'review'   ? 'bg-indigo-50 text-indigo-800 border-indigo-200'   :
                     item.status === 'progress' ? 'bg-amber-50 text-amber-800 border-amber-200'       :

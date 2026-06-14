@@ -34,17 +34,17 @@ export default function PaymentModal({ billing, onClose }: PaymentModalProps) {
           {/* 关闭 */}
           <button
             onClick={onClose}
-            className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center text-[#1A1A1A]/30 hover:text-[#1A1A1A]/70 transition-colors text-[11px] font-mono"
+            className="absolute top-3 right-3 w-5 h-5 flex items-center justify-center text-[#1A1A1A]/30 hover:text-[#1A1A1A]/70 transition-colors text-(--fs-md) font-mono"
           >
             ✕
           </button>
 
           {/* 金额 */}
-          <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/35 mb-1">
+          <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/35 mb-1">
             升级 PRO
           </p>
           <span className="text-[32px] font-black text-[#1A1A1A] leading-none mb-0.5">{amount}</span>
-          <p className="text-[8px] font-mono text-[#1A1A1A]/50 mb-0.5">{amountNote}</p>
+          <p className="text-(--fs-2xs) font-mono text-[#1A1A1A]/50 mb-0.5">{amountNote}</p>
           <p className="text-[7.5px] font-mono text-[#1A1A1A]/25 mb-5 line-through">{regularNote}</p>
 
           {/* 两码并排 */}

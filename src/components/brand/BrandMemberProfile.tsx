@@ -54,16 +54,16 @@ export default function BrandMemberProfile({ lang }: Props) {
     setTimeout(() => setSaved(false), 2500);
   };
 
-  const INP = 'w-full px-3 py-2 border border-[#DADCE0] text-[13px] font-sans text-[#202124] placeholder:text-[#BDC1C6] outline-none focus:border-[#1A6ECC] transition-colors rounded-sm bg-white';
+  const INP = 'w-full px-3 py-2 border border-[#DADCE0] text-(--fs-body) font-sans text-[#202124] placeholder:text-[#BDC1C6] outline-none focus:border-[#1A6ECC] transition-colors rounded-sm bg-white';
 
   return (
     <div>
       {/* 页面标题 — iA Writer shell 风格 */}
       <div className="mb-7">
-        <p className="text-[10px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
+        <p className="text-(--fs-sm) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
           {zh ? '账户信息' : 'Account'}
         </p>
-        <p className="text-[9px] font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
+        <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
           {zh ? '管理您的账户资料与连接方式' : 'Manage your account profile and connections'}
         </p>
       </div>
@@ -74,10 +74,10 @@ export default function BrandMemberProfile({ lang }: Props) {
           <div className="flex items-center gap-3">
             <div className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
             <div>
-              <p className="text-[10px] font-mono font-bold text-[#1A1A1A]">
+              <p className="text-(--fs-sm) font-mono font-bold text-[#1A1A1A]">
                 {zh ? '邮箱未验证' : 'Email not verified'}
               </p>
-              <p className="text-[9px] font-mono text-[#1A1A1A]/40 mt-0.5">
+              <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/40 mt-0.5">
                 {sent
                   ? zh
                     ? `验证邮件已发送，请查看收件箱${cooldown > 0 ? ` · ${cooldown}s 后可重发` : ''}`
@@ -88,16 +88,16 @@ export default function BrandMemberProfile({ lang }: Props) {
           </div>
           {!sent
             ? <button onClick={handleResend} disabled={sending}
-                className="px-3 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase border border-[#1A6ECC]/50 text-[#1A6ECC] hover:bg-[#1A6ECC] hover:text-[#F9F8F6] transition-all rounded-none shrink-0">
+                className="px-3 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase border border-[#1A6ECC]/50 text-[#1A6ECC] hover:bg-[#1A6ECC] hover:text-[#F9F8F6] transition-all rounded-none shrink-0">
                 {sending ? '···' : zh ? '发送验证邮件 →' : 'Send verification →'}
               </button>
-            : <span className="text-[9px] font-mono font-bold text-[#1A6ECC] shrink-0">✓ {zh ? '已发送' : 'Sent'}</span>
+            : <span className="text-(--fs-xs) font-mono font-bold text-[#1A6ECC] shrink-0">✓ {zh ? '已发送' : 'Sent'}</span>
           }
         </div>
       )}
 
       {/* Profile information — Google content 风格 */}
-      <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
+      <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
         {zh ? '基本信息' : 'Profile information'}
       </p>
       <div className="bg-white border border-[#DADCE0] mb-6">
@@ -121,7 +121,7 @@ export default function BrandMemberProfile({ lang }: Props) {
           </>
         )}
         <FormRow label={zh ? '主邮箱' : 'Primary email'} sub={zh ? '用于账户通知与登录' : 'Used for account notifications'} last={false}>
-          <div className="flex items-center gap-2 px-3 py-2 border border-[#DADCE0] bg-[#F8F9FA] text-[13px] font-sans text-[#5F6368] rounded-sm">
+          <div className="flex items-center gap-2 px-3 py-2 border border-[#DADCE0] bg-[#F8F9FA] text-(--fs-body) font-sans text-[#5F6368] rounded-sm">
             {user?.email ?? '—'}
             <span className={`ml-auto text-[7px] font-mono font-bold tracking-widest uppercase px-1.5 py-0.5 rounded-none ${!isUnverified ? 'text-[#137333] bg-[#E6F4EA]' : 'text-[#B05E00] bg-[#FEF7E0]'}`}>
               {!isUnverified ? (zh ? '已验证' : 'Verified') : (zh ? '未验证' : 'Unverified')}
@@ -132,7 +132,7 @@ export default function BrandMemberProfile({ lang }: Props) {
           <div className="flex gap-2">
             <select
               value={phoneCountry} onChange={e => setPhoneCountry(e.target.value)}
-              className="px-2 py-2 border border-[#DADCE0] text-[12px] font-sans text-[#202124] outline-none focus:border-[#1A6ECC] transition-colors rounded-sm bg-white shrink-0 cursor-pointer"
+              className="px-2 py-2 border border-[#DADCE0] text-(--fs-base) font-sans text-[#202124] outline-none focus:border-[#1A6ECC] transition-colors rounded-sm bg-white shrink-0 cursor-pointer"
             >
               <option value="+86">{zh ? '🇨🇳 中国 +86'       : '🇨🇳 China +86'}</option>
               <option value="+1"> {zh ? '🇺🇸 美国 +1'        : '🇺🇸 USA +1'}</option>
@@ -149,29 +149,29 @@ export default function BrandMemberProfile({ lang }: Props) {
         </FormRow>
         <div className="flex justify-end px-6 py-3 border-t border-[#DADCE0]">
           <button onClick={handleSave} disabled={saving}
-            className="px-4 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-colors rounded-none disabled:opacity-40">
+            className="px-4 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-colors rounded-none disabled:opacity-40">
             {saved ? `✓ ${zh ? '已保存' : 'Saved'}` : saving ? '···' : zh ? '保存' : 'Save'}
           </button>
         </div>
       </div>
 
       {/* Account identities */}
-      <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
+      <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
         {zh ? '账号身份' : 'Account identities'}
       </p>
       <div className="bg-white border border-[#DADCE0] mb-6">
         <FormRow label={PROVIDER_LABEL[provider] ?? provider} sub={zh ? '当前登录方式' : 'Connected login method'} last>
           <div className="flex items-center gap-2">
-            <span className="text-[8px] font-mono px-2 py-0.5 border border-[#DADCE0] text-[#5F6368] uppercase tracking-widest rounded-sm">
+            <span className="text-(--fs-2xs) font-mono px-2 py-0.5 border border-[#DADCE0] text-[#5F6368] uppercase tracking-widest rounded-sm">
               {PROVIDER_LABEL[provider] ?? provider}
             </span>
-            <span className="text-[13px] font-sans text-[#5F6368]">{user?.email ?? '—'}</span>
+            <span className="text-(--fs-body) font-sans text-[#5F6368]">{user?.email ?? '—'}</span>
           </div>
         </FormRow>
       </div>
 
       {/* 界面偏好 */}
-      <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
+      <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
         {zh ? '界面偏好' : 'Display preferences'}
       </p>
       <div className="bg-white border border-[#DADCE0]">
@@ -192,8 +192,8 @@ function FormRow({ label, sub, children, last }: { label: string; sub?: string; 
   return (
     <div className={`flex items-center gap-8 px-6 py-4 ${!last ? 'border-b border-[#DADCE0]' : ''}`}>
       <div className="w-48 shrink-0">
-        <p className="text-[13px] font-sans font-medium text-[#202124]">{label}</p>
-        {sub && <p className="text-[11px] font-sans text-[#5F6368] mt-0.5">{sub}</p>}
+        <p className="text-(--fs-body) font-sans font-medium text-[#202124]">{label}</p>
+        {sub && <p className="text-(--fs-md) font-sans text-[#5F6368] mt-0.5">{sub}</p>}
       </div>
       <div className="flex-1">{children}</div>
     </div>

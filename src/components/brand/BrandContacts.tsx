@@ -38,7 +38,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: string; 
         <Icon className="w-5 h-5 text-[#1A73E8]" strokeWidth={1.5} />
       </div>
       <div>
-        <p className="text-[11px] text-[#5F6368] font-sans">{label}</p>
+        <p className="text-(--fs-md) text-[#5F6368] font-sans">{label}</p>
         <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
       </div>
     </div>
@@ -86,7 +86,7 @@ export default function BrandContacts({ lang }: Props) {
         <div className="relative">
           <button
             onClick={() => { setShowCreateMenu(!showCreateMenu); }}
-            className="flex items-center gap-1 px-3 py-1 rounded-full text-[12px] font-sans font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] transition-all shrink-0">
+            className="flex items-center gap-1 px-3 py-1 rounded-full text-(--fs-base) font-sans font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] transition-all shrink-0">
             + {zh ? '往来' : 'New'}
           </button>
           {showCreateMenu && (
@@ -99,8 +99,8 @@ export default function BrandContacts({ lang }: Props) {
                     <div className="w-12 h-12 rounded-lg bg-[#E8F0FE] flex items-center justify-center mb-3 group-hover:bg-[#1A73E8] transition-all">
                       <Phone className="w-6 h-6 text-[#1A73E8] group-hover:text-white" strokeWidth={1.5} />
                     </div>
-                    <p className="text-[14px] font-medium text-[#202124] font-sans">{zh ? '联系人' : 'Contact'}</p>
-                    <p className="text-[12px] text-[#9AA0A6] mt-1 font-sans">{zh ? '创建新联系人' : 'Create new contact'}</p>
+                    <p className="text-(--fs-lg) font-medium text-[#202124] font-sans">{zh ? '联系人' : 'Contact'}</p>
+                    <p className="text-(--fs-base) text-[#9AA0A6] mt-1 font-sans">{zh ? '创建新联系人' : 'Create new contact'}</p>
                   </button>
                   <button
                     onClick={() => { setCreateType('team'); setShowCreateMenu(false); }}
@@ -108,8 +108,8 @@ export default function BrandContacts({ lang }: Props) {
                     <div className="w-12 h-12 rounded-lg bg-[#E8F0FE] flex items-center justify-center mb-3 group-hover:bg-[#1A73E8] transition-all">
                       <Users className="w-6 h-6 text-[#1A73E8] group-hover:text-white" strokeWidth={1.5} />
                     </div>
-                    <p className="text-[14px] font-medium text-[#202124] font-sans">{zh ? '团队' : 'Team'}</p>
-                    <p className="text-[12px] text-[#9AA0A6] mt-1 font-sans">{zh ? '创建新团队' : 'Create new team'}</p>
+                    <p className="text-(--fs-lg) font-medium text-[#202124] font-sans">{zh ? '团队' : 'Team'}</p>
+                    <p className="text-(--fs-base) text-[#9AA0A6] mt-1 font-sans">{zh ? '创建新团队' : 'Create new team'}</p>
                   </button>
                 </div>
               </div>
@@ -119,7 +119,7 @@ export default function BrandContacts({ lang }: Props) {
         <div className="w-px h-4 bg-[#DADCE0] mx-1 shrink-0" />
         {FILTERS.map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-3 py-1 rounded-full text-[12px] font-sans font-medium transition-all ${
+            className={`px-3 py-1 rounded-full text-(--fs-base) font-sans font-medium transition-all ${
               filter === f.key
                 ? 'bg-[#1A73E8] text-white'
                 : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'
@@ -130,7 +130,7 @@ export default function BrandContacts({ lang }: Props) {
         <input
           type="text" value={search} onChange={e => setSearch(e.target.value)}
           placeholder={zh ? (filter === 'team' ? '搜索团队…' : '搜索联系人…') : (filter === 'team' ? 'Search teams…' : 'Search contacts…')}
-          className="ml-auto px-3 py-1 rounded-full text-[12px] font-sans border border-[#DADCE0] bg-white text-[#202124] placeholder-[#9AA0A6] focus:outline-none focus:border-[#1A73E8] w-44"
+          className="ml-auto px-3 py-1 rounded-full text-(--fs-base) font-sans border border-[#DADCE0] bg-white text-[#202124] placeholder-[#9AA0A6] focus:outline-none focus:border-[#1A73E8] w-44"
         />
       </div>
 
@@ -142,19 +142,19 @@ export default function BrandContacts({ lang }: Props) {
               <tr className="border-b border-[#E8EAED] bg-[#F8F9FA]">
                 {filter === 'team' ? (
                   <>
-                    <th className="py-3 pl-6 pr-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[28%]">{zh ? '团队' : 'Team'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '邀请码' : 'Invite Code'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '座位数' : 'Seats'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '我的角色' : 'My Role'}</th>
-                    <th className="py-3 pl-3 pr-6 text-center text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '操作' : 'Action'}</th>
+                    <th className="py-3 pl-6 pr-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[28%]">{zh ? '团队' : 'Team'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '邀请码' : 'Invite Code'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '座位数' : 'Seats'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '我的角色' : 'My Role'}</th>
+                    <th className="py-3 pl-3 pr-6 text-center text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '操作' : 'Action'}</th>
                   </>
                 ) : (
                   <>
-                    <th className="py-3 pl-6 pr-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[28%]">{zh ? '联系人' : 'Contact'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '位置' : 'Location'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '联系方式' : 'Contact Info'}</th>
-                    <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '类型' : 'Type'}</th>
-                    <th className="py-3 pl-3 pr-6 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '状态' : 'Status'}</th>
+                    <th className="py-3 pl-6 pr-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[28%]">{zh ? '联系人' : 'Contact'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '位置' : 'Location'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '联系方式' : 'Contact Info'}</th>
+                    <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '类型' : 'Type'}</th>
+                    <th className="py-3 pl-3 pr-6 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans w-[18%]">{zh ? '状态' : 'Status'}</th>
                   </>
                 )}
               </tr>
@@ -162,7 +162,7 @@ export default function BrandContacts({ lang }: Props) {
             <tbody>
               {filter === 'team' ? (
                 teams.length === 0 ? (
-                  <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">{zh ? '暂无团队' : 'No teams found'}</td></tr>
+                  <tr><td colSpan={5} className="py-12 text-center text-(--fs-body) text-[#9AA0A6] font-sans">{zh ? '暂无团队' : 'No teams found'}</td></tr>
                 ) : (
                   teams.map(t => {
                     const TEAM_COLORS = ['bg-[#1A73E8]', 'bg-[#137333]', 'bg-[#B05E00]', 'bg-[#9334E6]', 'bg-[#D93025]', 'bg-[#0097A7]'];
@@ -172,22 +172,22 @@ export default function BrandContacts({ lang }: Props) {
                         <td className="py-3.5 pl-6 pr-3">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center shrink-0`}>
-                              <span className="text-white text-[12px] font-bold font-sans">{t.name.charAt(0).toUpperCase()}</span>
+                              <span className="text-white text-(--fs-base) font-bold font-sans">{t.name.charAt(0).toUpperCase()}</span>
                             </div>
                             <div>
-                              <p className="text-[13px] font-medium text-[#202124] font-sans">{t.name}</p>
-                              <p className="text-[11px] text-[#5F6368] font-sans">{t.type || '—'}</p>
+                              <p className="text-(--fs-body) font-medium text-[#202124] font-sans">{t.name}</p>
+                              <p className="text-(--fs-md) text-[#5F6368] font-sans">{t.type || '—'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3.5 px-3"><p className="text-[12px] text-[#5F6368] font-sans">{t.invite_code}</p></td>
-                        <td className="py-3.5 px-3"><p className="text-[12px] text-[#5F6368] font-sans">{t.seat_limit}</p></td>
-                        <td className="py-3.5 px-3"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#E8F0FE] text-[#1A73E8]">{t.role === 'owner' ? (zh ? '团长' : 'Owner') : (zh ? '成员' : 'Member')}</span></td>
+                        <td className="py-3.5 px-3"><p className="text-(--fs-base) text-[#5F6368] font-sans">{t.invite_code}</p></td>
+                        <td className="py-3.5 px-3"><p className="text-(--fs-base) text-[#5F6368] font-sans">{t.seat_limit}</p></td>
+                        <td className="py-3.5 px-3"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#E8F0FE] text-[#1A73E8]">{t.role === 'owner' ? (zh ? '团长' : 'Owner') : (zh ? '成员' : 'Member')}</span></td>
                         <td className="py-3.5 pl-3 pr-6">
                           {t.role === 'owner' ? (
-                            <button onClick={() => disband(t.id, zh)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '解散' : 'Disband'}</button>
+                            <button onClick={() => disband(t.id, zh)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '解散' : 'Disband'}</button>
                           ) : (
-                            <button onClick={() => {}} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '退出' : 'Leave'}</button>
+                            <button onClick={() => {}} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '退出' : 'Leave'}</button>
                           )}
                         </td>
                       </tr>
@@ -204,34 +204,34 @@ export default function BrandContacts({ lang }: Props) {
                         <td className="py-3.5 pl-6 pr-3">
                           <div className="flex items-center gap-3">
                             <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center shrink-0`}>
-                              <span className="text-white text-[12px] font-bold font-sans">{t.name.charAt(0).toUpperCase()}</span>
+                              <span className="text-white text-(--fs-base) font-bold font-sans">{t.name.charAt(0).toUpperCase()}</span>
                             </div>
                             <div>
-                              <p className="text-[13px] font-medium text-[#202124] font-sans">{t.name}</p>
-                              <p className="text-[11px] text-[#5F6368] font-sans">{t.type || '—'}</p>
+                              <p className="text-(--fs-body) font-medium text-[#202124] font-sans">{t.name}</p>
+                              <p className="text-(--fs-md) text-[#5F6368] font-sans">{t.type || '—'}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="py-3.5 px-3"><p className="text-[12px] text-[#5F6368] font-sans">{t.invite_code}</p></td>
-                        <td className="py-3.5 px-3"><p className="text-[12px] text-[#5F6368] font-sans">{t.seat_limit}</p></td>
-                        <td className="py-3.5 px-3"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#E8F0FE] text-[#1A73E8]">{t.role === 'owner' ? (zh ? '团长' : 'Owner') : (zh ? '成员' : 'Member')}</span></td>
+                        <td className="py-3.5 px-3"><p className="text-(--fs-base) text-[#5F6368] font-sans">{t.invite_code}</p></td>
+                        <td className="py-3.5 px-3"><p className="text-(--fs-base) text-[#5F6368] font-sans">{t.seat_limit}</p></td>
+                        <td className="py-3.5 px-3"><span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#E8F0FE] text-[#1A73E8]">{t.role === 'owner' ? (zh ? '团长' : 'Owner') : (zh ? '成员' : 'Member')}</span></td>
                         <td className="py-3.5 pl-3 pr-6">
                           {t.role === 'owner' ? (
-                            <button onClick={() => disband(t.id, zh)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '解散' : 'Disband'}</button>
+                            <button onClick={() => disband(t.id, zh)} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '解散' : 'Disband'}</button>
                           ) : (
-                            <button onClick={() => {}} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '退出' : 'Leave'}</button>
+                            <button onClick={() => {}} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans bg-[#FFEBEE] text-[#D93025] hover:bg-[#FFCDD2] transition-all cursor-pointer">{zh ? '退出' : 'Leave'}</button>
                           )}
                         </td>
                       </tr>
                     );
                   })}
                   {filtered.length === 0 && filter !== 'all' ? (
-                    <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">{zh ? '暂无联系人' : 'No contacts found'}</td></tr>
+                    <tr><td colSpan={5} className="py-12 text-center text-(--fs-body) text-[#9AA0A6] font-sans">{zh ? '暂无联系人' : 'No contacts found'}</td></tr>
                   ) : (
                     filtered.map(c => <ContactRow key={c.id} c={c} lang={lang} />)
                   )}
                   {filter === 'all' && filtered.length === 0 && teams.length === 0 && (
-                    <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">{zh ? '暂无内容' : 'No content'}</td></tr>
+                    <tr><td colSpan={5} className="py-12 text-center text-(--fs-body) text-[#9AA0A6] font-sans">{zh ? '暂无内容' : 'No content'}</td></tr>
                   )}
                 </>
               )}

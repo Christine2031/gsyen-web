@@ -38,16 +38,16 @@ export default function BrandTeamDetail({ team, members, currentUserId, onLeave,
       {isOwner ? (
         <div className="bg-[#E8F0FE] rounded-lg px-5 py-3 flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] text-[#5F6368] font-sans mb-0.5">邀请码</p>
-            <code className="text-[13px] font-mono text-[#1A73E8] font-semibold">{team.invite_code}</code>
+            <p className="text-(--fs-md) text-[#5F6368] font-sans mb-0.5">邀请码</p>
+            <code className="text-(--fs-body) font-mono text-[#1A73E8] font-semibold">{team.invite_code}</code>
           </div>
           <button onClick={copyInvite}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-sans font-medium bg-white border border-[#DADCE0] text-[#1A73E8] hover:bg-[#F8F9FA] transition-all shrink-0">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-(--fs-base) font-sans font-medium bg-white border border-[#DADCE0] text-[#1A73E8] hover:bg-[#F8F9FA] transition-all shrink-0">
             {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={2} />}
             {copied ? '已复制' : '复制'}
           </button>
           <button onClick={onDisband}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-sans font-medium border border-red-200 text-red-600 bg-white hover:bg-red-50 transition-all shrink-0">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-(--fs-base) font-sans font-medium border border-red-200 text-red-600 bg-white hover:bg-red-50 transition-all shrink-0">
             <Trash2 className="w-3.5 h-3.5" strokeWidth={2} />
             解散
           </button>
@@ -55,7 +55,7 @@ export default function BrandTeamDetail({ team, members, currentUserId, onLeave,
       ) : (
         <div className="flex justify-end">
           <button onClick={onLeave}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-sans border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4] transition-all">
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-(--fs-base) font-sans border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4] transition-all">
             <LogOut className="w-3.5 h-3.5" strokeWidth={2} />
             退出团队
           </button>
@@ -67,18 +67,18 @@ export default function BrandTeamDetail({ team, members, currentUserId, onLeave,
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-[#E8EAED] bg-[#F8F9FA]">
-              <th className="py-3 pl-6 pr-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">成员</th>
-              <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">
+              <th className="py-3 pl-6 pr-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">成员</th>
+              <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">
                 席位 {members.length} / {team.seat_limit}
               </th>
-              <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">加入时间</th>
-              <th className="py-3 pl-3 pr-6 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">角色</th>
+              <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">加入时间</th>
+              <th className="py-3 pl-3 pr-6 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">角色</th>
             </tr>
           </thead>
           <tbody>
             {members.length === 0 ? (
               <tr>
-                <td colSpan={4} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">暂无成员</td>
+                <td colSpan={4} className="py-12 text-center text-(--fs-body) text-[#9AA0A6] font-sans">暂无成员</td>
               </tr>
             ) : members.map(m => {
               const isSelf = m.user_id === currentUserId;
@@ -88,25 +88,25 @@ export default function BrandTeamDetail({ team, members, currentUserId, onLeave,
                   <td className="py-3.5 pl-6 pr-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-full ${color} flex items-center justify-center shrink-0`}>
-                        <span className="text-white text-[11px] font-bold font-sans">
+                        <span className="text-white text-(--fs-md) font-bold font-sans">
                           {m.user_id.slice(0, 2).toUpperCase()}
                         </span>
                       </div>
-                      <p className="text-[13px] font-medium text-[#202124] font-sans">
+                      <p className="text-(--fs-body) font-medium text-[#202124] font-sans">
                         {isSelf ? '你' : `用户 ${m.user_id.slice(0, 8)}`}
                       </p>
                     </div>
                   </td>
                   <td className="py-3.5 px-3">
-                    <p className="text-[12px] text-[#9AA0A6] font-sans">—</p>
+                    <p className="text-(--fs-base) text-[#9AA0A6] font-sans">—</p>
                   </td>
                   <td className="py-3.5 px-3">
-                    <p className="text-[12px] text-[#5F6368] font-sans">
+                    <p className="text-(--fs-base) text-[#5F6368] font-sans">
                       {new Date(m.joined_at).toLocaleDateString('zh-CN')}
                     </p>
                   </td>
                   <td className="py-3.5 pl-3 pr-6">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans ${
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans ${
                       m.role === 'owner'
                         ? 'bg-[#E6F4EA] text-[#137333]'
                         : 'bg-[#F1F3F4] text-[#5F6368]'

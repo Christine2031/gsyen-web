@@ -28,7 +28,7 @@ export default function BrandTeamSidebar({ teams, selectedId, onSelect, onCreate
             key={t.id}
             onClick={() => onSelect(t)}
             title={t.name}
-            className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-[13px] font-mono font-bold transition-all ${
+            className={`w-11 h-11 rounded-[14px] flex items-center justify-center text-(--fs-body) font-mono font-bold transition-all ${
               active
                 ? 'bg-[#1A1A1A] text-white rounded-[10px]'
                 : 'bg-white/70 text-[#1A1A1A]/60 hover:rounded-[10px] hover:bg-white'
@@ -55,7 +55,7 @@ export default function BrandTeamSidebar({ teams, selectedId, onSelect, onCreate
       <button
         onClick={onJoin}
         title="加入团队"
-        className="w-11 h-11 rounded-[14px] bg-white/70 hover:bg-white hover:rounded-[10px] flex items-center justify-center text-[#1A1A1A]/40 hover:text-[#1A1A1A]/70 transition-all text-[10px] font-mono font-bold"
+        className="w-11 h-11 rounded-[14px] bg-white/70 hover:bg-white hover:rounded-[10px] flex items-center justify-center text-[#1A1A1A]/40 hover:text-[#1A1A1A]/70 transition-all text-(--fs-sm) font-mono font-bold"
       >
         入
       </button>

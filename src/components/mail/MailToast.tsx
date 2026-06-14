@@ -17,7 +17,7 @@ export default function MailToast({ lang, message, hasUndo, onUndo }: MailToastP
     >
       <span>{message}</span>
       {hasUndo && (
-        <button onClick={onUndo} className="text-amber-400 font-bold hover:text-amber-300 font-mono tracking-wider uppercase text-[10px] pl-3 border-l border-white/20">
+        <button onClick={onUndo} className="text-amber-400 font-bold hover:text-amber-300 font-mono tracking-wider uppercase text-(--fs-sm) pl-3 border-l border-white/20">
           {lang === 'zh' ? '撤销 (UNDO)' : 'UNDO'}
         </button>
       )}

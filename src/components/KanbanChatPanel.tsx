@@ -42,7 +42,7 @@ export function KanbanChatPanel({
 
         {visibleMessages.length === 0 && !isLoading && (
           <div className="flex items-center justify-center h-full">
-            <p className="text-[10px] font-mono text-[#1A1A1A]/25 uppercase tracking-widest">
+            <p className="text-(--fs-sm) font-mono text-[#1A1A1A]/25 uppercase tracking-widest">
               {lang === 'zh' ? '选择往来记录 或 直接输入开始对话' : 'Select a session or start typing'}
             </p>
           </div>

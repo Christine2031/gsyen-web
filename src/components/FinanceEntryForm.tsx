@@ -47,12 +47,12 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
   return (
     <div className="bg-white border border-[#1A1A1A]/10 p-5 rounded-none space-y-4">
       <div className="flex items-center justify-between">
-        <h4 className="text-[10px] font-mono tracking-widest text-[#1A1A1A] uppercase font-bold">
+        <h4 className="text-(--fs-sm) font-mono tracking-widest text-[#1A1A1A] uppercase font-bold">
           {lang === 'zh' ? '录入收支款项' : 'ADD NEW ACCRUAL'}
         </h4>
         <button
           onClick={() => setShowForm(!showForm)}
-          className="text-xs bg-[#1A1A1A] text-[#F9F8F6] px-2 py-1 font-mono hover:bg-[#1A1A1A]/90 transition-all font-bold uppercase text-[9px] tracking-wider"
+          className="text-xs bg-[#1A1A1A] text-[#F9F8F6] px-2 py-1 font-mono hover:bg-[#1A1A1A]/90 transition-all font-bold uppercase text-(--fs-xs) tracking-wider"
         >
           {showForm ? (lang === 'zh' ? '关闭' : 'Close') : (lang === 'zh' ? '添加录入' : 'Open')}
         </button>
@@ -61,7 +61,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
       {(showForm || forceOpen) && (
         <form onSubmit={handleSubmit} className="space-y-3 pt-1">
           <div>
-            <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '交易款项描述' : 'LEGAL ROW DESCRIPTION'}
             </label>
             <input
@@ -76,7 +76,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '款项金额 · 币种' : 'AMOUNT · CURRENCY'}
               </label>
               <div className="flex gap-1.5">
@@ -102,7 +102,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
               </div>
             </div>
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '交易类型' : 'ENTRY FLOW TYPE'}
               </label>
               <select
@@ -118,7 +118,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '分类性质' : 'CLASSIFICATION'}
               </label>
               <select
@@ -135,7 +135,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
               </select>
             </div>
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '结账日期' : 'VALUE DATE'}
               </label>
               <input
@@ -149,7 +149,7 @@ export default function FinanceEntryForm({ lang, forceOpen, onAdd }: FinanceEntr
           </div>
 
           <div>
-            <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '内部注释 (选填)' : 'INTERNAL AUDIT NOTE'}
             </label>
             <input

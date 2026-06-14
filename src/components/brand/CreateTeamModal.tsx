@@ -34,8 +34,8 @@ export function CreateTeamModal({ zh, createType, teamType, teamName, onSetCreat
                 <t.Icon className={`w-7 h-7 ${t.icon}`} strokeWidth={1.5} />
               </div>
               <div className="text-left">
-                <p className="text-[13px] font-medium text-[#202124] font-sans">{t.zh}</p>
-                <p className="text-[11px] text-[#9AA0A6] mt-1 font-sans">{t.desc}</p>
+                <p className="text-(--fs-body) font-medium text-[#202124] font-sans">{t.zh}</p>
+                <p className="text-(--fs-md) text-[#9AA0A6] mt-1 font-sans">{t.desc}</p>
               </div>
             </button>
           ))}
@@ -46,19 +46,19 @@ export function CreateTeamModal({ zh, createType, teamType, teamName, onSetCreat
           value={teamName}
           onChange={e => onSetTeamName(e.target.value)}
           placeholder={zh ? '团队名称...' : 'Team name...'}
-          className="w-full px-4 py-3 rounded-xl border border-[#DADCE0] text-[13px] focus:outline-none focus:border-[#1A73E8] mb-8 font-sans"
+          className="w-full px-4 py-3 rounded-xl border border-[#DADCE0] text-(--fs-body) focus:outline-none focus:border-[#1A73E8] mb-8 font-sans"
         />
 
         <div className="flex gap-3 justify-end">
           <button
             onClick={() => { onSetCreateType(null); onSetTeamType(''); onSetTeamName(''); }}
-            className="px-5 py-2 rounded-lg text-[13px] font-medium text-[#5F6368] hover:bg-[#F1F3F4] font-sans">
+            className="px-5 py-2 rounded-lg text-(--fs-body) font-medium text-[#5F6368] hover:bg-[#F1F3F4] font-sans">
             {zh ? '取消' : 'Cancel'}
           </button>
           <button
             disabled={!teamType || !teamName.trim()}
             onClick={async () => { await onSubmit?.(); onSetCreateType(null); onSetTeamType(''); onSetTeamName(''); }}
-            className="px-6 py-2 rounded-lg text-[13px] font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] disabled:opacity-40 font-sans">
+            className="px-6 py-2 rounded-lg text-(--fs-body) font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] disabled:opacity-40 font-sans">
             {zh ? '创建' : 'Create'}
           </button>
         </div>

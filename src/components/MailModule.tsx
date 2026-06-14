@@ -34,14 +34,14 @@ export default function MailModule({ lang }: MailModuleProps) {
             <PanelLeft className="w-4 h-4" />
           </button>
           <button onClick={() => compose.setComposeState('window')}
-            className="px-4 py-1.5 bg-[#1A1A1A] text-white hover:bg-[#2C2C2C] text-[10px] font-mono font-bold tracking-widest uppercase transition-all flex items-center gap-2 rounded-none"
+            className="px-4 py-1.5 bg-[#1A1A1A] text-white hover:bg-[#2C2C2C] text-(--fs-sm) font-mono font-bold tracking-widest uppercase transition-all flex items-center gap-2 rounded-none"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>{lang === 'zh' ? '亲书信函' : 'Seal New Letter'}</span>
           </button>
         </div>
         <div className="flex items-center gap-2 flex-nowrap min-w-0">
-          <div className="hidden sm:flex gap-3 items-center px-3 py-1 border border-[#1A1A1A]/10 text-[9px] font-mono text-[#1A1A1A]/70 uppercase tracking-widest rounded-none">
+          <div className="hidden sm:flex gap-3 items-center px-3 py-1 border border-[#1A1A1A]/10 text-(--fs-xs) font-mono text-[#1A1A1A]/70 uppercase tracking-widest rounded-none">
             <div>{lang === 'zh' ? '未读:' : 'UNREAD:'} <strong className="text-amber-800 font-bold">{store.unreadInboxCount}</strong></div>
             <div className="w-[1px] h-3 bg-[#1A1A1A]/10" />
             <div>{lang === 'zh' ? '归档/推迟:' : 'ARCH/SNOOZE:'} <strong className="text-[#1A1A1A]">{store.emails.length}/{store.snoozedCount}</strong></div>
@@ -81,7 +81,7 @@ export default function MailModule({ lang }: MailModuleProps) {
       <AnimatePresence>
         {store.showFilters && (
           <div className="bg-white border border-[#1A1A1A] p-4 text-xs space-y-3 shadow-sm rounded-none">
-            <div className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A1A1A]/50 pb-2 border-b border-dashed border-[#1A1A1A]/10">
+            <div className="font-mono text-(--fs-xs) uppercase tracking-widest font-bold text-[#1A1A1A]/50 pb-2 border-b border-dashed border-[#1A1A1A]/10">
               {lang === 'zh' ? 'Hermes 自定义排字筛选器' : 'Hermes Advanced Metadata Filters'}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -91,7 +91,7 @@ export default function MailModule({ lang }: MailModuleProps) {
                 { label: lang === 'zh' ? '匹配标题' : 'Subject Matching', value: store.filterSubject, onChange: store.setFilterSubject, placeholder: 'e.g. quarterly report' },
               ].map(({ label, value, onChange, placeholder }) => (
                 <div key={label}>
-                  <label className="block text-[9px] font-mono uppercase tracking-wider text-neutral-400 mb-1">{label}</label>
+                  <label className="block text-(--fs-xs) font-mono uppercase tracking-wider text-neutral-400 mb-1">{label}</label>
                   <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
                     className="w-full text-xs p-1.5 bg-[#F9F8F6] border border-[#1A1A1A]/10 outline-none focus:border-[#1A1A1A] rounded-none"
                   />
@@ -99,10 +99,10 @@ export default function MailModule({ lang }: MailModuleProps) {
               ))}
             </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button onClick={store.handleResetFilters} className="px-3 py-1 bg-transparent hover:bg-[#1A1A1A]/5 text-[9px] font-mono tracking-wider uppercase border border-[#1A1A1A]/10 text-neutral-600 rounded-none">
+              <button onClick={store.handleResetFilters} className="px-3 py-1 bg-transparent hover:bg-[#1A1A1A]/5 text-(--fs-xs) font-mono tracking-wider uppercase border border-[#1A1A1A]/10 text-neutral-600 rounded-none">
                 {lang === 'zh' ? '恢复默认' : 'Reset'}
               </button>
-              <button onClick={store.handleApplyAdvancedFilters} className="px-4 py-1 bg-[#1A1A1A] text-white hover:bg-[#2C2C2C] text-[9px] font-mono font-bold tracking-wider uppercase rounded-none">
+              <button onClick={store.handleApplyAdvancedFilters} className="px-4 py-1 bg-[#1A1A1A] text-white hover:bg-[#2C2C2C] text-(--fs-xs) font-mono font-bold tracking-wider uppercase rounded-none">
                 {lang === 'zh' ? '套用矩阵筛选' : 'Apply Matrix'}
               </button>
             </div>

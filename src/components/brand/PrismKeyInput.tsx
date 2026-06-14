@@ -69,12 +69,12 @@ export default function PrismKeyInput({ connected, count, onActivated, isOwner =
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <ShieldCheck className="w-4 h-4 text-[#137333]" strokeWidth={1.8} />
-            <span className="text-[12px] text-[#202124] font-medium font-sans">订阅已激活</span>
-            <span className="text-[11px] font-mono text-[#9AA0A6]">· {displayUrl}</span>
+            <span className="text-(--fs-base) text-[#202124] font-medium font-sans">订阅已激活</span>
+            <span className="text-(--fs-md) font-mono text-[#9AA0A6]">· {displayUrl}</span>
           </div>
           <button
             onClick={() => setExpanded(true)}
-            className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-colors"
+            className="text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-colors"
           >
             更换
           </button>
@@ -82,15 +82,15 @@ export default function PrismKeyInput({ connected, count, onActivated, isOwner =
         {/* 钟馗行 — 所有人可见，仅 owner 可操作 */}
         <div className="flex items-center justify-between border-t border-[#F0F0F0] pt-3">
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-bold text-[#1A1A1A]/50">⚔ 钟馗</span>
-            <span className="text-[11px] font-mono text-[#9AA0A6]">
+            <span className="text-(--fs-md) font-mono font-bold text-[#1A1A1A]/50">⚔ 钟馗</span>
+            <span className="text-(--fs-md) font-mono text-[#9AA0A6]">
               {llmOnly ? '仅限大模型通道' : '全局代理'}
             </span>
           </div>
           {isOwner ? (
             <button
               onClick={toggleGateway}
-              className={`px-3 py-1 text-[10px] font-mono font-bold tracking-widest uppercase rounded-none transition-all ${
+              className={`px-3 py-1 text-(--fs-sm) font-mono font-bold tracking-widest uppercase rounded-none transition-all ${
                 llmOnly
                   ? 'bg-[#1A1A1A] text-[#F9F8F6]'
                   : 'border border-[#1A1A1A]/15 text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'
@@ -99,7 +99,7 @@ export default function PrismKeyInput({ connected, count, onActivated, isOwner =
               {llmOnly ? '已开启' : '关闭'}
             </button>
           ) : (
-            <span className={`text-[10px] font-mono tracking-widest ${llmOnly ? 'text-[#137333]' : 'text-[#9AA0A6]'}`}>
+            <span className={`text-(--fs-sm) font-mono tracking-widest ${llmOnly ? 'text-[#137333]' : 'text-[#9AA0A6]'}`}>
               {llmOnly ? '● 开启' : '○ 关闭'}
             </span>
           )}
@@ -114,14 +114,14 @@ export default function PrismKeyInput({ connected, count, onActivated, isOwner =
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Link className="w-4 h-4 text-[#1A1A1A]/70" strokeWidth={1.8} />
-          <span className="text-[10px] font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/60">
+          <span className="text-(--fs-sm) font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/60">
             订阅链接
           </span>
         </div>
         {connected && (
           <button
             onClick={() => { setExpanded(false); setError(null); }}
-            className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors"
+            className="text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/40 hover:text-[#1A1A1A] transition-colors"
           >
             收起
           </button>
@@ -134,15 +134,15 @@ export default function PrismKeyInput({ connected, count, onActivated, isOwner =
         placeholder="粘贴订阅链接（https://maas.gsyen.com/...）或 vless:// 节点…"
         rows={3}
         spellCheck={false}
-        className="w-full resize-none rounded-lg border border-[#DADCE0] bg-[#F9F8F6]/60 px-3.5 py-3 text-[12px] font-mono text-[#202124] placeholder:text-[#9AA0A6] outline-none focus:border-[#1A73E8] focus:bg-white transition-colors"
+        className="w-full resize-none rounded-lg border border-[#DADCE0] bg-[#F9F8F6]/60 px-3.5 py-3 text-(--fs-base) font-mono text-[#202124] placeholder:text-[#9AA0A6] outline-none focus:border-[#1A73E8] focus:bg-white transition-colors"
       />
 
       <div className="flex items-center justify-between mt-3">
-        <span className="text-[11px] font-mono text-[#D93025]">{error ?? ''}</span>
+        <span className="text-(--fs-md) font-mono text-[#D93025]">{error ?? ''}</span>
         <button
           onClick={activate}
           disabled={busy || !input.trim()}
-          className="flex items-center gap-1 px-4 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase rounded-none bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-1 px-4 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase rounded-none bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
           {busy ? (isUrl ? '拉取中…' : '激活中…') : '激活'}
           {!busy && <ChevronRight className="w-3 h-3" strokeWidth={2.5} />}

@@ -47,14 +47,14 @@ export default function BrandStudioCanvas({ lang, config, setConfig, colors, act
         <div className="flex items-center gap-4">
           <button
             onClick={() => setConfig(prev => ({ ...prev, gridOverlay: !prev.gridOverlay }))}
-            className={`flex items-center gap-2 px-4 py-2 rounded-none text-[10px] uppercase tracking-widest font-bold transition-all border ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-none text-(--fs-sm) uppercase tracking-widest font-bold transition-all border ${
               config.gridOverlay ? 'bg-[#1A1A1A] text-[#F9F8F6] border-[#1A1A1A]' : 'border-[#1A1A1A]/15 text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
             {config.gridOverlay ? t.gridSystemOn : t.gridSystemHide}
           </button>
-          <div className="text-[10px] text-[#1A1A1A]/50 flex items-center gap-1.5 uppercase tracking-wider font-mono">
+          <div className="text-(--fs-sm) text-[#1A1A1A]/50 flex items-center gap-1.5 uppercase tracking-wider font-mono">
             <span>{t.toneSet}:</span>
             <span className="text-[#1A1A1A] font-bold">{toneName}</span>
           </div>
@@ -63,14 +63,14 @@ export default function BrandStudioCanvas({ lang, config, setConfig, colors, act
         <div className="flex gap-2">
           <button
             onClick={onCopy}
-            className="flex items-center gap-2 bg-transparent hover:bg-[#1A1A1A]/5 text-[10px] uppercase tracking-wider font-mono font-bold px-4 py-2 rounded-none text-[#1A1A1A] border border-[#1A1A1A] transition-all"
+            className="flex items-center gap-2 bg-transparent hover:bg-[#1A1A1A]/5 text-(--fs-sm) uppercase tracking-wider font-mono font-bold px-4 py-2 rounded-none text-[#1A1A1A] border border-[#1A1A1A] transition-all"
           >
             {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
             {isCopied ? t.copied : t.copyCleanSvg}
           </button>
           <button
             onClick={downloadSvg}
-            className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-[10px] px-4 py-2 rounded-none text-[#F9F8F6] transition-all font-bold uppercase tracking-widest"
+            className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#1A1A1A]/90 text-(--fs-sm) px-4 py-2 rounded-none text-[#F9F8F6] transition-all font-bold uppercase tracking-widest"
           >
             <Download className="w-4 h-4" />
             {t.exportVectorSvg}
@@ -91,8 +91,8 @@ export default function BrandStudioCanvas({ lang, config, setConfig, colors, act
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-dashed border-[#1A1A1A]/15 w-72 h-72" />
             <div className="absolute top-1/2 left-0 w-full h-[1px] border-t border-dashed border-[#1A1A1A]/10" />
             <div className="absolute left-1/2 top-0 h-full w-[1px] border-l border-dashed border-[#1A1A1A]/10" />
-            <div className="absolute bottom-6 left-6 font-mono text-[9px] text-[#1A1A1A]/70 leading-relaxed max-w-[200px] space-y-1 bg-white p-3.5 rounded-none border border-[#1A1A1A]/10 shadow-sm">
-              <p className="text-[#1A1A1A] font-bold uppercase tracking-wider mb-1 font-sans text-[10px]">{t.specificationsBlock}</p>
+            <div className="absolute bottom-6 left-6 font-mono text-(--fs-xs) text-[#1A1A1A]/70 leading-relaxed max-w-[200px] space-y-1 bg-white p-3.5 rounded-none border border-[#1A1A1A]/10 shadow-sm">
+              <p className="text-[#1A1A1A] font-bold uppercase tracking-wider mb-1 font-sans text-(--fs-sm)">{t.specificationsBlock}</p>
               <p>{t.canvasLabel}</p>
               <p>{t.symbolLabel}: {config.iconName}</p>
               <p>{t.dimsLabel}: {config.iconSize} x {config.iconSize} px</p>

@@ -54,11 +54,11 @@ export function ColumnTitle({ col, onRename, onDelete, dotColor, lang }: {
             onChange={e => setVal(e.target.value)}
             onBlur={commit}
             onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setVal(col.title); setEditing(false); } }}
-            className="flex-1 min-w-0 text-[11px] font-bold tracking-wider uppercase bg-white border border-[#1A1A1A]/30 px-1 py-0 outline-none text-[#1A1A1A]"
+            className="flex-1 min-w-0 text-(--fs-md) font-bold tracking-wider uppercase bg-white border border-[#1A1A1A]/30 px-1 py-0 outline-none text-[#1A1A1A]"
           />
         ) : (
           <h4 onClick={() => setEditing(true)}
-            className="text-[11px] font-bold tracking-wider uppercase text-[#1A1A1A] truncate cursor-text hover:text-[#1A1A1A]/70 transition-colors"
+            className="text-(--fs-md) font-bold tracking-wider uppercase text-[#1A1A1A] truncate cursor-text hover:text-[#1A1A1A]/70 transition-colors"
             title={lang === 'zh' ? '点击改名' : 'Click to rename'}>
             {col.title}
           </h4>
@@ -94,7 +94,7 @@ export function AddListButton({ lang, onAdd }: { lang: 'zh' | 'en'; onAdd: (t: s
 
   if (!open) return (
     <button onClick={() => setOpen(true)}
-      className="shrink-0 w-[272px] h-12 flex items-center gap-2 px-3 text-[11px] font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] border border-dashed border-[#1A1A1A]/15 hover:border-[#1A1A1A]/35 bg-white/60 hover:bg-white transition-all self-start">
+      className="shrink-0 w-[272px] h-12 flex items-center gap-2 px-3 text-(--fs-md) font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] border border-dashed border-[#1A1A1A]/15 hover:border-[#1A1A1A]/35 bg-white/60 hover:bg-white transition-all self-start">
       <Plus className="w-3.5 h-3.5" />
       {lang === 'zh' ? '添加列表' : 'Add a list'}
     </button>
@@ -109,7 +109,7 @@ export function AddListButton({ lang, onAdd }: { lang: 'zh' | 'en'; onAdd: (t: s
       />
       <div className="flex items-center gap-2">
         <button onClick={submit}
-          className="px-3 py-1 bg-[#1A1A1A] text-[#F9F8F6] text-[10px] font-bold tracking-widest uppercase hover:bg-[#1A1A1A]/80 transition-colors">
+          className="px-3 py-1 bg-[#1A1A1A] text-[#F9F8F6] text-(--fs-sm) font-bold tracking-widest uppercase hover:bg-[#1A1A1A]/80 transition-colors">
           {lang === 'zh' ? '添加' : 'Add list'}
         </button>
         <button onClick={() => { setOpen(false); setVal(''); }}

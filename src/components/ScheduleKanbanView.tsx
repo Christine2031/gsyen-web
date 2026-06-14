@@ -129,16 +129,16 @@ export default function ScheduleKanbanView({
                       <Move className="w-2.5 h-2.5 text-[#1A1A1A]/50" />
                     </div>
                     <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                      <span className={`text-[8px] font-mono uppercase tracking-widest px-1.5 py-0.5 border ${info.color}`}>
+                      <span className={`text-(--fs-2xs) font-mono uppercase tracking-widest px-1.5 py-0.5 border ${info.color}`}>
                         {lang === 'zh' ? info.zhLabel : info.enLabel}
                       </span>
-                      <span className="text-[8px] font-mono text-[#1A1A1A]/40 flex items-center gap-0.5">
+                      <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/40 flex items-center gap-0.5">
                         <Clock className="w-2.5 h-2.5" />{item.time}
                       </span>
                     </div>
-                    <h5 className="text-[11px] font-bold text-[#1A1A1A] leading-tight mb-1 truncate">{item.title}</h5>
-                    <p className="text-[9px] leading-relaxed text-[#1A1A1A]/55 italic mb-2 line-clamp-2">{item.subtitle}</p>
-                    <div className="flex items-center justify-between pt-1.5 border-t border-[#1A1A1A]/5 text-[8px] font-mono text-[#1A1A1A]/40">
+                    <h5 className="text-(--fs-md) font-bold text-[#1A1A1A] leading-tight mb-1 truncate">{item.title}</h5>
+                    <p className="text-(--fs-xs) leading-relaxed text-[#1A1A1A]/55 italic mb-2 line-clamp-2">{item.subtitle}</p>
+                    <div className="flex items-center justify-between pt-1.5 border-t border-[#1A1A1A]/5 text-(--fs-2xs) font-mono text-[#1A1A1A]/40">
                       <span className="flex items-center gap-0.5 max-w-[120px] truncate">
                         <MapPin className="w-2 h-2 shrink-0" /><span className="truncate">{item.location}</span>
                       </span>
@@ -166,7 +166,7 @@ export default function ScheduleKanbanView({
             </div>
 
             <button onClick={() => onDraftHere(col.id)}
-              className="mt-2 w-full flex items-center gap-1.5 px-1 py-1 text-[9px] font-mono text-[#1A1A1A]/35 hover:text-[#1A1A1A]/70 hover:bg-[#F9F8F6] transition-colors">
+              className="mt-2 w-full flex items-center gap-1.5 px-1 py-1 text-(--fs-xs) font-mono text-[#1A1A1A]/35 hover:text-[#1A1A1A]/70 hover:bg-[#F9F8F6] transition-colors">
               <Plus className="w-3 h-3" />{lang === 'zh' ? '添加卡片' : 'Add a card'}
             </button>
           </div>

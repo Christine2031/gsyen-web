@@ -45,18 +45,18 @@ export function MailExpandContent({
           {!composing ? (
             /* ── Level 2 · 详情 ── */
             <>
-              <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
+              <div className="grid grid-cols-2 gap-3 text-(--fs-md) font-mono">
                 <div className="space-y-1">
-                  <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '收件人' : 'TO'}</p>
+                  <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '收件人' : 'TO'}</p>
                   <p className={`font-bold truncate ${C.panelText}`}>{to || '—'}</p>
                 </div>
                 <div className="space-y-1">
-                  <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '主题' : 'SUBJECT'}</p>
+                  <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '主题' : 'SUBJECT'}</p>
                   <p className={`font-bold truncate ${C.panelText}`}>{subj || '—'}</p>
                 </div>
                 <div className={`space-y-1 col-span-2 pt-1.5 border-t border-current/10`}>
-                  <p className={`text-[8px] uppercase tracking-widest ${C.panelLabel}`}>{zh ? '正文摘要' : 'PREVIEW'}</p>
-                  <p className={`text-[10px] italic truncate ${C.panelText} opacity-60`}>{preview}</p>
+                  <p className={`text-(--fs-2xs) uppercase tracking-widest ${C.panelLabel}`}>{zh ? '正文摘要' : 'PREVIEW'}</p>
+                  <p className={`text-(--fs-sm) italic truncate ${C.panelText} opacity-60`}>{preview}</p>
                 </div>
               </div>
 
@@ -64,18 +64,18 @@ export function MailExpandContent({
                 <div className="flex gap-1.5">
                   {(['self', 'shared'] as const).map(s => (
                     <button key={s} type="button" onClick={() => onScopeChange(s)}
-                      className={`px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${scope === s ? C.btnPrimary : C.btnGhost}`}>
+                      className={`px-3 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${scope === s ? C.btnPrimary : C.btnGhost}`}>
                       {s === 'self' ? (zh ? '个人' : 'Personal') : (zh ? '团队' : 'Team')}
                     </button>
                   ))}
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={onCollapse}
-                    className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnDanger}`}>
+                    className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnDanger}`}>
                     {zh ? '丢弃' : 'Discard'}
                   </button>
                   <button type="button" onClick={handleCompose}
-                    className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
+                    className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
                     {zh ? '撰写' : 'Compose'}
                   </button>
                 </div>
@@ -90,23 +90,23 @@ export function MailExpandContent({
                 { label: zh ? '主题'  : 'Subject',  val: subj, set: setSubj, ph: '' },
               ].map(({ label, val, set, ph }) => (
                 <div key={label} className={`flex items-center gap-4 border-b ${C.panelBorder} py-2`}>
-                  <span className={`text-[8px] font-mono uppercase tracking-widest w-12 shrink-0 text-right ${C.panelLabel}`}>{label}</span>
+                  <span className={`text-(--fs-2xs) font-mono uppercase tracking-widest w-12 shrink-0 text-right ${C.panelLabel}`}>{label}</span>
                   <input type="text" value={val} onChange={e => set(e.target.value)} placeholder={ph}
-                    className={`flex-1 text-[12px] bg-transparent border-none outline-none ${C.panelText} placeholder:opacity-30`} />
+                    className={`flex-1 text-(--fs-base) bg-transparent border-none outline-none ${C.panelText} placeholder:opacity-30`} />
                 </div>
               ))}
 
               <textarea rows={12} value={body} onChange={e => setBody(e.target.value)}
                 placeholder={zh ? '正文…' : 'Body…'}
-                className={`w-full text-[12px] leading-relaxed pt-3 pb-1 bg-transparent border-none outline-none resize-none ${C.panelText} placeholder:opacity-30`} />
+                className={`w-full text-(--fs-base) leading-relaxed pt-3 pb-1 bg-transparent border-none outline-none resize-none ${C.panelText} placeholder:opacity-30`} />
 
               <div className={`flex items-center justify-end gap-2 pt-2 border-t ${C.panelBorder}`}>
                 <button type="button" onClick={handleClose}
-                  className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnGhost}`}>
+                  className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnGhost}`}>
                   {zh ? '收起' : 'Collapse'}
                 </button>
                 <button type="button"
-                  className={`px-4 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
+                  className={`px-4 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${C.btnPrimary}`}>
                   {zh ? '发送' : 'Send'}
                 </button>
               </div>

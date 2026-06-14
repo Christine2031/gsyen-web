@@ -134,19 +134,45 @@
   --animate-scaleUp: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 字号档位 — zoom 挂在 body 层，html 保持铺满视口，不留底部空白 */
-html[data-font="compact"] body { zoom: 0.85; }
-html[data-font="large"] body {
-  zoom: 1.15;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
+/* ── 字号档位 CSS 变量 ─────────────────────────────────────────────────────
+   组件用 text-(--fs-sm) 等引用，切档只改变量，布局/间距/颜色全不变。
+   zoom 已完全移除，h-screen 天然铺满视口。
+   ────────────────────────────────────────────────────────────────────── */
+:root {
+  --fs-2xs:  8px;
+  --fs-xs:   9px;
+  --fs-sm:   10px;
+  --fs-md:   11px;
+  --fs-base: 12px;
+  --fs-body: 13px;
+  --fs-lg:   14px;
 }
-html[data-font="ji"] body {
-  zoom: 1.30;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: geometricPrecision;
+html[data-font="compact"] {
+  --fs-2xs:  7px;
+  --fs-xs:   8px;
+  --fs-sm:   9px;
+  --fs-md:   10px;
+  --fs-base: 11px;
+  --fs-body: 12px;
+  --fs-lg:   13px;
+}
+html[data-font="large"] {
+  --fs-2xs:  9px;
+  --fs-xs:   10px;
+  --fs-sm:   11px;
+  --fs-md:   12px;
+  --fs-base: 13px;
+  --fs-body: 14px;
+  --fs-lg:   15px;
+}
+html[data-font="ji"] {
+  --fs-2xs:  10px;
+  --fs-xs:   11px;
+  --fs-sm:   12px;
+  --fs-md:   13px;
+  --fs-base: 14px;
+  --fs-body: 15px;
+  --fs-lg:   16px;
 }
 
 @keyframes gsyen-breathe {

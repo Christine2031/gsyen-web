@@ -162,7 +162,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         <button onClick={() => setSidebarOpen(o => !o)} className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all shrink-0 ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
           <PanelLeft className="w-4 h-4" />
         </button>
-        <button onClick={handleNewSession} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 shrink-0">
+        <button onClick={handleNewSession} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 shrink-0">
           <Plus className="w-3 h-3" /><span>NEW</span>
         </button>
         <div className="flex-1" />
@@ -173,16 +173,16 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
             className="w-44 pl-8 pr-3 py-1.5 text-xs border border-[#1A1A1A]/10 bg-transparent focus:bg-white focus:outline-none focus:border-[#1A1A1A]/30 transition-colors" />
         </div>
         <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-          className="py-1.5 px-2 border border-[#1A1A1A]/10 text-[10px] font-mono bg-transparent text-[#1A1A1A] cursor-pointer shrink-0">
+          className="py-1.5 px-2 border border-[#1A1A1A]/10 text-(--fs-sm) font-mono bg-transparent text-[#1A1A1A] cursor-pointer shrink-0">
           <option value="all">{lang === 'zh' ? '全部' : 'All'}</option>
           {Object.entries(categoryMap).map(([key, val]) => (
             <option key={key} value={key}>{lang === 'zh' ? val.zhLabel : val.enLabel}</option>
           ))}
         </select>
-        <button onClick={handleClearAll} className="px-3 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all shrink-0">
+        <button onClick={handleClearAll} className="px-3 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all shrink-0">
           {lang === 'zh' ? '清空' : 'Clear'}
         </button>
-        <button onClick={() => openAddForm()} className="px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[10px] font-bold font-mono tracking-widest uppercase flex items-center gap-1.5 hover:bg-[#1A1A1A]/80 transition-all shrink-0">
+        <button onClick={() => openAddForm()} className="px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-(--fs-sm) font-bold font-mono tracking-widest uppercase flex items-center gap-1.5 hover:bg-[#1A1A1A]/80 transition-all shrink-0">
           <Plus className="w-3.5 h-3.5" />{lang === 'zh' ? '新建卡片' : 'New Card'}
         </button>
       </div>
@@ -195,17 +195,17 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
         <aside className={`shrink-0 flex flex-col border-r border-[#1A1A1A]/10 bg-[#F4F2EE] transition-all duration-300 overflow-hidden ${sidebarOpen ? 'w-[240px] 2xl:w-[320px] p-6 opacity-100' : 'w-0 p-0 opacity-0 pointer-events-none'}`}>
           <div className="flex flex-col h-full min-w-[208px] 2xl:min-w-[272px] gap-4">
             <div className="flex items-center justify-between w-full">
-              <h2 className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">{lang === 'zh' ? '往来' : 'Recents'}</h2>
-              <span className="text-[8px] font-mono text-[#1A1A1A]/25">{sessions.length}</span>
+              <h2 className="text-(--fs-md) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">{lang === 'zh' ? '往来' : 'Recents'}</h2>
+              <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25">{sessions.length}</span>
             </div>
             {/* default 入口 — 与 session 条目完全一致 */}
             <div onClick={() => setActiveSessionId('default')}
               className={`group flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${activeSessionId === 'default' ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
               <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug">Default Message</p>
+                <p className="text-(--fs-md) font-sans text-[#1A1A1A]/80 leading-snug">Default Message</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
-                  <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">ETHAN</span>
+                  <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/30 uppercase">{new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25 uppercase">ETHAN</span>
                 </div>
               </div>
             </div>
@@ -213,16 +213,16 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
               {sessions.length === 0 ? (
                 <div className="py-8 text-center space-y-2">
                   <MessageSquare className="w-6 h-6 text-[#1A1A1A]/15 mx-auto" />
-                  <p className="text-[9px] font-mono text-[#1A1A1A]/30 uppercase tracking-widest">{lang === 'zh' ? '暂无记录' : 'No sessions yet'}</p>
+                  <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/30 uppercase tracking-widest">{lang === 'zh' ? '暂无记录' : 'No sessions yet'}</p>
                 </div>
               ) : sessions.map(s => (
                 <div key={s.id} onClick={() => setActiveSessionId(s.id)}
                   className={`group flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${activeSessionId === s.id ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
                   <div className="flex-1 min-w-0 space-y-1">
-                    <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">{s.title}</p>
+                    <p className="text-(--fs-md) font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">{s.title}</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
-                      <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">{s.model}</span>
+                      <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/30 uppercase">{new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
+                      <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25 uppercase">{s.model}</span>
                     </div>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export default function KanbanModule({ lang }: KanbanModuleProps) {
             <div className="shrink-0 px-8 pt-1 pb-2 max-h-[88px] overflow-hidden flex flex-col justify-end gap-0.5 pointer-events-none select-none"
               style={{ maskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.7) 100%)' }}>
               {activeMessages.map(m => (
-                <p key={m.id} className={`text-[10px] font-mono leading-snug truncate ${m.role === 'user' ? 'text-[#1A1A1A]/30' : 'text-[#1A1A1A]/20'}`}>
+                <p key={m.id} className={`text-(--fs-sm) font-mono leading-snug truncate ${m.role === 'user' ? 'text-[#1A1A1A]/30' : 'text-[#1A1A1A]/20'}`}>
                   {m.role === 'user' ? '›' : '·'} {typeof m.content === 'string' ? m.content.slice(0, 160) : ''}
                 </p>
               ))}

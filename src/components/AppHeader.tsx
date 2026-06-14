@@ -160,9 +160,9 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-2.5 flex-nowrap whitespace-nowrap">
                     <span className="text-xl md:text-2xl font-black font-serif-sc tracking-[0.12em] text-[#111111] leading-none select-none">疆域</span>
-                    <span className="font-cinzel text-xs md:text-[14px] font-bold tracking-[0.22em] text-[#111111]/85 uppercase leading-none select-none ml-0.5">GSYEN</span>
+                    <span className="font-cinzel text-xs md:text-(--fs-lg) font-bold tracking-[0.22em] text-[#111111]/85 uppercase leading-none select-none ml-0.5">GSYEN</span>
                   </div>
-                  <p className="text-[7.5px] md:text-[8px] text-[#1A1A1A]/50 font-serif-sc tracking-[0.22em] font-medium leading-none uppercase mt-2.5 truncate">
+                  <p className="text-[7.5px] md:text-(--fs-2xs) text-[#1A1A1A]/50 font-serif-sc tracking-[0.22em] font-medium leading-none uppercase mt-2.5 truncate">
                     {isHome ? t.headerSubtitle : space?.subtitle}
                   </p>
                 </div>
@@ -177,7 +177,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
             <button
               key={value}
               onClick={() => setActiveSpace(value)}
-              className={`w-[80px] py-1.5 rounded-none text-[10px] font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
+              className={`w-[80px] py-1.5 rounded-none text-(--fs-sm) font-bold tracking-widest uppercase transition-all flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 ${
                 activeSpace === value ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
               }`}
             >
@@ -208,7 +208,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
             className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/10 bg-[#1A1A1A]/5 text-[#1A1A1A]/55 hover:text-[#1A1A1A] transition-all shrink-0"
           >
             <Globe className="w-3 h-3" />
-            <span className="text-[9px] font-bold tracking-wider uppercase">{lang === 'zh' ? '中文' : 'EN'}</span>
+            <span className="text-(--fs-xs) font-bold tracking-wider uppercase">{lang === 'zh' ? '中文' : 'EN'}</span>
           </button>
 
           {/* 竖线 */}
@@ -220,7 +220,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
               {activeTeam ? (
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('gsyen-toggle-team-panel'))}
-                  className="flex items-center gap-1.5 px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A]/80 whitespace-nowrap shrink-0 font-mono transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-(--fs-xs) font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A]/80 whitespace-nowrap shrink-0 font-mono transition-colors"
                   title="团队成员"
                 >
                   <Users className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -229,7 +229,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
               ) : (
                 <button
                   onClick={() => window.dispatchEvent(new CustomEvent('gsyen-toggle-friends-panel'))}
-                  className="flex items-center gap-1.5 px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A]/80 whitespace-nowrap shrink-0 font-mono transition-colors"
+                  className="flex items-center gap-1.5 px-2 py-1.5 text-(--fs-xs) font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A]/80 whitespace-nowrap shrink-0 font-mono transition-colors"
                 >
                   <User className="w-3.5 h-3.5" strokeWidth={1.5} />
                   {user.email?.split('@')[0]}
@@ -238,7 +238,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
               <TierBadge tier={tier} onClick={onMemberClick} />
               <button
                 onClick={signOut}
-                className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-[9px] font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
+                className="flex items-center gap-1 px-3 py-1.5 border border-[#1A1A1A]/15 text-[#1A1A1A]/50 text-(--fs-xs) font-bold tracking-wider uppercase hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all whitespace-nowrap shrink-0"
               >
                 {lang === 'zh' ? '登出' : 'SIGN OUT'}
               </button>
@@ -248,13 +248,13 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
             <>
               <button
                 onClick={() => setAuthModal('login')}
-                className="px-2 py-1.5 text-[9px] font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all whitespace-nowrap shrink-0"
+                className="px-2 py-1.5 text-(--fs-xs) font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all whitespace-nowrap shrink-0"
               >
                 {lang === 'zh' ? '登录' : 'LOGIN'}
               </button>
               <button
                 onClick={() => setAuthModal('register')}
-                className="flex items-center gap-1 px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-[9px] font-bold tracking-wider uppercase hover:bg-[#1A1A1A]/80 transition-all whitespace-nowrap shrink-0"
+                className="flex items-center gap-1 px-3 py-1.5 bg-[#1A1A1A] text-[#F9F8F6] text-(--fs-xs) font-bold tracking-wider uppercase hover:bg-[#1A1A1A]/80 transition-all whitespace-nowrap shrink-0"
               >
                 {lang === 'zh' ? '注册' : 'REGISTER'}
                 <span className="text-[#F9F8F6]/50 ml-0.5">→</span>

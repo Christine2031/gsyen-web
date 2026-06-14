@@ -53,7 +53,7 @@ export default function ScheduleMonthView({
     <div className="bg-white border border-[#1A1A1A]/10 rounded-none overflow-hidden" id="month-grid-wrapper">
 
       {/* Day-of-week headers — 导航已上移至 ScheduleToolbar */}
-      <div className="grid grid-cols-7 border-b border-[#1A1A1A]/10 text-center text-[10px] font-mono uppercase bg-neutral-50/30 text-neutral-500 py-2 select-none tracking-widest font-bold">
+      <div className="grid grid-cols-7 border-b border-[#1A1A1A]/10 text-center text-(--fs-sm) font-mono uppercase bg-neutral-50/30 text-neutral-500 py-2 select-none tracking-widest font-bold">
         {(lang === 'zh'
           ? ['周日 Sun','周一 Mon','周二 Tue','周三 Wed','周四 Thu','周五 Fri','周六 Sat']
           : ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
@@ -77,7 +77,7 @@ export default function ScheduleMonthView({
               <div className="flex items-center justify-between pointer-events-auto">
                 <button
                   onClick={() => { setQuickAddDate(cell.dateString); setQuickAddTitle(''); }}
-                  className="p-1 hover:bg-[#1A1A1A]/5 text-[9px] text-[#1A1A1A]/35 hover:text-[#1A1A1A] font-mono tracking-wider flex items-center gap-0.5 rounded-none"
+                  className="p-1 hover:bg-[#1A1A1A]/5 text-(--fs-xs) text-[#1A1A1A]/35 hover:text-[#1A1A1A] font-mono tracking-wider flex items-center gap-0.5 rounded-none"
                   title={lang === 'zh' ? '在这一天快捷新增记事' : 'Quick task on this date'}
                 >
                   <Plus className="w-2.5 h-2.5" /><span>ADD</span>
@@ -116,7 +116,7 @@ export default function ScheduleMonthView({
                       title={`${item.time} - ${item.title}`}
                     >
                       <div className="flex items-center gap-1 truncate w-full">
-                        <span className={`text-[8px] shrink-0 font-bold ${isCrossDay ? 'text-[#F9F8F6]/80' : 'text-[#1A1A1A]/50'}`}>
+                        <span className={`text-(--fs-2xs) shrink-0 font-bold ${isCrossDay ? 'text-[#F9F8F6]/80' : 'text-[#1A1A1A]/50'}`}>
                           {isCrossDay ? '⇄' : item.time}
                         </span>
                         <span className={`truncate ${isCrossDay ? 'text-[#F9F8F6] font-bold' : ''}`}>{item.title}</span>
@@ -133,7 +133,7 @@ export default function ScheduleMonthView({
                     <input type="text" required autoFocus
                       placeholder={lang === 'zh' ? '指令书写 (回车保存)' : 'Title... + ENTER'}
                       value={quickAddTitle} onChange={e => setQuickAddTitle(e.target.value)}
-                      className="w-full text-[9px] p-1 bg-white border border-[#1A1A1A]/20 outline-none rounded-none" />
+                      className="w-full text-(--fs-xs) p-1 bg-white border border-[#1A1A1A]/20 outline-none rounded-none" />
                     <div className="flex justify-between items-center text-[7.5px] font-mono uppercase tracking-widest text-neutral-400">
                       <span>PRESET: CREATIVE</span>
                       <button type="button" onClick={() => setQuickAddDate(null)} className="text-red-700 hover:underline">CLOSE</button>

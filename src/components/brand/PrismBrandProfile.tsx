@@ -36,12 +36,12 @@ export default function PrismBrandProfile({ lang }: Props) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Building2 className="w-4 h-4 text-[#1A1A1A]/60" strokeWidth={1.5} />
-          <span className="text-[9px] font-mono uppercase tracking-widest font-bold text-[#1A1A1A]">
+          <span className="text-(--fs-xs) font-mono uppercase tracking-widest font-bold text-[#1A1A1A]">
             {zh ? '品牌档案 · 信息对接' : 'Brand Profile · Data Bridge'}
           </span>
         </div>
         <button onClick={save}
-          className={`px-3 py-1 text-[9px] font-mono uppercase tracking-widest border rounded-none transition-all ${
+          className={`px-3 py-1 text-(--fs-xs) font-mono uppercase tracking-widest border rounded-none transition-all ${
             saved ? 'bg-emerald-600 border-emerald-600 text-white' : 'bg-[#1A1A1A] border-[#1A1A1A] text-white hover:bg-[#1A1A1A]/85'
           }`}>
           <Save className="w-3 h-3 inline mr-1" />
@@ -49,7 +49,7 @@ export default function PrismBrandProfile({ lang }: Props) {
         </button>
       </div>
 
-      <p className="text-[10px] text-[#1A1A1A]/50 font-mono">
+      <p className="text-(--fs-sm) text-[#1A1A1A]/50 font-mono">
         {zh
           ? '此处信息将注入 GEO 语料库，成为 AI 搜索引擎引用的事实锚点。'
           : 'This data feeds the GEO corpus — factual anchors for generative AI citation.'}
@@ -58,7 +58,7 @@ export default function PrismBrandProfile({ lang }: Props) {
       <div className="space-y-0 border border-[#1A1A1A]/8">
         {FIELDS.map(({ key, zh: zhLabel, en: enLabel, multi }) => (
           <div key={key} className="flex border-b border-[#1A1A1A]/8 last:border-b-0">
-            <span className="w-20 shrink-0 text-[8px] font-mono uppercase tracking-widest text-[#1A1A1A]/40 p-3 flex items-start pt-3.5 text-right justify-end border-r border-[#1A1A1A]/8">
+            <span className="w-20 shrink-0 text-(--fs-2xs) font-mono uppercase tracking-widest text-[#1A1A1A]/40 p-3 flex items-start pt-3.5 text-right justify-end border-r border-[#1A1A1A]/8">
               {zh ? zhLabel : enLabel}
             </span>
             {multi ? (
@@ -66,7 +66,7 @@ export default function PrismBrandProfile({ lang }: Props) {
                 rows={3}
                 value={form[key]}
                 onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                className="flex-1 text-[11px] font-mono bg-transparent border-none outline-none text-[#1A1A1A] p-3 resize-none"
+                className="flex-1 text-(--fs-md) font-mono bg-transparent border-none outline-none text-[#1A1A1A] p-3 resize-none"
                 placeholder={zh ? `输入${zhLabel}…` : `Enter ${enLabel}…`}
               />
             ) : (
@@ -74,7 +74,7 @@ export default function PrismBrandProfile({ lang }: Props) {
                 type="text"
                 value={form[key]}
                 onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                className="flex-1 text-[11px] font-mono bg-transparent border-none outline-none text-[#1A1A1A] p-3"
+                className="flex-1 text-(--fs-md) font-mono bg-transparent border-none outline-none text-[#1A1A1A] p-3"
                 placeholder={zh ? `输入${zhLabel}…` : `Enter ${enLabel}…`}
               />
             )}

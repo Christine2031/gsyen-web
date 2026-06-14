@@ -98,7 +98,7 @@ export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
               title={title}
               className={[
                 'relative z-10 px-[18px] py-[7px]',
-                'text-[10px] font-mono font-bold tracking-widest uppercase',
+                'text-(--fs-sm) font-mono font-bold tracking-widest uppercase',
                 'border-none bg-transparent rounded-none',
                 'transition-colors duration-[180ms]',
                 isActive ? 'text-[#F9F8F6] cursor-default'
@@ -113,12 +113,12 @@ export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
       </div>
 
       {value === 'ji' && (
-        <p className="text-[9px] font-mono text-[#1A1A1A]/40 tracking-wide">
+        <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/40 tracking-wide">
           {zh ? '极档放大 130%，适合大屏 / 演示 / 视力辅助' : 'Ultra scales to 130% — ideal for large displays or accessibility'}
         </p>
       )}
       {value === 'large' && isShortScreen && (
-        <p className="text-[9px] font-mono text-amber-500/60 tracking-wide">
+        <p className="text-(--fs-xs) font-mono text-amber-500/60 tracking-wide">
           {zh ? '当前屏幕高度较短，建议使用紧凑档' : 'Short screen — try compact for more content space'}
         </p>
       )}

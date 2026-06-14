@@ -61,35 +61,35 @@ export default function AboutDialog({ lang, onClose }: AboutDialogProps) {
         </div>
 
         {/* 版本号 */}
-        <p className="text-[10px] font-mono text-[#1A1A1A]/40 tracking-wider mb-6">
+        <p className="text-(--fs-sm) font-mono text-[#1A1A1A]/40 tracking-wider mb-6">
           Version {version || '…'} ({__GIT_SHA__})
         </p>
 
         {/* 检查更新按钮 */}
         <div className="w-full px-6 mb-3">
           <button onClick={checkUpdate} disabled={checking}
-            className="w-full flex items-center justify-center gap-2 py-2 border border-[#1A1A1A]/15 bg-white text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all disabled:opacity-50">
+            className="w-full flex items-center justify-center gap-2 py-2 border border-[#1A1A1A]/15 bg-white text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all disabled:opacity-50">
             <RefreshCw className={`w-3 h-3 ${checking ? 'animate-spin' : ''}`} />
             {checking ? (lang === 'zh' ? '检查中…' : 'Checking…') : (lang === 'zh' ? '检查更新' : 'Check for Updates')}
           </button>
           {checkResult && (
-            <p className="text-[9px] font-mono text-[#1A1A1A]/50 text-center mt-2">{checkResult}</p>
+            <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/50 text-center mt-2">{checkResult}</p>
           )}
         </div>
 
         {/* 支持链接 */}
         <div className="w-full px-6 mb-6">
           <a href="mailto:Ethan7586@gsyen.com"
-            className="w-full flex items-center justify-center py-2 border border-[#1A1A1A]/10 bg-white/60 text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all">
+            className="w-full flex items-center justify-center py-2 border border-[#1A1A1A]/10 bg-white/60 text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A] transition-all">
             {lang === 'zh' ? '联系支持' : 'Get Support'}
           </a>
         </div>
 
         {/* 版权 */}
-        <p className="text-[8px] font-mono text-[#1A1A1A]/25 tracking-wider pb-1">
+        <p className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25 tracking-wider pb-1">
           © 2026 雍彻科技 · GSYEN
         </p>
-        <p className="text-[8px] font-mono text-[#1A1A1A]/15 tracking-wider pb-4">
+        <p className="text-(--fs-2xs) font-mono text-[#1A1A1A]/15 tracking-wider pb-4">
           All rights reserved.
         </p>
       </div>

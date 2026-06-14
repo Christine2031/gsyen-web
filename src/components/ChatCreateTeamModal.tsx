@@ -43,7 +43,7 @@ export function ChatCreateTeamModal({ open, zh, onClose, onSubmit }: Props) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#1A1A1A]/8">
-          <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/60">
+          <span className="text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/60">
             {zh ? '开团' : 'New Team'}
           </span>
           <button onClick={close} className="p-0.5 text-[#1A1A1A]/25 hover:text-[#1A1A1A]/60 transition-colors">
@@ -60,10 +60,10 @@ export function ChatCreateTeamModal({ open, zh, onClose, onSubmit }: Props) {
                 className={`flex items-start gap-3 p-4 transition-all text-left ${active ? 'bg-[#1A1A1A]' : 'bg-[#F9F8F6] hover:bg-[#1A1A1A]/5'}`}>
                 <Icon className={`w-4 h-4 shrink-0 mt-0.5 ${active ? 'text-[#F9F8F6]/70' : 'text-[#1A1A1A]/40'}`} strokeWidth={1.5} />
                 <div className="min-w-0">
-                  <p className={`text-[11px] font-mono font-bold tracking-widest uppercase ${active ? 'text-[#F9F8F6]' : 'text-[#1A1A1A]'}`}>
+                  <p className={`text-(--fs-md) font-mono font-bold tracking-widest uppercase ${active ? 'text-[#F9F8F6]' : 'text-[#1A1A1A]'}`}>
                     {label}
                   </p>
-                  <p className={`text-[9px] font-mono mt-1 leading-snug ${active ? 'text-[#F9F8F6]/60' : 'text-[#1A1A1A]/50'}`}>
+                  <p className={`text-(--fs-xs) font-mono mt-1 leading-snug ${active ? 'text-[#F9F8F6]/60' : 'text-[#1A1A1A]/50'}`}>
                     {desc}
                   </p>
                 </div>
@@ -79,17 +79,17 @@ export function ChatCreateTeamModal({ open, zh, onClose, onSubmit }: Props) {
             value={teamName}
             onChange={e => setTeamName(e.target.value)}
             placeholder={zh ? '团队名称...' : 'Team name...'}
-            className="w-full px-3 py-2 bg-white border border-[#1A1A1A]/12 focus:border-[#1A1A1A]/40 outline-none text-[11px] font-sans text-[#1A1A1A] placeholder:text-[#1A1A1A]/25 rounded-none mb-4"
+            className="w-full px-3 py-2 bg-white border border-[#1A1A1A]/12 focus:border-[#1A1A1A]/40 outline-none text-(--fs-md) font-sans text-[#1A1A1A] placeholder:text-[#1A1A1A]/25 rounded-none mb-4"
           />
           <div className="flex gap-2 justify-end">
             <button onClick={close}
-              className="px-3 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 text-[#1A1A1A]/40 hover:bg-[#1A1A1A]/5 transition-all rounded-none">
+              className="px-3 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 text-[#1A1A1A]/40 hover:bg-[#1A1A1A]/5 transition-all rounded-none">
               {zh ? '取消' : 'CANCEL'}
             </button>
             <button
               disabled={!teamType || !teamName.trim() || loading}
               onClick={handleCreate}
-              className="px-3 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 disabled:bg-[#1A1A1A]/15 disabled:text-[#1A1A1A]/30 transition-all rounded-none">
+              className="px-3 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 disabled:bg-[#1A1A1A]/15 disabled:text-[#1A1A1A]/30 transition-all rounded-none">
               {loading ? '···' : (zh ? '创建 →' : 'CREATE →')}
             </button>
           </div>

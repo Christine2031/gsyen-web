@@ -36,11 +36,11 @@ export default function BrandControlsTypeSymbol({ lang, config, setConfig }: Pro
     <>
       {/* 字体排印 */}
       <div className="space-y-4">
-        <h3 className="text-[10px] font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center gap-2">
+        <h3 className="text-(--fs-sm) font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center gap-2">
           <Type className="w-3.5 h-3.5" /> {t.bookTypographySetup}
         </h3>
         <div>
-          <label className="block text-[9px] tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase mb-1.5">{t.selectedEditorialTypeface}</label>
+          <label className="block text-(--fs-xs) tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase mb-1.5">{t.selectedEditorialTypeface}</label>
           <div className="grid grid-cols-2 gap-2">
             {(['sans', 'display', 'space', 'serif', 'cinzel', 'mono'] as FontFamilyType[]).map(f => (
               <button
@@ -51,19 +51,19 @@ export default function BrandControlsTypeSymbol({ lang, config, setConfig }: Pro
                 }`}
               >
                 <span className={`text-xs block capitalize ${fontClassMap[f]}`}>{FONT_LABELS[f][lang]}</span>
-                <span className="text-[9px] opacity-60 font-mono tracking-widest uppercase">{lang === 'zh' ? '选择' : 'Select'}</span>
+                <span className="text-(--fs-xs) opacity-60 font-mono tracking-widest uppercase">{lang === 'zh' ? '选择' : 'Select'}</span>
               </button>
             ))}
           </div>
         </div>
         <div>
-          <label className="block text-[9px] tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase mb-1.5">{t.microTrackingScale}</label>
+          <label className="block text-(--fs-xs) tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase mb-1.5">{t.microTrackingScale}</label>
           <div className="grid grid-cols-4 gap-1 bg-[#1A1A1A]/5 p-1 rounded-none border border-[#1A1A1A]/10">
             {(['tight', 'normal', 'wide', 'widest'] as TrackingType[]).map(tText => (
               <button
                 key={tText}
                 onClick={() => setConfig(prev => ({ ...prev, fontTracking: tText }))}
-                className={`py-1.5 rounded-none text-[9px] uppercase tracking-wider transition-all ${
+                className={`py-1.5 rounded-none text-(--fs-xs) uppercase tracking-wider transition-all ${
                   config.fontTracking === tText ? 'bg-[#1A1A1A] text-[#F9F8F6] font-bold' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
                 }`}
               >
@@ -73,7 +73,7 @@ export default function BrandControlsTypeSymbol({ lang, config, setConfig }: Pro
           </div>
         </div>
         <div className="flex items-center justify-between pt-1">
-          <span className="text-[9px] tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase">{t.forceCapitalization}</span>
+          <span className="text-(--fs-xs) tracking-[0.15em] font-mono text-[#1A1A1A]/60 uppercase">{t.forceCapitalization}</span>
           <button
             onClick={() => setConfig(prev => ({ ...prev, textUppercase: !prev.textUppercase }))}
             className={`w-9 h-5 rounded-none p-0.5 transition-all focus:outline-none ${config.textUppercase ? 'bg-[#1A1A1A]' : 'bg-[#1A1A1A]/20'}`}
@@ -87,7 +87,7 @@ export default function BrandControlsTypeSymbol({ lang, config, setConfig }: Pro
 
       {/* 标识符号 */}
       <div className="space-y-4">
-        <h3 className="text-[10px] font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center gap-2">
+        <h3 className="text-(--fs-sm) font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5" /> {t.designInsigniaSymbol}
         </h3>
         <div className="flex flex-wrap gap-1">
@@ -95,7 +95,7 @@ export default function BrandControlsTypeSymbol({ lang, config, setConfig }: Pro
             <button
               key={cat}
               onClick={() => setActiveSymbolCategory(cat)}
-              className={`px-2.5 py-1 text-[8px] font-mono font-bold tracking-widest rounded-none transition-all border uppercase ${
+              className={`px-2.5 py-1 text-(--fs-2xs) font-mono font-bold tracking-widest rounded-none transition-all border uppercase ${
                 activeSymbolCategory === cat ? 'border-[#1A1A1A] bg-[#1A1A1A] text-[#F9F8F6]' : 'border-[#1A1A1A]/10 bg-white/40 text-[#1A1A1A]/50 hover:text-[#1A1A1A]'
               }`}
             >
@@ -157,9 +157,9 @@ interface SliderRowProps {
 function SliderRow({ label, resetLabel, min, max, step, value, onReset, onChange }: SliderRowProps) {
   return (
     <div>
-      <div className="flex justify-between text-[9px] tracking-wider text-[#1A1A1A]/60 font-mono uppercase mb-1">
+      <div className="flex justify-between text-(--fs-xs) tracking-wider text-[#1A1A1A]/60 font-mono uppercase mb-1">
         <span>{label}</span>
-        <button onClick={onReset} className="text-[9px] text-[#1A1A1A] font-bold hover:underline">{resetLabel}</button>
+        <button onClick={onReset} className="text-(--fs-xs) text-[#1A1A1A] font-bold hover:underline">{resetLabel}</button>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}

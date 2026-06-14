@@ -70,7 +70,7 @@ export default function BrandMember({ lang }: { lang: 'zh' | 'en' }) {
               </p>
               {NAV.filter(n => n.group === g.key).map(n => (
                 <button key={n.id} onClick={() => scrollTo(n.id)}
-                  className={`w-full text-left px-3 py-1.5 text-[10px] font-mono transition-all rounded-none ${
+                  className={`w-full text-left px-3 py-1.5 text-(--fs-sm) font-mono transition-all rounded-none ${
                     active === n.id
                       ? 'text-[#1A1A1A] font-bold bg-[#1A1A1A]/6'
                       : 'text-[#1A1A1A]/45 hover:text-[#1A1A1A]/75 hover:bg-[#1A1A1A]/4'
@@ -98,25 +98,25 @@ export default function BrandMember({ lang }: { lang: 'zh' | 'en' }) {
           <div className="border-t border-[#1A1A1A]/6" />
           <section id="member-plans">
             <div className="mb-7">
-              <p className="text-[10px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
+              <p className="text-(--fs-sm) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
                 {zh ? '会员方案' : 'Membership'}
               </p>
-              <p className="text-[9px] font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
+              <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
                 {zh ? '穹弯算筹 · 按量计费' : 'Compute credits · Pay as you go'}
               </p>
             </div>
             <div className="bg-white border border-[#DADCE0] px-6 py-5 flex items-center justify-between">
               <div>
-                <p className="text-[11px] font-mono font-bold text-[#1A1A1A] tracking-wide mb-1">
+                <p className="text-(--fs-md) font-mono font-bold text-[#1A1A1A] tracking-wide mb-1">
                   {zh ? '当前方案' : 'Current Plan'}
                 </p>
-                <p className="text-[13px] font-sans text-[#202124]">
+                <p className="text-(--fs-body) font-sans text-[#202124]">
                   {TIER_LABEL[tier ?? ''] ?? (zh ? '免费版' : 'Free')}
                 </p>
               </div>
               {(!tier || tier === 'free' || tier === 'free_unverified') && (
                 <button onClick={() => setShowPlans(true)}
-                  className="px-4 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-colors rounded-none">
+                  className="px-4 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/80 transition-colors rounded-none">
                   {zh ? '升级会员 →' : 'Upgrade →'}
                 </button>
               )}
@@ -135,14 +135,14 @@ function SecuritySection({ lang }: { lang: 'zh' | 'en' }) {
   return (
     <div>
       <div className="mb-7">
-        <p className="text-[10px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
+        <p className="text-(--fs-sm) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
           {zh ? '安全设置' : 'Security'}
         </p>
-        <p className="text-[9px] font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
+        <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
           {zh ? '管理密码与登录安全' : 'Manage your password and login security'}
         </p>
       </div>
-      <div className="bg-white border border-[#DADCE0] px-6 py-5 text-[13px] font-sans text-[#5F6368]">
+      <div className="bg-white border border-[#DADCE0] px-6 py-5 text-(--fs-body) font-sans text-[#5F6368]">
         {zh ? '即将上线' : 'Coming soon'}
       </div>
     </div>

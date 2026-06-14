@@ -14,13 +14,13 @@ export default function FinanceCategoryBars({ lang, categorySummary, maxCategory
 
   return (
     <div className="bg-white border border-[#1A1A1A]/10 p-5 rounded-none space-y-4">
-      <h3 className="text-[10px] font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center justify-between pb-2 border-b border-[#1A1A1A]/5">
+      <h3 className="text-(--fs-sm) font-mono tracking-[0.2em] text-[#1A1A1A] uppercase font-bold flex items-center justify-between pb-2 border-b border-[#1A1A1A]/5">
         <span>{lang === 'zh' ? '费用分布视觉占比' : 'CAPITAL CATEGORY METRICS'}</span>
         <BarChart3 className="w-3.5 h-3.5 text-[#1A1A1A]" />
       </h3>
 
       {entries.length === 0 ? (
-        <p className="text-[10px] text-zinc-400 italic text-center font-mono py-6">EMPTY DATA GRID</p>
+        <p className="text-(--fs-sm) text-zinc-400 italic text-center font-mono py-6">EMPTY DATA GRID</p>
       ) : (
         <div className="space-y-3 pt-1">
           {entries.map(([key, value]) => {
@@ -28,7 +28,7 @@ export default function FinanceCategoryBars({ lang, categorySummary, maxCategory
             const percentage = Math.round((value / maxCategoryWeight) * 100);
             return (
               <div key={key} className="space-y-1.5">
-                <div className="flex justify-between text-[10px] font-mono uppercase text-[#1A1A1A]/70">
+                <div className="flex justify-between text-(--fs-sm) font-mono uppercase text-[#1A1A1A]/70">
                   <span className="font-bold">{lang === 'zh' ? tagInfo.labelZh : tagInfo.labelEn}</span>
                   <span>${value.toLocaleString()}</span>
                 </div>

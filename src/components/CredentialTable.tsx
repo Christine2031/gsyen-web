@@ -72,7 +72,7 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#1A1A1A]/10 gap-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-[#1A1A1A]" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#1A1A1A] font-bold">
+            <span className="text-(--fs-sm) font-mono uppercase tracking-widest text-[#1A1A1A] font-bold">
               {lang === 'zh' ? '金库离线防劫持沙箱数据库' : 'TRUST SECURED STANDALONE KEYS TABLE'}
             </span>
           </div>
@@ -81,14 +81,14 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
             placeholder={lang === 'zh' ? '搜索保密项目...' : 'Search secret targets...'}
             value={searchFilter}
             onChange={e => setSearchFilter(e.target.value)}
-            className="px-3 py-1 text-[11px] font-mono border border-[#1A1A1A]/15 bg-transparent rounded-none focus:outline-none focus:border-[#1A1A1A]"
+            className="px-3 py-1 text-(--fs-md) font-mono border border-[#1A1A1A]/15 bg-transparent rounded-none focus:outline-none focus:border-[#1A1A1A]"
           />
         </div>
 
         <div className="flex flex-wrap gap-1.5 pt-1">
           {Object.entries(filterTypeTags).map(([key, tag]) => (
             <button key={key} onClick={() => setFilterCategory(key)}
-              className={`py-1 px-2 text-[9px] font-mono uppercase tracking-wider border rounded-none transition-all ${
+              className={`py-1 px-2 text-(--fs-xs) font-mono uppercase tracking-wider border rounded-none transition-all ${
                 filterCategory === key
                   ? 'bg-[#1A1A1A] border-[#1A1A1A] text-[#F9F8F6] font-bold'
                   : 'bg-transparent border-[#1A1A1A]/10 text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
@@ -116,18 +116,18 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 group">
                     <div className="space-y-1.5 max-w-[70%]">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-[9px] font-mono text-[#1A1A1A]/40">
+                        <span className="text-(--fs-xs) font-mono text-[#1A1A1A]/40">
                           {lang === 'zh' ? '更新:' : 'UPDATED:'} {item.lastUpdated}
                         </span>
-                        <span className="text-[9px] font-mono uppercase font-bold text-[#1A1A1A]/60 bg-[#1A1A1A]/5 px-2 py-0.5">
+                        <span className="text-(--fs-xs) font-mono uppercase font-bold text-[#1A1A1A]/60 bg-[#1A1A1A]/5 px-2 py-0.5">
                           {item.category.toUpperCase()}
                         </span>
                       </div>
                       <h4 className="text-xs font-bold font-sans text-[#1A1A1A] flex items-center gap-1.5">
                         {item.serviceName}
-                        <span className="text-[9px] text-[#1A1A1A]/50 font-mono italic">({item.username})</span>
+                        <span className="text-(--fs-xs) text-[#1A1A1A]/50 font-mono italic">({item.username})</span>
                       </h4>
-                      <code className="text-[11px] font-mono px-2 py-1 bg-[#F4F2EE] border border-[#1A1A1A]/5 text-[#1A1A1A] rounded-none select-all break-all inline-block min-w-[200px]">
+                      <code className="text-(--fs-md) font-mono px-2 py-1 bg-[#F4F2EE] border border-[#1A1A1A]/5 text-[#1A1A1A] rounded-none select-all break-all inline-block min-w-[200px]">
                         {isRevealed ? item.secretVal : '* * * * * * * *'}
                       </code>
                     </div>
@@ -170,17 +170,17 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
                         { label: lang === 'zh' ? '密钥'   : 'Secret',   key: 'secretVal'   as const },
                       ] as const).map(({ label, key }) => (
                         <div key={key} className="flex items-center gap-3 border-b border-[#1A1A1A]/8 pb-1.5">
-                          <span className="text-[8px] font-mono uppercase tracking-widest w-12 shrink-0 text-right text-[#1A1A1A]/40">{label}</span>
+                          <span className="text-(--fs-2xs) font-mono uppercase tracking-widest w-12 shrink-0 text-right text-[#1A1A1A]/40">{label}</span>
                           <input type="text" value={editState[key]}
                             onChange={e => setEditState(s => s ? { ...s, [key]: e.target.value } : s)}
-                            className="flex-1 text-[11px] font-mono bg-transparent border-none outline-none text-[#1A1A1A]" />
+                            className="flex-1 text-(--fs-md) font-mono bg-transparent border-none outline-none text-[#1A1A1A]" />
                         </div>
                       ))}
                       <div className="flex items-center gap-2 flex-wrap pt-1">
-                        <span className="text-[8px] font-mono uppercase tracking-widest w-12 shrink-0 text-right text-[#1A1A1A]/40">{lang === 'zh' ? '分类' : 'Type'}</span>
+                        <span className="text-(--fs-2xs) font-mono uppercase tracking-widest w-12 shrink-0 text-right text-[#1A1A1A]/40">{lang === 'zh' ? '分类' : 'Type'}</span>
                         {CATEGORIES.map(c => (
                           <button key={c.key} type="button" onClick={() => setEditState(s => s ? { ...s, category: c.key } : s)}
-                            className={`py-0.5 px-2 text-[8px] font-mono uppercase tracking-wider border rounded-none transition-all ${
+                            className={`py-0.5 px-2 text-(--fs-2xs) font-mono uppercase tracking-wider border rounded-none transition-all ${
                               editState.category === c.key
                                 ? 'bg-[#1A1A1A] border-[#1A1A1A] text-[#F9F8F6]'
                                 : 'border-[#1A1A1A]/15 text-[#1A1A1A]/60 hover:text-[#1A1A1A]'
@@ -191,11 +191,11 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
                       </div>
                       <div className="flex justify-end gap-2 pt-1">
                         <button type="button" onClick={cancelEdit}
-                          className="px-3 py-1 text-[9px] font-mono uppercase border border-[#1A1A1A]/15 text-[#1A1A1A]/60 hover:text-[#1A1A1A] rounded-none transition">
+                          className="px-3 py-1 text-(--fs-xs) font-mono uppercase border border-[#1A1A1A]/15 text-[#1A1A1A]/60 hover:text-[#1A1A1A] rounded-none transition">
                           {lang === 'zh' ? '取消' : 'Cancel'}
                         </button>
                         <button type="button" onClick={() => saveEdit(item.id)}
-                          className="px-4 py-1 text-[9px] font-mono uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/85 rounded-none transition">
+                          className="px-4 py-1 text-(--fs-xs) font-mono uppercase bg-[#1A1A1A] text-[#F9F8F6] hover:bg-[#1A1A1A]/85 rounded-none transition">
                           {lang === 'zh' ? '保存' : 'Save'}
                         </button>
                       </div>
@@ -208,7 +208,7 @@ export default function CredentialTable({ lang, credentials, onDelete }: Credent
         )}
       </div>
 
-      <div className="mt-8 pt-4 border-t border-[#1A1A1A]/5 flex flex-col md:flex-row items-center justify-between text-[9px] font-mono text-[#1A1A1A]/40 uppercase tracking-widest gap-2">
+      <div className="mt-8 pt-4 border-t border-[#1A1A1A]/5 flex flex-col md:flex-row items-center justify-between text-(--fs-xs) font-mono text-[#1A1A1A]/40 uppercase tracking-widest gap-2">
         <div className="flex items-center gap-1.5 text-emerald-800">
           <Sparkles className="w-3 h-3 text-emerald-700" />
           <span>{lang === 'zh' ? '128位动态哈希密钥环，无任何外置网络上传' : 'Local Sandbox Isolated Security Matrix Active'}</span>

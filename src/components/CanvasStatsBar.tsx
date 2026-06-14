@@ -77,7 +77,7 @@ export function CanvasStatsBar({ content, dark, fg, dim, bdr, mono, open, closin
       )}
       <div className="absolute bottom-0 right-0 z-10 pb-2 pr-4">
         <button onClick={onToggle}
-          className="flex items-center gap-1 px-3 py-1 rounded-full text-[13px]"
+          className="flex items-center gap-1 px-3 py-1 rounded-full text-(--fs-body)"
           style={{ fontFamily:mono, color:dim, background: open?(dark?'#2C2C2C':'#E8E8E8'):'transparent' }}
           onMouseEnter={e => (e.currentTarget.style.color = fg)}
           onMouseLeave={e => (e.currentTarget.style.color = dim)}>

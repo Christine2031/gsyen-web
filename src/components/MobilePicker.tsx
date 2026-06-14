@@ -73,16 +73,16 @@ export default function MobilePicker({ options, value, onChange, onClose, lang }
         <div className="flex items-center justify-between px-6 py-3.5 border-b border-[#1A1A1A]/8">
           <button
             onClick={onClose}
-            className="font-mono text-[11px] tracking-widest uppercase text-[#1A1A1A]/40 hover:text-[#1A1A1A]/70 transition-colors"
+            className="font-mono text-(--fs-md) tracking-widest uppercase text-[#1A1A1A]/40 hover:text-[#1A1A1A]/70 transition-colors"
           >
             {lang === 'zh' ? '取消' : 'Cancel'}
           </button>
-          <span className="font-cinzel text-[9px] tracking-[0.3em] uppercase text-[#1A1A1A]/25">
+          <span className="font-cinzel text-(--fs-xs) tracking-[0.3em] uppercase text-[#1A1A1A]/25">
             疆域 GSYEN
           </span>
           <button
             onClick={confirm}
-            className="font-mono text-[11px] tracking-widest uppercase font-bold text-[#1A1A1A] hover:text-[#1A1A1A]/70 transition-colors"
+            className="font-mono text-(--fs-md) tracking-widest uppercase font-bold text-[#1A1A1A] hover:text-[#1A1A1A]/70 transition-colors"
           >
             {lang === 'zh' ? '确定' : 'OK'}
           </button>

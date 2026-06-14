@@ -24,7 +24,7 @@ export function ChatMessageBubble({ msg, lang, isCopiedId, onCopy }: ChatMessage
         {isAI ? <Sparkles className="w-3 h-3" /> : <User className="w-3 h-3" />}
       </div>
       <div className="space-y-1 max-w-[88%]">
-        <div className={`flex items-center gap-1.5 text-[9px] font-mono tracking-wider uppercase text-neutral-400 ${!isAI ? 'justify-end' : ''}`}>
+        <div className={`flex items-center gap-1.5 text-(--fs-xs) font-mono tracking-wider uppercase text-neutral-400 ${!isAI ? 'justify-end' : ''}`}>
           <span className="font-bold text-[#1A1A1A]/50">{isAI ? (lang === 'zh' ? 'Atelier AI' : 'ATELIER AI') : (lang === 'zh' ? '您' : 'CLIENT')}</span>
           <span>·</span><span>{msg.timestamp}</span>
         </div>
@@ -33,10 +33,10 @@ export function ChatMessageBubble({ msg, lang, isCopiedId, onCopy }: ChatMessage
           {isAI && msg.card && <ActionCardView card={msg.card} lang={lang} />}
           {isAI && (
             <div className="mt-4 pt-3.5 border-t border-[#1A1A1A]/5 flex items-center justify-end gap-3.5">
-              <button onClick={() => onCopy(msg.id, msg.content)} className="text-[9px] font-mono uppercase tracking-widest text-neutral-400 hover:text-[#1A1A1A] transition-colors flex items-center gap-1">
+              <button onClick={() => onCopy(msg.id, msg.content)} className="text-(--fs-xs) font-mono uppercase tracking-widest text-neutral-400 hover:text-[#1A1A1A] transition-colors flex items-center gap-1">
                 {isCopiedId === msg.id ? <><Check className="w-2.5 h-2.5 text-emerald-600" /><span className="text-emerald-600 font-bold">{lang === 'zh' ? '已复制' : 'COPIED'}</span></> : <><Copy className="w-2.5 h-2.5" /><span>{lang === 'zh' ? '复制' : 'COPY'}</span></>}
               </button>
-              <button onClick={() => exportQuoteCard(msg, lang)} className="text-[9px] font-mono uppercase tracking-widest text-neutral-400 hover:text-[#1A1A1A] transition-colors flex items-center gap-1">
+              <button onClick={() => exportQuoteCard(msg, lang)} className="text-(--fs-xs) font-mono uppercase tracking-widest text-neutral-400 hover:text-[#1A1A1A] transition-colors flex items-center gap-1">
                 <Download className="w-2.5 h-2.5" /><span>{lang === 'zh' ? '灵感卡片' : 'CARD'}</span>
               </button>
             </div>

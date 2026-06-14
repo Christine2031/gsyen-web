@@ -46,10 +46,10 @@ export function CanvasExpandContent({
           {/* 文档信息行 */}
           <div className="flex items-center gap-2">
             <TypeIcon className={`w-3 h-3 shrink-0 ${C.panelLabel}`} />
-            <span className={`font-mono text-[9px] tracking-widest uppercase ${C.panelLabel}`}>
+            <span className={`font-mono text-(--fs-xs) tracking-widest uppercase ${C.panelLabel}`}>
               {doc?.type === 'canvas' ? (zh ? '画板' : 'Canvas') : (zh ? '文档' : 'Document')}
             </span>
-            <span className={`ml-auto font-mono text-[9px] ${C.panelLabel}`}>
+            <span className={`ml-auto font-mono text-(--fs-xs) ${C.panelLabel}`}>
               {doc ? new Date(doc.updatedAt).toLocaleDateString('zh-CN') : '—'}
             </span>
           </div>
@@ -57,11 +57,11 @@ export function CanvasExpandContent({
           {/* 内容预览 */}
           <div className={`rounded-[3px] border ${C.panelBorder} px-3 py-2.5 min-h-[60px] max-h-[120px] overflow-hidden`}>
             {preview ? (
-              <div className={`prose prose-xs max-w-none text-[11px] leading-relaxed ${C.panelText} line-clamp-5`}>
+              <div className={`prose prose-xs max-w-none text-(--fs-md) leading-relaxed ${C.panelText} line-clamp-5`}>
                 <ReactMarkdown>{preview}</ReactMarkdown>
               </div>
             ) : (
-              <span className={`font-mono text-[10px] italic ${C.panelLabel}`}>
+              <span className={`font-mono text-(--fs-sm) italic ${C.panelLabel}`}>
                 {zh ? '空文档，点击编辑开始创作…' : 'Empty document, click to start writing…'}
               </span>
             )}
@@ -69,7 +69,7 @@ export function CanvasExpandContent({
 
           {/* 字数统计 */}
           {doc?.content && (
-            <div className={`font-mono text-[9px] ${C.panelLabel}`}>
+            <div className={`font-mono text-(--fs-xs) ${C.panelLabel}`}>
               {doc.content.trim().split(/\s+/).filter(Boolean).length} {zh ? '词' : 'words'}
               &nbsp;·&nbsp;
               {doc.content.length} {zh ? '字符' : 'chars'}
@@ -82,7 +82,7 @@ export function CanvasExpandContent({
             <div className="flex gap-1.5">
               {(['self', 'shared'] as const).map(s => (
                 <button key={s} onClick={() => onScopeChange(s)}
-                  className={`px-3 py-1.5 rounded-md font-mono text-[9px] uppercase tracking-widest transition-all ${
+                  className={`px-3 py-1.5 rounded-md font-mono text-(--fs-xs) uppercase tracking-widest transition-all ${
                     scope === s ? C.btnPrimary : C.btnGhost
                   }`}>
                   {s === 'self' ? (zh ? '个人' : 'Personal') : (zh ? '团队' : 'Team')}
@@ -92,11 +92,11 @@ export function CanvasExpandContent({
             {/* 编辑 / 删除 */}
             <div className="flex gap-1.5">
               <button onClick={onOpenEditor}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnPrimary}`}>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnPrimary}`}>
                 <ExternalLink className="w-2.5 h-2.5" />{zh ? '打开编辑' : 'Edit'}
               </button>
               <button onClick={() => { canvasStore.remove(doc!.id); onCollapse(); }}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnDanger}`}>
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnDanger}`}>
                 <Trash2 className="w-2.5 h-2.5" />{zh ? '删除' : 'Delete'}
               </button>
             </div>

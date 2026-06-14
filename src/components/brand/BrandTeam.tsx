@@ -33,7 +33,7 @@ function StatCard({ label, value, icon: Icon, iconBg = 'bg-[#E8F0FE]', iconColor
         <Icon className={`w-5 h-5 ${iconColor}`} strokeWidth={1.5} />
       </div>
       <div>
-        <p className="text-[11px] text-[#5F6368] font-sans">{label}</p>
+        <p className="text-(--fs-md) text-[#5F6368] font-sans">{label}</p>
         <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
       </div>
     </div>
@@ -156,10 +156,10 @@ export default function BrandTeam({ pendingCreate, onPendingCreateHandled }: Pro
       <Plus className="w-16 h-16 text-[#1A73E8] opacity-60" strokeWidth={1.5} />
       <div className="flex flex-col items-center gap-1">
         <p className="text-[16px] font-medium text-[#202124]">开始团队协作</p>
-        <p className="text-[13px] text-[#5F6368]">登录后创建或加入团队</p>
+        <p className="text-(--fs-body) text-[#5F6368]">登录后创建或加入团队</p>
       </div>
       <button onClick={() => window.location.href = '/login'}
-        className="mt-2 px-6 py-2.5 rounded-full text-[13px] font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] transition-all">
+        className="mt-2 px-6 py-2.5 rounded-full text-(--fs-body) font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] transition-all">
         前往登录
       </button>
     </div>
@@ -187,7 +187,7 @@ export default function BrandTeam({ pendingCreate, onPendingCreateHandled }: Pro
       {/* 无团队提示 */}
       {teams.length === 0 && (
         <div className="px-6 pb-2 shrink-0">
-          <p className="text-[12px] text-[#9AA0A6] font-sans">还没有团队，点击上方「+ 开团」创建第一个</p>
+          <p className="text-(--fs-base) text-[#9AA0A6] font-sans">还没有团队，点击上方「+ 开团」创建第一个</p>
         </div>
       )}
 

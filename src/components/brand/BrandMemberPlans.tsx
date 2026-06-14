@@ -59,7 +59,7 @@ export default function BrandMemberPlans({ lang, onClose }: PlansProps) {
       <div className="flex items-start justify-between mb-7">
         <div>
           <h2 className="text-[17px] font-mono font-bold text-[#1A1A1A] mb-1">会员方案</h2>
-          <p className="text-[10px] font-mono text-[#1A1A1A]/40 tracking-wide">穹弯算筹 · 按量计费</p>
+          <p className="text-(--fs-sm) font-mono text-[#1A1A1A]/40 tracking-wide">穹弯算筹 · 按量计费</p>
         </div>
         {onClose && (
           <button onClick={onClose} className="text-[#1A1A1A]/30 hover:text-[#1A1A1A] text-lg leading-none transition-colors mt-1">✕</button>
@@ -68,12 +68,12 @@ export default function BrandMemberPlans({ lang, onClose }: PlansProps) {
 
       <div className="flex items-center border border-[#1A1A1A]/10 mb-8 w-fit">
         <button onClick={() => setBilling('month')}
-          className={`px-4 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase rounded-none transition-all ${billing === 'month' ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'}`}>
+          className={`px-4 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase rounded-none transition-all ${billing === 'month' ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'}`}>
           月付
         </button>
         <button onClick={() => setBilling('year')}
-          className={`px-4 py-1.5 text-[10px] font-mono font-bold tracking-widest uppercase rounded-none transition-all flex items-center gap-1.5 ${billing === 'year' ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'}`}>
-          年付 <span className={`text-[8px] font-bold ${billing === 'year' ? 'text-white/60' : 'text-[#1A6ECC]'}`}>-20%</span>
+          className={`px-4 py-1.5 text-(--fs-sm) font-mono font-bold tracking-widest uppercase rounded-none transition-all flex items-center gap-1.5 ${billing === 'year' ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/50 hover:bg-[#1A1A1A]/5'}`}>
+          年付 <span className={`text-(--fs-2xs) font-bold ${billing === 'year' ? 'text-white/60' : 'text-[#1A6ECC]'}`}>-20%</span>
         </button>
       </div>
 
@@ -163,15 +163,15 @@ function PlanCard({ name, price, period, subtitle, features, isCurrent,
         {isSelected && (
           <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
             transition={{ type: 'spring', stiffness: 400, damping: 18 }}
-            className="absolute top-3 right-3 w-4 h-4 flex items-center justify-center text-[8px] font-bold"
+            className="absolute top-3 right-3 w-4 h-4 flex items-center justify-center text-(--fs-2xs) font-bold"
             style={{ color: onDark ? 'rgba(240,237,234,0.6)' : '#1A1A1A' }}>✓</motion.span>
         )}
         <div className="mb-5">
           <div className={`text-[8.5px] font-mono font-bold tracking-[0.28em] uppercase mb-3 ${fgMuted}`}>{name}</div>
           <div className="flex items-baseline gap-1 flex-wrap">
             <span className={`text-[34px] font-black leading-none ${fg}`}>{price}</span>
-            <span className={`text-[11px] font-mono ${fgMuted}`}>{period}</span>
-            {originalPrice && <span className={`text-[9px] font-mono line-through ml-1 ${fgMuted}`}>{originalPrice}</span>}
+            <span className={`text-(--fs-md) font-mono ${fgMuted}`}>{period}</span>
+            {originalPrice && <span className={`text-(--fs-xs) font-mono line-through ml-1 ${fgMuted}`}>{originalPrice}</span>}
           </div>
           <div className={`text-[8.5px] font-mono mt-1.5 ${fgMuted}`}>{subtitle}</div>
         </div>
@@ -185,7 +185,7 @@ function PlanCard({ name, price, period, subtitle, features, isCurrent,
           ))}
         </ul>
         <button disabled={ctaDisabled} onClick={e => { e.stopPropagation(); onCtaClick?.(); }}
-          className={`w-full py-2 text-[9px] font-mono font-bold tracking-widest uppercase transition-all rounded-none ${ctaCls} ${ctaDisabled ? 'opacity-40 cursor-default' : 'cursor-pointer'}`}>
+          className={`w-full py-2 text-(--fs-xs) font-mono font-bold tracking-widest uppercase transition-all rounded-none ${ctaCls} ${ctaDisabled ? 'opacity-40 cursor-default' : 'cursor-pointer'}`}>
           {isCurrent && '✓ '}{cta}
         </button>
       </motion.div>

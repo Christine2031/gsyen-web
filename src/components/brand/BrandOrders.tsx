@@ -42,9 +42,9 @@ function avatarColor(name: string) {
 function StatCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="flex-1 bg-white rounded-lg border border-[#DADCE0] px-5 py-4 min-w-0">
-      <p className="text-[11px] text-[#5F6368] font-sans mb-1">{label}</p>
+      <p className="text-(--fs-md) text-[#5F6368] font-sans mb-1">{label}</p>
       <p className="text-[22px] font-bold text-[#202124] leading-none font-sans">{value}</p>
-      {sub && <p className="text-[11px] text-[#5F6368] mt-1">{sub}</p>}
+      {sub && <p className="text-(--fs-md) text-[#5F6368] mt-1">{sub}</p>}
     </div>
   );
 }
@@ -62,39 +62,39 @@ function OrderRow({ order, lang }: { order: Order; lang: 'zh' | 'en' }) {
       <td className="py-3.5 pl-6 pr-3">
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full ${avatarColor(order.customer)} flex items-center justify-center shrink-0`}>
-            <span className="text-white text-[12px] font-bold font-sans">{initial}</span>
+            <span className="text-white text-(--fs-base) font-bold font-sans">{initial}</span>
           </div>
           <div>
-            <p className="text-[13px] font-medium text-[#202124] font-sans">{order.customer}</p>
-            {order.notes && <p className="text-[11px] text-[#5F6368] font-sans truncate max-w-[180px]">{order.notes}</p>}
+            <p className="text-(--fs-body) font-medium text-[#202124] font-sans">{order.customer}</p>
+            {order.notes && <p className="text-(--fs-md) text-[#5F6368] font-sans truncate max-w-[180px]">{order.notes}</p>}
           </div>
         </div>
       </td>
 
       {/* 服务 */}
       <td className="py-3.5 px-3">
-        <p className="text-[13px] text-[#202124] font-sans">{order.service}</p>
-        <p className="text-[11px] text-[#5F6368] font-sans">{order.plan}</p>
+        <p className="text-(--fs-body) text-[#202124] font-sans">{order.service}</p>
+        <p className="text-(--fs-md) text-[#5F6368] font-sans">{order.plan}</p>
       </td>
 
       {/* 日期 */}
       <td className="py-3.5 px-3 whitespace-nowrap">
-        <p className="text-[12px] text-[#5F6368] font-sans">{order.startDate}</p>
-        {order.expireDate && <p className="text-[11px] text-[#9AA0A6] font-sans">→ {order.expireDate}</p>}
+        <p className="text-(--fs-base) text-[#5F6368] font-sans">{order.startDate}</p>
+        {order.expireDate && <p className="text-(--fs-md) text-[#9AA0A6] font-sans">→ {order.expireDate}</p>}
       </td>
 
       {/* 状态 chip */}
       <td className="py-3.5 px-3">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans ${cfg.cls}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans ${cfg.cls}`}>
           {zh ? cfg.zh : cfg.en}
         </span>
       </td>
 
       {/* 金额 */}
       <td className="py-3.5 pl-3 pr-6 text-right">
-        <p className="text-[13px] font-semibold text-[#202124] font-sans">{symbol}{order.amount.toLocaleString()}</p>
+        <p className="text-(--fs-body) font-semibold text-[#202124] font-sans">{symbol}{order.amount.toLocaleString()}</p>
         {balance > 0 && order.amount > 0 && (
-          <p className="text-[11px] text-[#B05E00] font-sans">{zh ? '待收' : 'Due'} {symbol}{balance.toLocaleString()}</p>
+          <p className="text-(--fs-md) text-[#B05E00] font-sans">{zh ? '待收' : 'Due'} {symbol}{balance.toLocaleString()}</p>
         )}
       </td>
     </tr>
@@ -121,7 +121,7 @@ export default function BrandOrders({ lang }: Props) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 py-24 text-center">
         <Package className="w-10 h-10 text-[#DADCE0]" strokeWidth={1.2} />
-        <p className="text-[14px] font-sans text-[#5F6368]">{zh ? '暂无订单' : 'No orders yet'}</p>
+        <p className="text-(--fs-lg) font-sans text-[#5F6368]">{zh ? '暂无订单' : 'No orders yet'}</p>
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function BrandOrders({ lang }: Props) {
       <div className="flex items-center gap-2 px-6 pb-4 shrink-0">
         {FILTERS.map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
-            className={`px-3 py-1 rounded-full text-[12px] font-sans font-medium transition-all ${
+            className={`px-3 py-1 rounded-full text-(--fs-base) font-sans font-medium transition-all ${
               filter === f.key
                 ? 'bg-[#1A73E8] text-white'
                 : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'
@@ -156,16 +156,16 @@ export default function BrandOrders({ lang }: Props) {
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b border-[#E8EAED] bg-[#F8F9FA]">
-                <th className="py-3 pl-6 pr-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '客户' : 'Customer'}</th>
-                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '服务' : 'Service'}</th>
-                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '日期' : 'Date'}</th>
-                <th className="py-3 px-3 text-left text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '状态' : 'Status'}</th>
-                <th className="py-3 pl-3 pr-6 text-right text-[11px] font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '金额' : 'Amount'}</th>
+                <th className="py-3 pl-6 pr-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '客户' : 'Customer'}</th>
+                <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '服务' : 'Service'}</th>
+                <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '日期' : 'Date'}</th>
+                <th className="py-3 px-3 text-left text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '状态' : 'Status'}</th>
+                <th className="py-3 pl-3 pr-6 text-right text-(--fs-md) font-semibold text-[#5F6368] uppercase tracking-wider font-sans">{zh ? '金额' : 'Amount'}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
-                <tr><td colSpan={5} className="py-12 text-center text-[13px] text-[#9AA0A6] font-sans">{zh ? '该分类暂无订单' : 'No orders in this category'}</td></tr>
+                <tr><td colSpan={5} className="py-12 text-center text-(--fs-body) text-[#9AA0A6] font-sans">{zh ? '该分类暂无订单' : 'No orders in this category'}</td></tr>
               ) : (
                 filtered.map(order => <OrderRow key={order.id} order={order} lang={lang} />)
               )}

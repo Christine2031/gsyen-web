@@ -39,13 +39,13 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
   const currentStrength = strengthLabels[strengthScore - 1] || strengthLabels[2];
 
   const toggleBtn = (active: boolean) =>
-    `px-2 py-0.5 text-[8px] border font-bold transition-all ${
+    `px-2 py-0.5 text-(--fs-2xs) border font-bold transition-all ${
       active ? 'border-[#E5C158] bg-[#E5C158] text-black' : 'border-white/20 text-white/40'
     }`;
 
   return (
     <div className="bg-[#1A1A1A] text-white p-5 rounded-none border border-[#1A1A1A] space-y-4">
-      <h3 className="text-[10px] font-mono tracking-[0.2em] uppercase font-bold flex items-center justify-between pb-2 border-b border-white/10 text-[#E5C158]">
+      <h3 className="text-(--fs-sm) font-mono tracking-[0.2em] uppercase font-bold flex items-center justify-between pb-2 border-b border-white/10 text-[#E5C158]">
         <span>{lang === 'zh' ? '密码学密钥生成器' : 'CRYPTOGRAPHIC ENGINE'}</span>
         <RefreshCw className="w-3.5 h-3.5" />
       </h3>
@@ -65,7 +65,7 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
 
         {/* 实时熵值强度条 */}
         <div className="space-y-1.5 p-2.5 bg-white/5 border border-white/5 rounded-none">
-          <div className="flex justify-between items-center text-[9px] font-mono uppercase tracking-wider">
+          <div className="flex justify-between items-center text-(--fs-xs) font-mono uppercase tracking-wider">
             <span className="text-white/60">{lang === 'zh' ? '算法安全冗余等级' : 'ENTROPY DEFENSE SCORE'}</span>
             <span className="font-bold text-[#E5C158]">LV.{strengthScore} / 5</span>
           </div>
@@ -77,7 +77,7 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
               />
             ))}
           </div>
-          <p className="text-[9px] font-mono uppercase text-[#E5C158] italic tracking-tight pt-1">
+          <p className="text-(--fs-xs) font-mono uppercase text-[#E5C158] italic tracking-tight pt-1">
             &gt; {lang === 'zh' ? currentStrength.labelZh : currentStrength.labelEn}
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
       {/* 控制项 */}
       <div className="space-y-3 pt-1 text-xs">
         <div className="space-y-1">
-          <div className="flex justify-between font-mono text-[9px] text-white/50 uppercase">
+          <div className="flex justify-between font-mono text-(--fs-xs) text-white/50 uppercase">
             <span>{lang === 'zh' ? '密钥符号长度' : 'ALGORITHMIC REQUISITE LENGTH'}</span>
             <span className="text-[#E5C158] font-bold">{genLength} bytes</span>
           </div>
@@ -101,7 +101,7 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
         </div>
 
         <div>
-          <label className="block font-mono text-[9px] text-white/50 uppercase mb-1">
+          <label className="block font-mono text-(--fs-xs) text-white/50 uppercase mb-1">
             {lang === 'zh' ? '指定固定开头前缀 (可用于开发辨别)' : 'STATIC PREFIX HEAD (e.g. ATELIER_)'}
           </label>
           <input
@@ -114,19 +114,19 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
         </div>
 
         <div className="space-y-2 pt-1">
-          <div className="flex items-center justify-between font-mono text-[10px] text-white/80">
+          <div className="flex items-center justify-between font-mono text-(--fs-sm) text-white/80">
             <span>A-Z (大写英文字母)</span>
             <button onClick={() => setIncludeUpper(!includeUpper)} className={toggleBtn(includeUpper)}>
               {includeUpper ? 'ENABLED' : 'DISABLED'}
             </button>
           </div>
-          <div className="flex items-center justify-between font-mono text-[10px] text-white/80">
+          <div className="flex items-center justify-between font-mono text-(--fs-sm) text-white/80">
             <span>0-9 (数字字符)</span>
             <button onClick={() => setIncludeNumbers(!includeNumbers)} className={toggleBtn(includeNumbers)}>
               {includeNumbers ? 'ENABLED' : 'DISABLED'}
             </button>
           </div>
-          <div className="flex items-center justify-between font-mono text-[10px] text-white/80">
+          <div className="flex items-center justify-between font-mono text-(--fs-sm) text-white/80">
             <span>#@% (特殊高强度符号)</span>
             <button onClick={() => setIncludeSymbols(!includeSymbols)} className={toggleBtn(includeSymbols)}>
               {includeSymbols ? 'ENABLED' : 'DISABLED'}
@@ -136,7 +136,7 @@ export default function PasswordGeneratorPanel({ lang, onGeneratedChange }: Pass
 
         <button
           onClick={() => setNonce((n) => n + 1)}
-          className="w-full py-2 bg-white hover:bg-white/90 text-black font-mono font-bold uppercase text-[10px] tracking-widest transition-all mt-4"
+          className="w-full py-2 bg-white hover:bg-white/90 text-black font-mono font-bold uppercase text-(--fs-sm) tracking-widest transition-all mt-4"
         >
           {lang === 'zh' ? '刷新随机高强密码' : 'REGENERATED ENTROPY'}
         </button>

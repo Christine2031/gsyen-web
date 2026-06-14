@@ -41,12 +41,12 @@ export default function CredentialAddForm({ lang, generatedPass, forceOpen, onAd
   return (
     <div className="bg-white border border-[#1A1A1A]/10 p-5 rounded-none space-y-4">
       <div className="flex items-center justify-between pb-1">
-        <h4 className="text-[10px] font-mono tracking-widest text-[#1A1A1A] uppercase font-bold">
+        <h4 className="text-(--fs-sm) font-mono tracking-widest text-[#1A1A1A] uppercase font-bold">
           {lang === 'zh' ? '存档加密令牌密钥' : 'ENCRYPT BRAND KEY'}
         </h4>
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="text-xs bg-[#1A1A1A] text-white hover:bg-[#1A1A1A]/90 transition-all font-bold px-2 py-0.5 text-[9px] uppercase tracking-wider"
+          className="text-xs bg-[#1A1A1A] text-white hover:bg-[#1A1A1A]/90 transition-all font-bold px-2 py-0.5 text-(--fs-xs) uppercase tracking-wider"
         >
           {showAddForm ? (lang === 'zh' ? '收起' : 'Hide') : (lang === 'zh' ? '快捷录入' : 'Open')}
         </button>
@@ -55,7 +55,7 @@ export default function CredentialAddForm({ lang, generatedPass, forceOpen, onAd
       {(showAddForm || forceOpen) && (
         <form onSubmit={handleSubmit} className="space-y-3 pt-1">
           <div>
-            <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '服务设施/网络名称' : 'TARGET HOST / DEPLOY PORT'}
             </label>
             <input
@@ -70,7 +70,7 @@ export default function CredentialAddForm({ lang, generatedPass, forceOpen, onAd
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '托管用户名/主机' : 'CUSTODIAN IDENTIFIER'}
               </label>
               <input
@@ -82,7 +82,7 @@ export default function CredentialAddForm({ lang, generatedPass, forceOpen, onAd
               />
             </div>
             <div>
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase mb-1">
                 {lang === 'zh' ? '分类群组' : 'VAULT DOMAIN'}
               </label>
               <select
@@ -100,14 +100,14 @@ export default function CredentialAddForm({ lang, generatedPass, forceOpen, onAd
 
           <div>
             <div className="flex justify-between items-center mb-1">
-              <label className="block text-[9px] tracking-widest font-mono text-[#1A1A1A]/60 uppercase">
+              <label className="block text-(--fs-xs) tracking-widest font-mono text-[#1A1A1A]/60 uppercase">
                 {lang === 'zh' ? '核心机密内容 (密匙/哈希等)' : 'VAULT HIDDEN SECRET KEY'}
               </label>
               {generatedPass && (
                 <button
                   type="button"
                   onClick={() => setNewSecretVal(generatedPass)}
-                  className="text-[8px] font-mono text-indigo-700 underline font-bold"
+                  className="text-(--fs-2xs) font-mono text-indigo-700 underline font-bold"
                 >
                   {lang === 'zh' ? '[ 绑定上面刚生成的密码 ]' : '[ Bind Generated Password ]'}
                 </button>

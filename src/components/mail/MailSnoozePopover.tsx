@@ -25,7 +25,7 @@ export default function MailSnoozePopover({ lang, position, onClose, onSnooze }:
         style={{ left: position.x, top: position.y }}
         className="absolute bg-white border border-[#1A1A1A] shadow-xl p-3 w-56 z-50 rounded-none font-sans"
       >
-        <div className="font-mono text-[8px] uppercase tracking-widest text-neutral-400 pb-1.5 border-b border-[#1A1A1A]/10 mb-2">
+        <div className="font-mono text-(--fs-2xs) uppercase tracking-widest text-neutral-400 pb-1.5 border-b border-[#1A1A1A]/10 mb-2">
           {lang === 'zh' ? '指定延迟挂起周期' : 'SNOOZE CHRONOMETRY'}
         </div>
         <div className="space-y-1 text-xs">

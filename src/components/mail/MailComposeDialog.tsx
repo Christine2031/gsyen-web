@@ -45,7 +45,7 @@ export default function MailComposeDialog({
     >
       {/* Header */}
       <div className="bg-neutral-900 text-white p-2.5 px-4 flex items-center justify-between text-xs select-none">
-        <span className="font-mono text-[9px] uppercase tracking-widest font-bold flex items-center gap-2">
+        <span className="font-mono text-(--fs-xs) uppercase tracking-widest font-bold flex items-center gap-2">
           <Plus className="w-3.5 h-3.5 text-white" />
           {lang === 'zh' ? '起草加密新信函' : 'SEALING NEW CORRESPONDENCE BLUEPRINT'}
         </span>
@@ -69,7 +69,7 @@ export default function MailComposeDialog({
             {/* To field */}
             <div className="relative">
               <div className="flex items-center gap-2 border-b border-neutral-200 py-1.5">
-                <span className="font-mono text-[9px] uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '寄至: ' : 'To: '}</span>
+                <span className="font-mono text-(--fs-xs) uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '寄至: ' : 'To: '}</span>
                 <input type="text" required value={composeTo}
                   onChange={e => { onToChange(e.target.value); onToSuggestionsChange(true); }}
                   onFocus={() => onToSuggestionsChange(true)}
@@ -85,9 +85,9 @@ export default function MailComposeDialog({
                     >
                       <div>
                         <span className="font-bold text-neutral-900 block">{c.name}</span>
-                        <span className="font-mono text-[9px] text-neutral-400">{c.email}</span>
+                        <span className="font-mono text-(--fs-xs) text-neutral-400">{c.email}</span>
                       </div>
-                      <span className="text-[8px] font-mono text-neutral-300">import contact [↲]</span>
+                      <span className="text-(--fs-2xs) font-mono text-neutral-300">import contact [↲]</span>
                     </div>
                   ))}
                 </div>
@@ -96,7 +96,7 @@ export default function MailComposeDialog({
 
             {/* Subject */}
             <div className="flex items-center gap-2 border-b border-neutral-200 py-1.5">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '关于: ' : 'Subject: '}</span>
+              <span className="font-mono text-(--fs-xs) uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '关于: ' : 'Subject: '}</span>
               <input type="text" required value={composeSubject} onChange={e => onSubjectChange(e.target.value)}
                 placeholder="Title of this envelope..."
                 className="bg-transparent border-none outline-none font-sans text-xs w-full text-neutral-900"
@@ -105,11 +105,11 @@ export default function MailComposeDialog({
 
             {/* Category */}
             <div className="flex items-center gap-2 border-b border-neutral-200 py-1.5">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '分类: ' : 'Label: '}</span>
+              <span className="font-mono text-(--fs-xs) uppercase tracking-wider text-neutral-400 w-12">{lang === 'zh' ? '分类: ' : 'Label: '}</span>
               <div className="flex items-center gap-1.5">
                 {CATEGORIES.map(cat => (
                   <button key={cat} type="button" onClick={() => onCategoryChange(cat)}
-                    className={`px-2 py-0.5 text-[8px] font-mono uppercase tracking-wider border rounded-none transition-all ${
+                    className={`px-2 py-0.5 text-(--fs-2xs) font-mono uppercase tracking-wider border rounded-none transition-all ${
                       composeCategory === cat ? 'bg-neutral-900 text-white border-neutral-900 font-bold' : 'bg-transparent text-neutral-400 border-neutral-200 hover:border-neutral-400'
                     }`}
                   >{cat}</button>
@@ -126,15 +126,15 @@ export default function MailComposeDialog({
 
           {/* Footer */}
           <div className="flex justify-between items-center border-t border-neutral-200 pt-3">
-            <div className="font-mono text-[8px] text-neutral-400 uppercase">
+            <div className="font-mono text-(--fs-2xs) text-neutral-400 uppercase">
               {lang === 'zh' ? '离线多端信道: PGP/E2EE ACTIVE' : 'SECURE ENVELOPE SEALER: ONLINE'}
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={onShred} className="px-3.5 py-1.5 border border-red-200 hover:bg-red-50 text-red-700 text-[10px] font-mono uppercase tracking-wider rounded-none">
+              <button type="button" onClick={onShred} className="px-3.5 py-1.5 border border-red-200 hover:bg-red-50 text-red-700 text-(--fs-sm) font-mono uppercase tracking-wider rounded-none">
                 {lang === 'zh' ? '粉碎毁弃' : 'Shred'}
               </button>
               <button type="submit" disabled={!composeTo.trim() || !composeSubject.trim()}
-                className={`px-5 py-1.5 text-[10px] font-mono tracking-widest font-bold uppercase transition flex items-center gap-1.5 rounded-none ${
+                className={`px-5 py-1.5 text-(--fs-sm) font-mono tracking-widest font-bold uppercase transition flex items-center gap-1.5 rounded-none ${
                   composeTo.trim() && composeSubject.trim() ? 'bg-neutral-900 text-white hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-300 border border-neutral-100 cursor-not-allowed'
                 }`}
               >

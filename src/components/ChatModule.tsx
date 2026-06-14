@@ -163,16 +163,16 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
       )}
 
       {/* Status bar */}
-      <div className="relative shrink-0 h-[52px] px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE] flex items-center justify-between font-mono text-[9px] tracking-widest text-[#1A1A1A]/55 font-bold uppercase">
+      <div className="relative shrink-0 h-[52px] px-8 border-b border-[#1A1A1A]/8 bg-[#F4F2EE] flex items-center justify-between font-mono text-(--fs-xs) tracking-widest text-[#1A1A1A]/55 font-bold uppercase">
         <div className="flex items-center gap-3">
           <button onClick={() => setSidebarOpen(o => !o)} className={`p-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A]/5 rounded-none transition-all ${sidebarOpen ? 'bg-[#1A1A1A]/10 text-[#1A1A1A]' : 'text-[#1A1A1A]/70'}`}>
             <PanelLeft className="w-4 h-4" />
           </button>
-          <button onClick={handleNewChat} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
+          <button onClick={handleNewChat} className="flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
             <Plus className="w-3 h-3" /><span>NEW</span>
           </button>
           <button onClick={openCreativeKingdom}
-            className="flex items-center gap-2 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-[10px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
+            className="flex items-center gap-2 px-2 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] rounded-none transition-all text-(--fs-sm) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70">
             <MessageSquare className="w-3.5 h-3.5" />
             <span>{lang === 'zh' ? '疆域灵感创意国度' : 'GSYEN Muse'}</span>
           </button>
@@ -186,7 +186,7 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
               style={{ maxWidth: 224, cursor: 'grab' }}>
               {MODELS.map(m => (
                 <button key={m.id} onClick={() => !m.disabled && setSelectedModel(m.id as ModelId)} disabled={m.disabled}
-                  className={`px-2 py-0.5 text-[9px] font-mono font-bold tracking-widest uppercase shrink-0 rounded-none transition-all ${m.disabled ? 'text-[#1A1A1A]/20 cursor-not-allowed' : selectedModel === m.id ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}>
+                  className={`px-2 py-0.5 text-(--fs-xs) font-mono font-bold tracking-widest uppercase shrink-0 rounded-none transition-all ${m.disabled ? 'text-[#1A1A1A]/20 cursor-not-allowed' : selectedModel === m.id ? 'bg-[#1A1A1A] text-[#F9F8F6]' : 'text-[#1A1A1A]/60 hover:text-[#1A1A1A]'}`}>
                   {m.label}
                 </button>
               ))}
@@ -238,7 +238,7 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
                   <Sparkles className="w-3 h-3" />
                 </div>
                 <div className="space-y-1">
-                  <div className="text-[9px] font-mono tracking-wider uppercase text-neutral-400">
+                  <div className="text-(--fs-xs) font-mono tracking-wider uppercase text-neutral-400">
                     <span className="font-bold text-[#1A1A1A]/50">{lang === 'zh' ? 'Atelier AI' : 'ATELIER AI'}</span>
                   </div>
                   <div className="pt-0.5 flex items-center gap-1.5">

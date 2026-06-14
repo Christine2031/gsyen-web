@@ -40,12 +40,12 @@ export function ScheduleToolbar(p: ToolbarProps) {
           <PanelLeft className="w-4 h-4" />
         </button>
         <button onClick={() => p.setShowAddForm(o => !o)}
-          className={`px-4 py-1.5 font-bold text-[10px] font-mono tracking-widest uppercase transition-all flex items-center gap-2 rounded-none ${p.showAddForm ? 'bg-red-800 text-white hover:bg-red-900' : 'bg-[#1A1A1A] text-white hover:bg-[#2C2C2C]'}`}>
+          className={`px-4 py-1.5 font-bold text-(--fs-sm) font-mono tracking-widest uppercase transition-all flex items-center gap-2 rounded-none ${p.showAddForm ? 'bg-red-800 text-white hover:bg-red-900' : 'bg-[#1A1A1A] text-white hover:bg-[#2C2C2C]'}`}>
           {p.showAddForm ? <X className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           <span>{p.showAddForm ? (lang === 'zh' ? '收回表单' : 'Collapse Scribe') : (lang === 'zh' ? '签发事件' : 'Sealed Event')}</span>
         </button>
         <button onClick={p.onNavigateToday}
-          className="px-3.5 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition text-[10px] font-mono font-bold tracking-widest uppercase rounded-none">
+          className="px-3.5 py-1.5 border border-[#1A1A1A]/15 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition text-(--fs-sm) font-mono font-bold tracking-widest uppercase rounded-none">
           {lang === 'zh' ? '今天' : 'Today'}
         </button>
         <div className="flex items-center">
@@ -61,7 +61,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
 
       {/* 右：统计 + 视图切换 + 分流筛选 + 搜索 + 清空 */}
       <div className="flex items-center gap-3 flex-nowrap min-w-0">
-        <div className="hidden sm:flex gap-3 items-center px-3 py-1 border border-[#1A1A1A]/10 text-[9px] font-mono text-[#1A1A1A]/70 uppercase tracking-widest rounded-none">
+        <div className="hidden sm:flex gap-3 items-center px-3 py-1 border border-[#1A1A1A]/10 text-(--fs-xs) font-mono text-[#1A1A1A]/70 uppercase tracking-widest rounded-none">
           <div>{lang === 'zh' ? '总日程:' : 'TOTAL:'} <strong className="text-amber-800 font-bold">{p.total}</strong></div>
           <div className="w-[1px] h-3 bg-[#1A1A1A]/10" />
           <div>{lang === 'zh' ? '筛选:' : 'SHOWN:'} <strong className="text-[#1A1A1A]">{p.active}</strong></div>
@@ -69,7 +69,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
         <div className="flex items-center gap-1 border border-[#1A1A1A]/10 p-1 bg-[#F9F8F6]/40">
           {(['month','week','day'] as ViewMode[]).map(mode => (
             <button key={mode} onClick={() => p.setViewMode(mode)}
-              className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all rounded-none ${p.viewMode === mode ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'}`}>
+              className={`px-3.5 py-1.5 text-(--fs-sm) font-mono font-bold uppercase tracking-widest transition-all rounded-none ${p.viewMode === mode ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'}`}>
               {mode === 'month' ? (lang === 'zh' ? '格网月历' : 'Month Grid')
                 : mode === 'week' ? (lang === 'zh' ? '执行周历' : 'Week Timeline')
                 :                  (lang === 'zh' ? '单日重点' : 'Day Focus')}
@@ -94,7 +94,7 @@ export function ScheduleToolbar(p: ToolbarProps) {
             }`} />
         </div>
         <button onClick={p.onClearAll}
-          className="px-3 py-1.5 font-mono text-[9px] tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all rounded-none">
+          className="px-3 py-1.5 font-mono text-(--fs-xs) tracking-widest uppercase border border-red-200 text-red-700 hover:bg-red-50 transition-all rounded-none">
           {lang === 'zh' ? '清空' : 'CLEAR ALL'}
         </button>
       </div>

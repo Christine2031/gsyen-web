@@ -111,7 +111,7 @@ export function CardExpandPanel({
       <div className="overflow-hidden">
         <div className={`px-4 pb-4 pt-3 border-t ${COLOR.panelBorder} space-y-3`} onClick={e => e.stopPropagation()}>
           {!stillExists ? (
-            <p className={`text-[11px] font-mono uppercase tracking-widest py-3 text-center ${COLOR.panelLabel}`}>
+            <p className={`text-(--fs-md) font-mono uppercase tracking-widest py-3 text-center ${COLOR.panelLabel}`}>
               {lang === 'zh'
                 ? `该记录已不存在于${canExpandLedger ? '财务账簿' : '日程看板'}（可能已被删除）`
                 : 'This record no longer exists on the board'}
@@ -119,24 +119,24 @@ export function CardExpandPanel({
           ) : !editing ? (
             <>
               {canExpandLedger ? (
-                <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
+                <div className="grid grid-cols-2 gap-3 text-(--fs-md) font-mono">
                   <div className="space-y-1">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '收支日期' : 'DATE'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '收支日期' : 'DATE'}</p>
                     <p className={`font-bold flex items-center gap-1 ${COLOR.panelText}`}><Clock className="w-3 h-3" />{tx!.date}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '科目分类' : 'CATEGORY'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '科目分类' : 'CATEGORY'}</p>
                     <p className={`font-bold ${COLOR.panelText}`}>{lang === 'zh' ? LEDGER_CATEGORY_LABEL[tx!.category].zh : LEDGER_CATEGORY_LABEL[tx!.category].en}</p>
                   </div>
                   <div className="space-y-1 col-span-2 pt-1.5 border-t border-current/10">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项备注' : 'NOTES'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项备注' : 'NOTES'}</p>
                     <p className={`font-bold truncate ${COLOR.panelText}`}>{tx!.notes || '—'}</p>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 gap-3 text-[11px] font-mono">
+                <div className="grid grid-cols-2 gap-3 text-(--fs-md) font-mono">
                   <div className="space-y-1">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '日程期间' : 'DATE RANGE'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '日程期间' : 'DATE RANGE'}</p>
                     <p className={`font-bold ${COLOR.panelText}`}>
                       {event!.endDate && event!.endDate !== event!.date
                         ? <span>{event!.date} {lang === 'zh' ? '至' : 'to'} {event!.endDate}</span>
@@ -144,11 +144,11 @@ export function CardExpandPanel({
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '精确时刻' : 'TIME'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '精确时刻' : 'TIME'}</p>
                     <p className={`font-bold flex items-center gap-1 ${COLOR.panelText}`}><Clock className="w-3 h-3" />{event!.time}</p>
                   </div>
                   <div className="space-y-1 col-span-2 pt-1.5 border-t border-current/10">
-                    <p className={`text-[8px] uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '场地节点' : 'LOCATION'}</p>
+                    <p className={`text-(--fs-2xs) uppercase tracking-widest ${COLOR.panelLabel}`}>{lang === 'zh' ? '场地节点' : 'LOCATION'}</p>
                     <p className={`font-bold flex items-center gap-1 truncate ${COLOR.panelText}`}><MapPin className="w-3 h-3 shrink-0" /><span className="truncate">{event!.location || '—'}</span></p>
                   </div>
                 </div>
@@ -161,7 +161,7 @@ export function CardExpandPanel({
                       <button key={s} type="button"
                         title={lang === 'zh' ? '归属（可手动改写算法判断）' : 'Scope (overrides auto-detection)'}
                         onClick={() => setScope(s)}
-                        className={`px-3 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${active ? COLOR.btnPrimary : COLOR.btnGhost}`}>
+                        className={`px-3 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${active ? COLOR.btnPrimary : COLOR.btnGhost}`}>
                         {s === 'self' ? (lang === 'zh' ? '个人' : 'Personal') : (lang === 'zh' ? '团队' : 'Team')}
                       </button>
                     );
@@ -169,11 +169,11 @@ export function CardExpandPanel({
                 </div>
                 <div className="flex gap-2">
                   <button type="button" onClick={handleDelete}
-                    className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnDanger}`}>
+                    className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnDanger}`}>
                     {lang === 'zh' ? (canExpandLedger ? '销毁记账' : '销毁日程') : 'Delete'}
                   </button>
                   <button type="button" onClick={() => setEditing(true)}
-                    className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md flex items-center gap-1.5 transition ${COLOR.btnPrimary}`}>
+                    className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md flex items-center gap-1.5 transition ${COLOR.btnPrimary}`}>
                     <Edit2 className="w-3 h-3" />{lang === 'zh' ? '修改编纂' : 'Revise'}
                   </button>
                 </div>
@@ -183,50 +183,50 @@ export function CardExpandPanel({
             <form onSubmit={handleSave} className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="col-span-2">
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项描述' : 'DESCRIPTION'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项描述' : 'DESCRIPTION'}</label>
                   <input type="text" required value={lDesc} onChange={e => setLDesc(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '金额' : 'AMOUNT'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '金额' : 'AMOUNT'}</label>
                   <input type="number" required min="0" step="0.01" value={lAmount} onChange={e => setLAmount(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`} />
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '收 / 支' : 'TYPE'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '收 / 支' : 'TYPE'}</label>
                   <select value={lType} onChange={e => setLType(e.target.value as Transaction['type'])}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`}>
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`}>
                     <option value="expense">{lang === 'zh' ? '支出' : 'Expense'}</option>
                     <option value="income">{lang === 'zh' ? '收入' : 'Income'}</option>
                   </select>
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '日期' : 'DATE'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '日期' : 'DATE'}</label>
                   <input type="date" required value={lDate} onChange={e => setLDate(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '科目分类' : 'CATEGORY'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '科目分类' : 'CATEGORY'}</label>
                   <select value={lCategory} onChange={e => setLCategory(e.target.value as Transaction['category'])}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`}>
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono ${COLOR.panelInput}`}>
                     {(Object.keys(LEDGER_CATEGORY_LABEL) as Transaction['category'][]).map(c => (
                       <option key={c} value={c}>{lang === 'zh' ? LEDGER_CATEGORY_LABEL[c].zh : LEDGER_CATEGORY_LABEL[c].en}</option>
                     ))}
                   </select>
                 </div>
                 <div className="col-span-2">
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项备注' : 'NOTES'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '事项备注' : 'NOTES'}</label>
                   <input type="text" value={lNotes} onChange={e => setLNotes(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <button type="button" onClick={() => setEditing(false)}
-                  className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnGhost}`}>
+                  className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnGhost}`}>
                   {lang === 'zh' ? '返回' : 'Back'}
                 </button>
                 <button type="submit"
-                  className={`px-4 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnPrimary}`}>
+                  className={`px-4 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnPrimary}`}>
                   {lang === 'zh' ? '确认保存' : 'Save'}
                 </button>
               </div>
@@ -235,33 +235,33 @@ export function CardExpandPanel({
             <form onSubmit={handleSave} className="space-y-2.5">
               <div className="grid grid-cols-2 gap-2.5">
                 <div className="col-span-2">
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '标题' : 'TITLE'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '标题' : 'TITLE'}</label>
                   <input type="text" required value={eTitle} onChange={e => setETitle(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '日期' : 'DATE'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '日期' : 'DATE'}</label>
                   <input type="date" required value={eDate} onChange={e => setEDate(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
                 </div>
                 <div>
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '时间' : 'TIME'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '时间' : 'TIME'}</label>
                   <input type="time" required value={eTime} onChange={e => setETime(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none font-mono [color-scheme:dark] ${COLOR.panelInput}`} />
                 </div>
                 <div className="col-span-2">
-                  <label className={`block text-[8px] font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '场地节点' : 'LOCATION'}</label>
+                  <label className={`block text-(--fs-2xs) font-mono uppercase mb-1 ${COLOR.panelLabel}`}>{lang === 'zh' ? '场地节点' : 'LOCATION'}</label>
                   <input type="text" value={eLoc} onChange={e => setELoc(e.target.value)}
-                    className={`w-full text-[11px] px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
+                    className={`w-full text-(--fs-md) px-2 py-1.5 rounded-md border outline-none ${COLOR.panelInput}`} />
                 </div>
               </div>
               <div className="flex justify-end gap-2 pt-1">
                 <button type="button" onClick={() => setEditing(false)}
-                  className={`px-3.5 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnGhost}`}>
+                  className={`px-3.5 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnGhost}`}>
                   {lang === 'zh' ? '返回' : 'Back'}
                 </button>
                 <button type="submit"
-                  className={`px-4 py-1.5 text-[9px] font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnPrimary}`}>
+                  className={`px-4 py-1.5 text-(--fs-xs) font-mono uppercase tracking-widest rounded-md transition ${COLOR.btnPrimary}`}>
                   {lang === 'zh' ? '确认保存' : 'Save'}
                 </button>
               </div>

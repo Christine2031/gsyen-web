@@ -45,17 +45,17 @@ export default function BrandMemberPerms({ lang, onScrollToPlans }: Props) {
   return (
     <div>
       <div className="mb-7">
-        <p className="text-[10px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
+        <p className="text-(--fs-sm) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]">
           {zh ? '我的权限' : 'My Permissions'}
         </p>
-        <p className="text-[9px] font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
+        <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/38 mt-1 tracking-wide">
           {zh ? '当前等级包含的功能与访问权限' : 'Features and access included in your current plan'}
         </p>
       </div>
 
       {/* 未登录占位 */}
       {!isLoggedIn && (
-        <div className="bg-white border border-[#DADCE0] px-6 py-5 mb-5 text-[13px] font-sans text-[#5F6368]">
+        <div className="bg-white border border-[#DADCE0] px-6 py-5 mb-5 text-(--fs-body) font-sans text-[#5F6368]">
           {zh ? '登录后查看您的权限' : 'Sign in to view your permissions'}
         </div>
       )}
@@ -64,14 +64,14 @@ export default function BrandMemberPerms({ lang, onScrollToPlans }: Props) {
       {isLoggedIn && meta && (
       <div className="bg-white border border-[#DADCE0] px-6 py-5 mb-5 flex items-center justify-between">
         <div>
-          <p className="text-[11px] font-sans text-[#5F6368] mb-1">{zh ? '当前等级' : 'Current plan'}</p>
+          <p className="text-(--fs-md) font-sans text-[#5F6368] mb-1">{zh ? '当前等级' : 'Current plan'}</p>
           <span className={`inline-flex items-center px-2 py-0.5 text-[7px] font-mono font-bold tracking-[0.22em] uppercase border ${meta.cls}`}>
             {meta.label}
           </span>
         </div>
         {(t === 'free_unverified' || t === 'free') && (
           <button onClick={onScrollToPlans}
-            className="text-[10px] font-mono text-[#1A6ECC]/70 tracking-wide hover:text-[#1A6ECC] transition-colors cursor-pointer">
+            className="text-(--fs-sm) font-mono text-[#1A6ECC]/70 tracking-wide hover:text-[#1A6ECC] transition-colors cursor-pointer">
             {zh ? '升级 PRO 解锁更多 →' : 'Upgrade to PRO for more →'}
           </button>
         )}
@@ -81,28 +81,28 @@ export default function BrandMemberPerms({ lang, onScrollToPlans }: Props) {
       {/* 已包含 / 未包含权限列表 — 仅登录后显示 */}
       {isLoggedIn && (
         <>
-          <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
+          <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
             {zh ? '已包含' : 'Included'}
           </p>
           <div className="bg-white border border-[#DADCE0] mb-5">
             {included.map((p, i) => (
               <div key={p.en} className={`flex items-center gap-3 px-6 py-3.5 ${i < included.length - 1 ? 'border-b border-[#DADCE0]' : ''}`}>
-                <span className="text-[#137333] text-[13px] font-sans shrink-0">✓</span>
-                <span className="text-[13px] font-sans text-[#202124]">{zh ? p.zh : p.en}</span>
+                <span className="text-[#137333] text-(--fs-body) font-sans shrink-0">✓</span>
+                <span className="text-(--fs-body) font-sans text-[#202124]">{zh ? p.zh : p.en}</span>
               </div>
             ))}
           </div>
 
           {excluded.length > 0 && (
             <>
-              <p className="text-[8px] font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
+              <p className="text-(--fs-2xs) font-mono font-bold tracking-[0.28em] uppercase text-[#1A1A1A]/30 mb-3">
                 {zh ? '未包含' : 'Not included'}
               </p>
               <div className="bg-[#F8F9FA] border border-[#DADCE0]">
                 {excluded.map((p, i) => (
                   <div key={p.en} className={`flex items-center gap-3 px-6 py-3.5 ${i < excluded.length - 1 ? 'border-b border-[#DADCE0]' : ''}`}>
-                    <span className="text-[#BDC1C6] text-[13px] font-sans shrink-0">—</span>
-                    <span className="text-[13px] font-sans text-[#9AA0A6]">{zh ? p.zh : p.en}</span>
+                    <span className="text-[#BDC1C6] text-(--fs-body) font-sans shrink-0">—</span>
+                    <span className="text-(--fs-body) font-sans text-[#9AA0A6]">{zh ? p.zh : p.en}</span>
                   </div>
                 ))}
               </div>

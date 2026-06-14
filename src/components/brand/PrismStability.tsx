@@ -63,26 +63,26 @@ function HealthRow({ r, idx, selectable, switching, onSelect }: RowProps) {
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-2.5">
           <span className="w-2 h-2 rounded-full" style={{ background: dotColor }} />
-          <span className="text-[14px] font-medium text-[#202124] font-sans">{r.name}</span>
-          <span className="text-[11px] font-mono text-[#9AA0A6]">{r.region}</span>
+          <span className="text-(--fs-lg) font-medium text-[#202124] font-sans">{r.name}</span>
+          <span className="text-(--fs-md) font-mono text-[#9AA0A6]">{r.region}</span>
         </div>
-        <div className="flex items-center gap-3.5 font-mono text-[11px]">
+        <div className="flex items-center gap-3.5 font-mono text-(--fs-md)">
           {r.ping !== null && <span className="text-[#5F6368]">{r.ping}ms</span>}
           {r.pattern !== 'empty'
             ? <span className="text-[#137333] font-bold">{r.uptime.toFixed(1)}%</span>
             : <span className="text-[#9AA0A6]">未配置</span>}
           {r.active && (
-            <span className="bg-[#E6F4EA] text-[#137333] text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full">
+            <span className="bg-[#E6F4EA] text-[#137333] text-(--fs-xs) font-bold tracking-widest px-2 py-0.5 rounded-full">
               ACTIVE
             </span>
           )}
           {switching && (
-            <span className="bg-[#FEF7E0] text-[#B05E00] text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full">
+            <span className="bg-[#FEF7E0] text-[#B05E00] text-(--fs-xs) font-bold tracking-widest px-2 py-0.5 rounded-full">
               切换中…
             </span>
           )}
           {clickable && (
-            <span className="text-[#1A73E8] text-[9px] font-bold tracking-widest uppercase">切换 ›</span>
+            <span className="text-[#1A73E8] text-(--fs-xs) font-bold tracking-widest uppercase">切换 ›</span>
           )}
         </div>
       </div>
@@ -108,10 +108,10 @@ export default function PrismStability({ data = DEMO_HEALTH, selectable, switchi
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <span className="text-[10px] font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/50">
+        <span className="text-(--fs-sm) font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/50">
           线路稳定性{selectable ? ' · 点击切换' : ' · 近 90 次心跳'}
         </span>
-        <span className="text-[10px] font-mono tracking-[0.12em] text-[#1A1A1A]/40">每 30s 一次</span>
+        <span className="text-(--fs-sm) font-mono tracking-[0.12em] text-[#1A1A1A]/40">每 30s 一次</span>
       </div>
       <div className="flex flex-col gap-2.5">
         {data.map((r, i) => (

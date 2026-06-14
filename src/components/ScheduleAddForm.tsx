@@ -66,7 +66,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
           <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-spin" />
           <span>{lang === 'zh' ? '极速日程信条拟书契约' : 'ATELIER MEMORANDUM DEPLOYMENT ENGINE'}</span>
         </h3>
-        <span className="text-[9px] font-mono text-[#1A1A1A]/40 uppercase tracking-widest">
+        <span className="text-(--fs-xs) font-mono text-[#1A1A1A]/40 uppercase tracking-widest">
           LANE PRESET: {status.toUpperCase()}
         </span>
       </div>
@@ -74,7 +74,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Title */}
         <div>
-          <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+          <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
             {lang === 'zh' ? '日程核心标题 (简述)' : 'Primary Event Title'}
           </label>
           <input type="text" required value={title} onChange={e => setTitle(e.target.value)}
@@ -84,7 +84,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
 
         {/* Subtitle */}
         <div>
-          <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+          <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
             {lang === 'zh' ? '实施大纲或行动意图 (选填)' : 'Strategic Intent (Optional)'}
           </label>
           <input type="text" value={subtitle} onChange={e => setSubtitle(e.target.value)}
@@ -95,21 +95,21 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
         {/* Date / End Date / Time */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>
-            <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '起始日期' : 'Start Date'}
             </label>
             <input type="date" required value={date} onChange={e => setDate(e.target.value)}
               className="w-full px-2 py-1.5 text-xs border border-[#1A1A1A]/15 bg-white rounded-none font-mono" />
           </div>
           <div>
-            <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '结束日期' : 'End Date (Optional)'}
             </label>
             <input type="date" required value={endDate} min={date} onChange={e => setEndDate(e.target.value)}
               className="w-full px-2 py-1.5 text-xs border border-[#1A1A1A]/15 bg-white rounded-none font-mono" />
           </div>
           <div>
-            <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '计划时间' : 'Exact Timeline'}
             </label>
             <input type="time" required value={time} onChange={e => setTime(e.target.value)}
@@ -120,7 +120,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
         {/* Category / Status */}
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '分流领域' : 'Category Domain'}
             </label>
             <select value={category} onChange={e => setCategory(e.target.value as EventCategory)}
@@ -132,7 +132,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
             </select>
           </div>
           <div>
-            <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+            <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
               {lang === 'zh' ? '投放看板分类段' : 'Initial Status'}
             </label>
             <select value={status} onChange={e => setStatus(e.target.value as ColumnId)}
@@ -146,7 +146,7 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
 
         {/* Location */}
         <div className="md:col-span-2">
-          <label className="block text-[9px] tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
+          <label className="block text-(--fs-xs) tracking-[0.12em] font-mono text-[#1A1A1A]/60 uppercase mb-1">
             {lang === 'zh' ? '指定研讨保密节点/场所' : 'Secure Vault Node or Venue'}
           </label>
           <input type="text" value={location} onChange={e => setLocation(e.target.value)}
@@ -157,11 +157,11 @@ export default function ScheduleAddForm({ lang, todayString, initialStatus = 'to
 
       <div className="flex justify-end gap-2 pt-2 border-t border-[#1A1A1A]/10 mt-3">
         <button type="button" onClick={onClose}
-          className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-[#1A1A1A] font-mono text-[9px] uppercase tracking-widest rounded-none">
+          className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-[#1A1A1A] font-mono text-(--fs-xs) uppercase tracking-widest rounded-none">
           {lang === 'zh' ? '取消起草' : 'Cancel'}
         </button>
         <button type="submit"
-          className="px-5 py-2 bg-[#1A1A1A] text-[#F9F8F6] font-mono font-bold text-[9px] uppercase tracking-widest rounded-none">
+          className="px-5 py-2 bg-[#1A1A1A] text-[#F9F8F6] font-mono font-bold text-(--fs-xs) uppercase tracking-widest rounded-none">
           {lang === 'zh' ? '密封下发执行' : 'Seal and Dispatch'}
         </button>
       </div>

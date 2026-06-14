@@ -42,35 +42,35 @@ export function ContactRow({ c, lang }: { c: Contact; lang: 'zh' | 'en' }) {
       <td className="py-3.5 pl-6 pr-3">
         <div className="flex items-center gap-3">
           <div className={`w-8 h-8 rounded-full ${avatarCls} flex items-center justify-center shrink-0`}>
-            <span className="text-white text-[12px] font-bold font-sans">{c.name.charAt(0)}</span>
+            <span className="text-white text-(--fs-base) font-bold font-sans">{c.name.charAt(0)}</span>
           </div>
           <div>
-            <p className="text-[13px] font-medium text-[#202124] font-sans">{c.name}</p>
-            <p className="text-[11px] text-[#5F6368] font-sans">{c.company}</p>
+            <p className="text-(--fs-body) font-medium text-[#202124] font-sans">{c.name}</p>
+            <p className="text-(--fs-md) text-[#5F6368] font-sans">{c.company}</p>
           </div>
         </div>
       </td>
       <td className="py-3.5 px-3">
-        <p className="text-[12px] text-[#5F6368] font-sans">{c.location}</p>
-        {c.notes && <p className="text-[11px] text-[#9AA0A6] font-sans truncate max-w-[160px]">{c.notes}</p>}
+        <p className="text-(--fs-base) text-[#5F6368] font-sans">{c.location}</p>
+        {c.notes && <p className="text-(--fs-md) text-[#9AA0A6] font-sans truncate max-w-[160px]">{c.notes}</p>}
       </td>
       <td className="py-3.5 px-3">
-        <div className="flex items-center gap-1.5 text-[12px] text-[#5F6368] font-sans">
+        <div className="flex items-center gap-1.5 text-(--fs-base) text-[#5F6368] font-sans">
           <Phone className="w-3 h-3 text-[#9AA0A6]" strokeWidth={1.5} />
           {c.phone}
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-[#9AA0A6] font-sans mt-0.5">
+        <div className="flex items-center gap-1.5 text-(--fs-md) text-[#9AA0A6] font-sans mt-0.5">
           <Mail className="w-3 h-3" strokeWidth={1.5} />
           {c.email}
         </div>
       </td>
       <td className="py-3.5 px-3">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans ${typeCfg.cls}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans ${typeCfg.cls}`}>
           {zh ? typeCfg.zh : typeCfg.en}
         </span>
       </td>
       <td className="py-3.5 pl-3 pr-6">
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium font-sans ${statusCfg.cls}`}>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-(--fs-md) font-medium font-sans ${statusCfg.cls}`}>
           {zh ? statusCfg.zh : statusCfg.en}
         </span>
       </td>

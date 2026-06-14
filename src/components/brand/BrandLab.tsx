@@ -75,7 +75,7 @@ export default function BrandLab({ lang, requestedTab, onTabConsumed }: BrandLab
   const tabBtn = (tab: BrandTab, label: string) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest transition-all rounded-none ${
+      className={`px-3.5 py-1.5 text-(--fs-sm) font-mono font-bold uppercase tracking-widest transition-all rounded-none ${
         activeTab === tab ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
       }`}
     >

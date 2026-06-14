@@ -42,7 +42,7 @@ export default function MailSidebar({
         isSidebarCollapsed ? 'w-full md:w-[64px]' : 'w-full md:w-[200px]'
       }`}
     >
-      <div className="font-mono text-[8px] uppercase tracking-widest text-[#1A1A1A]/30 p-2 select-none whitespace-nowrap overflow-hidden">
+      <div className="font-mono text-(--fs-2xs) uppercase tracking-widest text-[#1A1A1A]/30 p-2 select-none whitespace-nowrap overflow-hidden">
         {isSidebarCollapsed ? '.' : (lang === 'zh' ? '封档目录' : 'DEPOT DIRECTORIES')}
       </div>
 
@@ -63,7 +63,7 @@ export default function MailSidebar({
             )}
           </div>
           {!isSidebarCollapsed && !!count && count > 0 && (
-            <span className={`text-[9px] font-mono ${countStyle}`}>{count}</span>
+            <span className={`text-(--fs-xs) font-mono ${countStyle}`}>{count}</span>
           )}
         </button>
       ))}

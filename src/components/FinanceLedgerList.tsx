@@ -21,7 +21,7 @@ export default function FinanceLedgerList({ lang, transactions, showCny, usdToCn
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-[#1A1A1A]/10 gap-3">
           <div className="flex items-center gap-2">
             <Receipt className="w-4 h-4 text-[#1A1A1A]" />
-            <span className="text-[10px] font-mono uppercase tracking-widest text-[#1A1A1A] font-bold">
+            <span className="text-(--fs-sm) font-mono uppercase tracking-widest text-[#1A1A1A] font-bold">
               {lang === 'zh' ? '复式平衡账目明细表' : 'ATELIER DETAILED BUSINESS TRANSACTION STACKS'}
             </span>
           </div>
@@ -31,7 +31,7 @@ export default function FinanceLedgerList({ lang, transactions, showCny, usdToCn
               placeholder={lang === 'zh' ? '输入款项名称搜索...' : 'Filter ledger descriptions...'}
               value={descFilter}
               onChange={(e) => setDescFilter(e.target.value)}
-              className="px-3 py-1 text-[11px] font-mono border border-[#1A1A1A]/15 bg-transparent rounded-none focus:outline-none focus:border-[#1A1A1A]"
+              className="px-3 py-1 text-(--fs-md) font-mono border border-[#1A1A1A]/15 bg-transparent rounded-none focus:outline-none focus:border-[#1A1A1A]"
             />
           </div>
         </div>
@@ -50,15 +50,15 @@ export default function FinanceLedgerList({ lang, transactions, showCny, usdToCn
                 <div key={item.id} className="py-3.5 flex items-center justify-between gap-4 group transition-all hover:bg-[#F9F8F6]/40 px-2">
                   <div className="space-y-1 max-w-[70%]">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-mono text-[#1A1A1A]/40 flex items-center gap-1">
+                      <span className="text-(--fs-xs) font-mono text-[#1A1A1A]/40 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {item.date}
                       </span>
-                      <span className={`text-[8px] font-mono tracking-widest px-1.5 py-0.5 border uppercase ${tagInfo.color}`}>
+                      <span className={`text-(--fs-2xs) font-mono tracking-widest px-1.5 py-0.5 border uppercase ${tagInfo.color}`}>
                         {lang === 'zh' ? tagInfo.labelZh : tagInfo.labelEn}
                       </span>
                       {item.notes && (
-                        <span className="text-[8px] text-zinc-400 font-mono italic max-w-[150px] truncate" title={item.notes}>
+                        <span className="text-(--fs-2xs) text-zinc-400 font-mono italic max-w-[150px] truncate" title={item.notes}>
                           [{item.notes}]
                         </span>
                       )}
@@ -87,7 +87,7 @@ export default function FinanceLedgerList({ lang, transactions, showCny, usdToCn
         )}
       </div>
 
-      <div className="mt-8 pt-4 border-t border-[#1A1A1A]/5 flex flex-col md:flex-row items-center justify-between text-[9px] font-mono text-[#1A1A1A]/40 uppercase tracking-widest gap-2">
+      <div className="mt-8 pt-4 border-t border-[#1A1A1A]/5 flex flex-col md:flex-row items-center justify-between text-(--fs-xs) font-mono text-[#1A1A1A]/40 uppercase tracking-widest gap-2">
         <span>{lang === 'zh' ? '账单认证编号: ISO-9003-FINE_ATELIER' : 'REGISTRY CODENAME: SILK_WEAVE_SYSTEM'}</span>
         <div className="flex items-center gap-1">
           <Sparkles className="w-3 h-3 text-emerald-800" />

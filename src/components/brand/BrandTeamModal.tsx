@@ -31,7 +31,7 @@ export default function BrandTeamModal({ busy, error, onClose, onConfirm }: Prop
       <div className="bg-white rounded-2xl border border-[#DADCE0] p-6 w-96 shadow-xl"
         onClick={e => e.stopPropagation()}>
 
-        <p className="text-[14px] font-sans font-semibold text-[#202124] mb-5">创建团队</p>
+        <p className="text-(--fs-lg) font-sans font-semibold text-[#202124] mb-5">创建团队</p>
 
         {/* 场景选择 */}
         <div className="grid grid-cols-2 gap-2 mb-5">
@@ -50,15 +50,15 @@ export default function BrandTeamModal({ busy, error, onClose, onConfirm }: Prop
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 mb-1">
-                    <p className="text-[12px] font-sans font-semibold leading-none"
+                    <p className="text-(--fs-base) font-sans font-semibold leading-none"
                       style={{ color: active ? t.color : t.disabled ? '#9AA0A6' : '#202124' }}>{t.key}</p>
                     {t.disabled && (
-                      <span className="text-[8px] font-mono font-bold tracking-wide uppercase px-1.5 py-0.5 rounded bg-[#F1F3F4] text-[#9AA0A6] leading-none">
+                      <span className="text-(--fs-2xs) font-mono font-bold tracking-wide uppercase px-1.5 py-0.5 rounded bg-[#F1F3F4] text-[#9AA0A6] leading-none">
                         待开发
                       </span>
                     )}
                   </div>
-                  <p className="text-[10px] font-sans text-[#9AA0A6] leading-snug">{t.desc}</p>
+                  <p className="text-(--fs-sm) font-sans text-[#9AA0A6] leading-snug">{t.desc}</p>
                 </div>
               </button>
             );
@@ -70,18 +70,18 @@ export default function BrandTeamModal({ busy, error, onClose, onConfirm }: Prop
           autoFocus value={name} onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && submit()}
           placeholder="团队名称…"
-          className="w-full border border-[#DADCE0] rounded-lg px-3 py-2 text-[13px] font-sans text-[#202124] placeholder:text-[#9AA0A6] outline-none focus:border-[#1A73E8] transition-colors mb-3"
+          className="w-full border border-[#DADCE0] rounded-lg px-3 py-2 text-(--fs-body) font-sans text-[#202124] placeholder:text-[#9AA0A6] outline-none focus:border-[#1A73E8] transition-colors mb-3"
         />
 
-        {error && <p className="text-[12px] font-sans text-[#D93025] mb-3">{error}</p>}
+        {error && <p className="text-(--fs-base) font-sans text-[#D93025] mb-3">{error}</p>}
 
         <div className="flex justify-end gap-2">
           <button onClick={onClose}
-            className="px-4 py-2 rounded-full text-[12px] font-sans text-[#5F6368] hover:bg-[#F1F3F4] transition-all">
+            className="px-4 py-2 rounded-full text-(--fs-base) font-sans text-[#5F6368] hover:bg-[#F1F3F4] transition-all">
             取消
           </button>
           <button onClick={submit} disabled={busy || !name.trim()}
-            className="px-4 py-2 rounded-full text-[12px] font-sans font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] disabled:opacity-40 transition-all">
+            className="px-4 py-2 rounded-full text-(--fs-base) font-sans font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] disabled:opacity-40 transition-all">
             {busy ? '…' : '创建'}
           </button>
         </div>

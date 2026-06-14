@@ -79,12 +79,12 @@ export function ChatSidebar({
     <aside className={`bg-[#F4F2EE] border-[#1A1A1A]/10 flex flex-col justify-between transition-all duration-300 overflow-hidden shrink-0 ${open ? 'w-full md:w-[240px] 2xl:w-[320px] p-6 border-r opacity-100' : 'w-0 p-0 border-r-0 opacity-0 pointer-events-none'}`}>
       <div className="flex flex-col h-full min-w-[208px] 2xl:min-w-[272px] gap-4">
         <button onClick={() => setRecentsOpen(o => !o)} className="flex items-center justify-between w-full group">
-          <h2 className="text-[11px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 group-hover:text-[#1A1A1A] transition-colors">
+          <h2 className="text-(--fs-md) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 group-hover:text-[#1A1A1A] transition-colors">
             {lang === 'zh' ? '往来' : 'Recents'}
           </h2>
           <div className="flex items-center gap-2">
-            <span className="text-[8px] font-mono text-[#1A1A1A]/25">{sessions.length}</span>
-            <span className={`text-[#1A1A1A]/30 text-[10px] transition-transform duration-200 ${recentsOpen ? 'rotate-90' : ''}`}>›</span>
+            <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25">{sessions.length}</span>
+            <span className={`text-[#1A1A1A]/30 text-(--fs-sm) transition-transform duration-200 ${recentsOpen ? 'rotate-90' : ''}`}>›</span>
           </div>
         </button>
 
@@ -92,10 +92,10 @@ export function ChatSidebar({
         <div onClick={onNewChat}
           className={`group flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${currentSessionId === null ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
           <div className="flex-1 min-w-0 space-y-1">
-            <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug">Default Message</p>
+            <p className="text-(--fs-md) font-sans text-[#1A1A1A]/80 leading-snug">Default Message</p>
             <div className="flex items-center gap-2">
-              <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
-              <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">ETHAN</span>
+              <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/30 uppercase">{new Date().toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
+              <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25 uppercase">ETHAN</span>
             </div>
           </div>
         </div>
@@ -104,16 +104,16 @@ export function ChatSidebar({
           {sessions.length === 0 ? (
             <div className="py-10 text-center space-y-2">
               <MessageSquare className="w-6 h-6 text-[#1A1A1A]/15 mx-auto" />
-              <p className="text-[9px] font-mono text-[#1A1A1A]/30 uppercase tracking-widest">{lang === 'zh' ? '暂无记录' : 'No history yet'}</p>
+              <p className="text-(--fs-xs) font-mono text-[#1A1A1A]/30 uppercase tracking-widest">{lang === 'zh' ? '暂无记录' : 'No history yet'}</p>
             </div>
           ) : sessions.map(s => (
             <div key={s.id} onClick={() => loadSession(s)}
               className={`group relative flex items-start gap-2.5 p-3 border cursor-pointer transition-all ${currentSessionId === s.id ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
               <div className="flex-1 min-w-0 space-y-1">
-                <p className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">{s.title}</p>
+                <p className="text-(--fs-md) font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2">{s.title}</p>
                 <div className="flex items-center gap-2">
-                  <span className="text-[8px] font-mono text-[#1A1A1A]/30 uppercase">{new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
-                  <span className="text-[8px] font-mono text-[#1A1A1A]/25 uppercase">{s.model}</span>
+                  <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/30 uppercase">{new Date(s.updatedAt).toLocaleDateString(lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' })}</span>
+                  <span className="text-(--fs-2xs) font-mono text-[#1A1A1A]/25 uppercase">{s.model}</span>
                 </div>
               </div>
               <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }} className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 hover:text-red-500 text-[#1A1A1A]/30 transition-all">
@@ -127,7 +127,7 @@ export function ChatSidebar({
         {recentsOpen && (
           <div className="pt-2 border-t border-[#1A1A1A]/10 space-y-0.5">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-[9px] font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/40">
+              <span className="text-(--fs-xs) font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/40">
                 {lang === 'zh' ? '我的团队' : 'Teams'} · {teams.length}
               </span>
             </div>
@@ -137,12 +137,12 @@ export function ChatSidebar({
                 <button key={t.id} onClick={() => onSelectTeam?.(t)}
                   className={`group flex items-start gap-2.5 p-3 w-full border cursor-pointer transition-all text-left ${active ? 'border-[#1A1A1A]/30 bg-white shadow-xs' : 'border-transparent hover:border-[#1A1A1A]/10 hover:bg-white/60'}`}>
                   <Users className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${active ? 'text-[#1A1A1A]/70' : 'text-[#1A1A1A]/25 group-hover:text-[#1A1A1A]/50'}`} strokeWidth={1.5} />
-                  <span className="text-[11px] font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2 flex-1">{t.name}</span>
+                  <span className="text-(--fs-md) font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2 flex-1">{t.name}</span>
                 </button>
               );
             })}
             <button onClick={() => onCreateTeam?.()}
-              className="flex items-center gap-1.5 w-full px-3 py-2 mt-1 text-[10px] font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition-all text-[#1A1A1A]/40 rounded-none">
+              className="flex items-center gap-1.5 w-full px-3 py-2 mt-1 text-(--fs-sm) font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition-all text-[#1A1A1A]/40 rounded-none">
               <Plus className="w-3 h-3" />
               {lang === 'zh' ? '开团' : 'New Team'}
             </button>
@@ -248,12 +248,12 @@ export function ChatSidebar({
         )}
 
         {phase === 'idle' && (
-          <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-[9px] uppercase tracking-wider text-neutral-500 shadow-xs shrink-0">
+          <div className="space-y-1.5 bg-white p-3.5 border border-[#1A1A1A]/10 font-mono text-(--fs-xs) uppercase tracking-wider text-neutral-500 shadow-xs shrink-0">
             <div className="inline-flex items-center gap-1.5 text-[#1A1A1A]/60 font-bold">
               <Terminal className="w-3 h-3" />
               {lang === 'zh' ? '本地存储 · 云同步就绪' : 'LOCAL · CLOUD READY'}
             </div>
-            <p className="text-[8px] text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
+            <p className="text-(--fs-2xs) text-[#1A1A1A]/40 leading-normal normal-case tracking-normal">
               {lang === 'zh' ? '记录保存于本设备，登录后自动云同步。' : 'Sessions stored locally. Sign in to enable cloud sync.'}
             </p>
           </div>

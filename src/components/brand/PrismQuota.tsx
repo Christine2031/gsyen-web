@@ -57,10 +57,10 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
     <div className="flex flex-col gap-4">
       {/* 顶栏标题 */}
       <div className="flex items-center justify-between">
-        <span className="text-[10px] font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/50">
+        <span className="text-(--fs-sm) font-mono font-bold tracking-[0.18em] uppercase text-[#1A1A1A]/50">
           穹弯算筹 · 本月配额
         </span>
-        <span className="text-[10px] font-mono tracking-[0.12em] text-[#1A1A1A]/40">
+        <span className="text-(--fs-sm) font-mono tracking-[0.12em] text-[#1A1A1A]/40">
           {data.resetLabel} 重置
         </span>
       </div>
@@ -72,7 +72,7 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
             {usedGB.toFixed(1)}
           </span>
           <span className="text-[16px] text-[#5F6368] font-sans">/ {data.limitGB} GB</span>
-          <span className={`ml-auto font-mono text-[11px] font-bold tracking-[0.1em] ${near ? 'text-[#D93025]' : 'text-[#1A73E8]'}`}>
+          <span className={`ml-auto font-mono text-(--fs-md) font-bold tracking-[0.1em] ${near ? 'text-[#D93025]' : 'text-[#1A73E8]'}`}>
             {Math.round(pct)}%
           </span>
         </div>
@@ -83,7 +83,7 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
         </div>
 
         <div className="flex items-center justify-between mt-3.5">
-          <div className="flex gap-[18px] text-[12px]">
+          <div className="flex gap-[18px] text-(--fs-base)">
             <span className="flex items-center gap-1.5 text-[#5F6368]">
               <span className="w-2 h-2 rounded-sm" style={{ background: '#1A73E8' }} />Token 消耗
             </span>
@@ -91,7 +91,7 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
               <span className="w-2 h-2 rounded-sm" style={{ background: '#5FA0EC' }} />线路流量
             </span>
           </div>
-          <span className={`text-[12px] font-medium ${near ? 'text-[#D93025]' : 'text-[#137333]'}`}>
+          <span className={`text-(--fs-base) font-medium ${near ? 'text-[#D93025]' : 'text-[#137333]'}`}>
             剩余 {remainGB.toFixed(1)} GB
           </span>
         </div>
@@ -102,12 +102,12 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
         {/* Token 热图（Claude 格子） */}
         <div className="bg-white rounded-xl border border-[#DADCE0] px-5 py-4">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] font-mono font-bold tracking-[0.12em] uppercase text-[#5F6368]">
+            <span className="text-(--fs-sm) font-mono font-bold tracking-[0.12em] uppercase text-[#5F6368]">
               Token 消耗 · 每 5 小时
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-[18px] font-medium text-[#202124] font-sans">{data.tokenGB} GB</span>
-              <span className="text-[11px] text-[#5F6368] font-mono">{tokensLabel}</span>
+              <span className="text-(--fs-md) text-[#5F6368] font-mono">{tokensLabel}</span>
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
             ))}
           </div>
 
-          <div className="flex items-center justify-end gap-1.5 mt-3 text-[10px] text-[#5F6368]">
+          <div className="flex items-center justify-end gap-1.5 mt-3 text-(--fs-sm) text-[#5F6368]">
             <span>少</span>
             {HEAT.map(c => <span key={c} className="w-[11px] h-[11px] rounded-[2px]" style={{ background: c }} />)}
             <span>多</span>
@@ -131,12 +131,12 @@ export default function PrismQuota({ data = DEMO_QUOTA }: { data?: QuotaData }) 
         {/* 线路流量 */}
         <div className="bg-white rounded-xl border border-[#DADCE0] px-5 py-4 flex flex-col">
           <div className="flex items-center gap-2.5 mb-3">
-            <span className="text-[10px] font-mono font-bold tracking-[0.12em] uppercase text-[#5F6368]">
+            <span className="text-(--fs-sm) font-mono font-bold tracking-[0.12em] uppercase text-[#5F6368]">
               线路流量
             </span>
           </div>
           <span className="text-[22px] font-medium text-[#202124] font-sans">{data.routeGB} GB</span>
-          <span className="text-[12px] text-[#5F6368] mt-1">穹弯代理 · 本月浏览</span>
+          <span className="text-(--fs-base) text-[#5F6368] mt-1">穹弯代理 · 本月浏览</span>
         </div>
       </div>
     </div>

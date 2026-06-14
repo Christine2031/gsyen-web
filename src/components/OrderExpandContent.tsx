@@ -86,8 +86,8 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
 
   const handleDelete = () => { orderStore.remove(order.id); onCollapse(); };
 
-  const inputCls = `w-full px-2 py-1 rounded-[2px] border text-[11px] font-sans outline-none ${C.panelInput}`;
-  const labelCls = `font-mono text-[8px] tracking-[0.15em] uppercase shrink-0 w-14 ${C.panelLabel}`;
+  const inputCls = `w-full px-2 py-1 rounded-[2px] border text-(--fs-md) font-sans outline-none ${C.panelInput}`;
+  const labelCls = `font-mono text-(--fs-2xs) tracking-[0.15em] uppercase shrink-0 w-14 ${C.panelLabel}`;
 
   return (
     <div className={`grid transition-[grid-template-rows] duration-[360ms] ease-[cubic-bezier(0.16,1,0.3,1)] ${expanded && order ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -100,7 +100,7 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
             const { zh: label, en, Icon } = STATUS_CONFIG[s];
             return (
               <button key={s} onClick={() => handleStatusChange(s)}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-[2px] font-mono text-[9px] tracking-wide transition-all duration-150 ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-[2px] font-mono text-(--fs-xs) tracking-wide transition-all duration-150 ${
                   order.status === s ? C.btnPrimary : C.btnGhost
                 }`}>
                 <Icon className="w-2.5 h-2.5" />{zh ? label : en}
@@ -111,7 +111,7 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
 
         {/* 商品信息 */}
         <div className={`rounded-[3px] border ${C.panelBorder} px-3 py-2.5 space-y-2`}>
-          <span className={`font-mono text-[8px] tracking-[0.18em] uppercase font-bold ${C.panelLabel}`}>
+          <span className={`font-mono text-(--fs-2xs) tracking-[0.18em] uppercase font-bold ${C.panelLabel}`}>
             {zh ? '商品信息' : 'Product'}
           </span>
           {editing ? (
@@ -137,7 +137,7 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-3">
                   <span className={labelCls}>{label}</span>
-                  <span className={`font-sans text-[11px] ${C.panelText}`}>{value || '—'}</span>
+                  <span className={`font-sans text-(--fs-md) ${C.panelText}`}>{value || '—'}</span>
                 </div>
               ))}
             </div>
@@ -169,7 +169,7 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-3">
                   <span className={labelCls}>{label}</span>
-                  <span className={`font-sans text-[11px] ${C.panelText}`}>{value}</span>
+                  <span className={`font-sans text-(--fs-md) ${C.panelText}`}>{value}</span>
                 </div>
               ))}
             </>
@@ -187,17 +187,17 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
           ) : (
             <>
               <div className="flex justify-between">
-                <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '总额' : 'Total'}</span>
-                <span className={`font-mono text-[12px] font-bold ${C.panelText}`}>{order.amount ? `${symbol}${order.amount}` : '—'}</span>
+                <span className={`font-mono text-(--fs-2xs) tracking-widest uppercase ${C.panelLabel}`}>{zh ? '总额' : 'Total'}</span>
+                <span className={`font-mono text-(--fs-base) font-bold ${C.panelText}`}>{order.amount ? `${symbol}${order.amount}` : '—'}</span>
               </div>
               <div className="flex justify-between">
-                <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '已付' : 'Paid'}</span>
-                <span className={`font-mono text-[12px] font-bold ${C.panelText}`}>{symbol}{order.paidAmount}</span>
+                <span className={`font-mono text-(--fs-2xs) tracking-widest uppercase ${C.panelLabel}`}>{zh ? '已付' : 'Paid'}</span>
+                <span className={`font-mono text-(--fs-base) font-bold ${C.panelText}`}>{symbol}{order.paidAmount}</span>
               </div>
               {order.amount > 0 && (
                 <div className="flex justify-between">
-                  <span className={`font-mono text-[8px] tracking-widest uppercase ${C.panelLabel}`}>{zh ? '待收' : 'Balance'}</span>
-                  <span className={`font-mono text-[12px] font-bold ${balance > 0 ? 'text-amber-400/80' : 'text-emerald-400/80'}`}>{symbol}{balance}</span>
+                  <span className={`font-mono text-(--fs-2xs) tracking-widest uppercase ${C.panelLabel}`}>{zh ? '待收' : 'Balance'}</span>
+                  <span className={`font-mono text-(--fs-base) font-bold ${balance > 0 ? 'text-amber-400/80' : 'text-emerald-400/80'}`}>{symbol}{balance}</span>
                 </div>
               )}
             </>
@@ -210,7 +210,7 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
           <div className="flex gap-1.5">
             {(['self', 'shared'] as const).map(s => (
               <button key={s} onClick={() => onScopeChange(s)}
-                className={`px-3 py-1.5 rounded-md font-mono text-[9px] uppercase tracking-widest transition-all ${
+                className={`px-3 py-1.5 rounded-md font-mono text-(--fs-xs) uppercase tracking-widest transition-all ${
                   scope === s ? C.btnPrimary : C.btnGhost
                 }`}>
                 {s === 'self' ? (zh ? '个人' : 'Personal') : (zh ? '团队' : 'Team')}
@@ -221,19 +221,19 @@ export function OrderExpandContent({ lang, color: C, orderId, expanded, scope, o
           <div className="flex gap-1.5">
             {editing ? (
               <>
-                <button onClick={() => setEditing(false)} className={`px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnGhost}`}>
+                <button onClick={() => setEditing(false)} className={`px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnGhost}`}>
                   {zh ? '取消' : 'Cancel'}
                 </button>
-                <button onClick={saveEdit} className={`px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnPrimary}`}>
+                <button onClick={saveEdit} className={`px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnPrimary}`}>
                   {zh ? '确认修改' : 'Save'}
                 </button>
               </>
             ) : (
               <>
-                <button onClick={startEdit} className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnGhost}`}>
+                <button onClick={startEdit} className={`flex items-center gap-1 px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnGhost}`}>
                   <Pencil className="w-2.5 h-2.5" />{zh ? '修改编纂' : 'Edit'}
                 </button>
-                <button onClick={handleDelete} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-[9px] font-mono ${C.btnDanger}`}>
+                <button onClick={handleDelete} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-[2px] text-(--fs-xs) font-mono ${C.btnDanger}`}>
                   <Trash2 className="w-2.5 h-2.5" />{zh ? '删除订单' : 'Delete'}
                 </button>
               </>
