@@ -82,7 +82,8 @@ export function useAuth() {
 
         // Step 2: 无本地 session → 尝试 HttpOnly cookie（Cloud Run，可能冷启动）
         const me = await authProxy.me();
-        if (cancelled) return;
+        // 等待期间用户已手动登录，不再干扰
+        if (cancelled || currentUidRef.current) return;
         if (me.ok) {
           await supabase.auth.setSession({ access_token: me.access_token!, refresh_token: me.refresh_token! });
           return; // onAuthStateChange 接管
