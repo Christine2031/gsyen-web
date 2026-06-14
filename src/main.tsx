@@ -5,8 +5,9 @@ import App from './App.tsx';
 import './index.css';
 
 // 同步应用字体偏好，避免首屏闪烁
-if (localStorage.getItem('gsyen_font_size') === 'compact') {
-  document.documentElement.setAttribute('data-font', 'compact');
+const _savedFont = localStorage.getItem('gsyen_font_size');
+if (_savedFont === 'compact' || _savedFont === 'large') {
+  document.documentElement.setAttribute('data-font', _savedFont);
 }
 
 Sentry.init({

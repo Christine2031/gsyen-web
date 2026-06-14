@@ -175,26 +175,19 @@ export default function BrandMemberProfile({ lang }: Props) {
       <div className="bg-white border border-[#DADCE0]">
         <FormRow label={zh ? '界面字体' : 'Font size'} sub={zh ? '影响全局字号，立即生效' : 'Applies globally, takes effect immediately'} last>
           <div className="flex items-center gap-1 border border-[#1A1A1A]/10 p-1 bg-[#F9F8F6]/40 w-fit">
-            <button
-              onClick={() => setFontSize('normal')}
-              className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest rounded-none transition-colors ${
-                fontSize === 'normal'
-                  ? 'bg-[#1A1A1A] text-white'
-                  : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
-              }`}
-            >
-              {zh ? '正常' : 'Normal'}
-            </button>
-            <button
-              onClick={() => setFontSize('compact')}
-              className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest rounded-none transition-colors ${
-                fontSize === 'compact'
-                  ? 'bg-[#1A1A1A] text-white'
-                  : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
-              }`}
-            >
-              {zh ? '紧凑' : 'Compact'}
-            </button>
+            {(['compact', 'normal', 'large'] as const).map(v => (
+              <button
+                key={v}
+                onClick={() => setFontSize(v)}
+                className={`px-3.5 py-1.5 text-[10px] font-mono font-bold uppercase tracking-widest rounded-none transition-colors ${
+                  fontSize === v ? 'bg-[#1A1A1A] text-white' : 'text-[#1A1A1A]/60 hover:bg-[#1A1A1A]/5'
+                }`}
+              >
+                {zh
+                  ? v === 'compact' ? '紧凑' : v === 'normal' ? '正常' : '近视'
+                  : v === 'compact' ? 'Compact' : v === 'normal' ? 'Normal' : 'Large'}
+              </button>
+            ))}
           </div>
         </FormRow>
       </div>

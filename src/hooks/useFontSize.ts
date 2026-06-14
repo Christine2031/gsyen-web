@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type FontSize = 'normal' | 'compact';
+export type FontSize = 'compact' | 'normal' | 'large';
 const KEY = 'gsyen_font_size';
 
 export function useFontSize() {
@@ -9,10 +9,11 @@ export function useFontSize() {
   );
 
   useEffect(() => {
-    if (size === 'compact') {
-      document.documentElement.setAttribute('data-font', 'compact');
+    const el = document.documentElement;
+    if (size === 'normal') {
+      el.removeAttribute('data-font');
     } else {
-      document.documentElement.removeAttribute('data-font');
+      el.setAttribute('data-font', size);
     }
     localStorage.setItem(KEY, size);
   }, [size]);

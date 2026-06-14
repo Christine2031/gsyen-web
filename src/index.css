@@ -134,10 +134,10 @@
   --animate-scaleUp: scaleUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* 紧凑模式 — body zoom 0.85，全局等比缩小，硬编码 px 值一并生效 */
-html[data-font="compact"] body {
-  zoom: 0.85;
-}
+/* 紧凑模式 */
+html[data-font="compact"] body { zoom: 0.85; }
+/* 近视模式 */
+html[data-font="large"] body   { zoom: 1.15; }
 
 @keyframes gsyen-breathe {
   0%, 100% { opacity: 1; }
