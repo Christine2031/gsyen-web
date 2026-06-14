@@ -21,27 +21,25 @@ export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
   const labels     = zh ? ZH : EN;
 
   // slider 跟随 committed value
+  // 用 offsetLeft/offsetWidth（CSS 像素），不用 getBoundingClientRect（受 html zoom 缩放）
   function syncSlider(idx: number) {
     if (!pickerRef.current || !sliderRef.current) return;
-    const pr   = pickerRef.current.getBoundingClientRect();
     const btns = pickerRef.current.querySelectorAll<HTMLElement>('[data-pbtn]');
     const btn  = btns[idx];
     if (!btn) return;
-    const br = btn.getBoundingClientRect();
-    sliderRef.current.style.left  = `${br.left - pr.left - 3}px`;
-    sliderRef.current.style.width = `${br.width}px`;
+    sliderRef.current.style.left  = `${btn.offsetLeft}px`;
+    sliderRef.current.style.width = `${btn.offsetWidth}px`;
   }
 
   function syncHover(idx: number | null) {
-    if (!pickerRef.current || !hoverRef.current) return;
+    if (!hoverRef.current) return;
     if (idx === null) { hoverRef.current.style.opacity = '0'; return; }
-    const pr   = pickerRef.current.getBoundingClientRect();
+    if (!pickerRef.current) return;
     const btns = pickerRef.current.querySelectorAll<HTMLElement>('[data-pbtn]');
     const btn  = btns[idx];
     if (!btn) return;
-    const br = btn.getBoundingClientRect();
-    hoverRef.current.style.left    = `${br.left - pr.left - 3}px`;
-    hoverRef.current.style.width   = `${br.width}px`;
+    hoverRef.current.style.left    = `${btn.offsetLeft}px`;
+    hoverRef.current.style.width   = `${btn.offsetWidth}px`;
     hoverRef.current.style.opacity = '1';
   }
 
