@@ -47,7 +47,6 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
   const [createTeamOpen, setCreateTeamOpen]   = useState(false);
   const [showFriends,    setShowFriends]       = useState(false);
   const { friends } = useFriends();
-  const { show: savePrompt, dismiss: dismissSavePrompt } = useChatSavePrompt(messages);
 
   const { teams }                                                  = useTeams();
   const { selectedTeam, showPanel, members, selectTeam, clearTeam } = useTeamPanel(onTeamChange);
@@ -69,6 +68,7 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
 
   const { messages, sessions, currentSessionId, currentTeamId, setMessages, saveChat, loadSession, deleteSession, newChat, openTeamSession } =
     useChatSession(lang);
+  const { show: savePrompt, dismiss: dismissSavePrompt } = useChatSavePrompt(messages);
 
   const handleLoadSession = (s: Parameters<typeof loadSession>[0]) => { loadSession(s); clearTeam(); };
   const handleNewChat = () => { newChat(); clearTeam(); };
