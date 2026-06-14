@@ -12,7 +12,7 @@ interface UseChatSessionReturn {
   saveChat: (msgs: ChatMessage[], model: ModelId) => void;
   loadSession: (session: StoredSession) => void;
   deleteSession: (id: string) => void;
-  newChat: () => void;
+  newChat: (model: ModelId) => void;
   openTeamSession: (teamId: string) => void;
 }
 
@@ -84,13 +84,16 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     }
   }, [lang]);
 
-  const newChat = useCallback(() => {
-    sessionIdRef.current = null;
+  const newChat = useCallback((model: ModelId) => {
+    const id = crypto.randomUUID();
+    sessionIdRef.current = id;
     teamIdRef.current    = null;
-    setCurrentSessionId(null);
+    setCurrentSessionId(id);
     setCurrentTeamId(null);
     setMessagesState([]);
     chatSessionStore.clearCurrentChat();
+    const updated = chatSessionStore.upsert(id, [], model);
+    setSessions(updated);
   }, []);
 
   const openTeamSession = useCallback((teamId: string) => {
