@@ -11,7 +11,7 @@ async function _upsert(s: StoredSession) {
   if (!supabase || !_uid) return;
   await supabase.from('gsyen_chat_sessions').upsert({
     id: s.id, user_id: _uid, title: s.title, model: s.model,
-    messages: s.messages, updated_at: new Date(s.updatedAt).getTime(),
+    messages: s.messages, updated_at: new Date(s.updatedAt).toISOString(),
   });
 }
 
