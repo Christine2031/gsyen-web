@@ -5,7 +5,6 @@ interface Props {
   value: FontSize;
   onChange: (v: FontSize) => void;
   zh: boolean;
-  isSmallScreen: boolean;
   isShortScreen: boolean;
 }
 
@@ -14,14 +13,17 @@ const OPTIONS: FontSize[] = ['compact', 'normal', 'large', 'ji'];
 const ZH: Record<FontSize, string> = { compact: '紧凑', normal: '正常', large: '舒适', ji: '极' };
 const EN: Record<FontSize, string> = { compact: 'Compact', normal: 'Normal', large: 'Comfort', ji: 'Ultra' };
 
-// 直接操控 html[data-font]，不经 React state，实现零延迟悬停预览
-function applyDataFont(v: FontSize) {
+// instant=true: 跳过 zoom transition（悬停预览，避免闪烁）
+// instant=false: 恢复 CSS 动画（点击确认时播放 180ms 过渡）
+function applyDataFont(v: FontSize, instant: boolean) {
   const el = document.documentElement;
+  if (instant) el.style.setProperty('transition', 'zoom 0ms');
+  else el.style.removeProperty('transition');
   if (v === 'normal') el.removeAttribute('data-font');
   else el.setAttribute('data-font', v);
 }
 
-export function FontSizePicker({ value, onChange, zh, isSmallScreen, isShortScreen }: Props) {
+export function FontSizePicker({ value, onChange, zh, isShortScreen }: Props) {
   const pickerRef  = useRef<HTMLDivElement>(null);
   const sliderRef  = useRef<HTMLDivElement>(null);
   const hoverRef   = useRef<HTMLDivElement>(null);
@@ -65,21 +67,18 @@ export function FontSizePicker({ value, onChange, zh, isSmallScreen, isShortScre
   }, [value]);
 
   const handleEnter = (i: number) => {
-    const v = OPTIONS[i];
-    if (v === 'ji' && isSmallScreen) return;
     syncHover(i);
-    applyDataFont(v);
+    applyDataFont(OPTIONS[i], true);  // instant — no zoom flicker on hover
   };
 
   const handleLeave = () => {
     syncHover(null);
-    applyDataFont(value); // 还原至已确认档位
+    applyDataFont(value, true);  // instant restore to committed value
   };
 
   const handleClick = (i: number) => {
-    const v = OPTIONS[i];
-    if (v === 'ji' && isSmallScreen) return;
-    onChange(v);
+    document.documentElement.style.removeProperty('transition');  // restore CSS 180ms for commit animation
+    onChange(OPTIONS[i]);
   };
 
   return (
@@ -103,14 +102,11 @@ export function FontSizePicker({ value, onChange, zh, isSmallScreen, isShortScre
         />
 
         {OPTIONS.map((v, i) => {
-          const isActive    = v === value;
-          const isDisabled  = v === 'ji' && isSmallScreen;
-          const isWarn      = v === 'large' && isShortScreen;
+          const isActive = v === value;
+          const isWarn   = v === 'large' && isShortScreen;
           const title =
             v === 'ji'
-              ? zh
-                ? isSmallScreen ? '屏幕不足，建议 27 寸以上使用' : '极大字号，适合演示 / 辅助场景'
-                : isSmallScreen ? 'Screen too small — best on 27"+ displays' : 'Maximum — great for large screens or presentations'
+              ? zh ? '极大字号，适合演示 / 辅助场景' : 'Maximum — great for large screens or presentations'
               : v === 'large' && isWarn
               ? zh ? '屏幕高度较短，内容区偏紧' : 'Short screen — content may be cramped'
               : undefined;
@@ -127,10 +123,9 @@ export function FontSizePicker({ value, onChange, zh, isSmallScreen, isShortScre
                 'text-[10px] font-mono font-bold tracking-widest uppercase',
                 'border-none bg-transparent rounded-none',
                 'transition-colors duration-[180ms]',
-                isDisabled  ? 'opacity-25 cursor-not-allowed text-[#1A1A1A]/40'
-                : isActive  ? 'text-[#F9F8F6] cursor-default'
-                : isWarn    ? 'text-amber-500/70 cursor-pointer'
-                :              'text-[#1A1A1A]/45 cursor-pointer hover:text-[#1A1A1A]/75',
+                isActive ? 'text-[#F9F8F6] cursor-default'
+                : isWarn ? 'text-amber-500/70 cursor-pointer'
+                :           'text-[#1A1A1A]/45 cursor-pointer hover:text-[#1A1A1A]/75',
               ].join(' ')}
             >
               {labels[v]}

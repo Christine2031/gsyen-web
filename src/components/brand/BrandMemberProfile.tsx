@@ -31,7 +31,6 @@ export default function BrandMemberProfile({ lang }: Props) {
 
   const { size: fontSize, setSize: setFontSize } = useFontSize();
   const isShortScreen = window.screen.height <= 800;   // 13寸 768p 等短屏
-  const isSmallScreen = window.screen.width < 1600 || isShortScreen;
   const isUnverified = tier === 'free_unverified' || (!emailVerified && !!user);
   const provider = user?.app_metadata?.provider ?? meta.provider ?? 'email';
 
@@ -181,7 +180,6 @@ export default function BrandMemberProfile({ lang }: Props) {
             value={fontSize}
             onChange={setFontSize}
             zh={zh}
-            isSmallScreen={isSmallScreen}
             isShortScreen={isShortScreen}
           />
         </FormRow>
