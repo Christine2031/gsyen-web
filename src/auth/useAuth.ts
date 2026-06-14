@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { authProxy } from './gsyenApiProxy';
 import {
@@ -14,10 +14,7 @@ const DEFAULT_AUTH_STATE: AuthState = {
   loading: true, isPasswordRecovery: false,
 };
 
-// ── Tier cache ──────────────────────────────────────────────────────────────
-// localStorage keyed by userId，消除 TOKEN_REFRESHED 触发的 0.5s "未验证" 闪烁。
-// 写入：SIGNED_IN / 验证成功 / 后台刷新后
-// 清除：SIGNED_OUT
+// ── Tier cache ────────────────────────────────────────────────────────────────
 interface TierCache { tier: UserTier; ev: boolean; }
 const TIER_KEY = (uid: string) => `gsyen_tier_${uid}`;
 
@@ -36,149 +33,151 @@ function clearTier(uid: string) {
   try { localStorage.removeItem(TIER_KEY(uid)); } catch {}
 }
 
-export function useAuth() {
-  const [state, setState] = useState<AuthState>(DEFAULT_AUTH_STATE);
-  const [justVerified, setJustVerified] = useState(false);
+// ── Singleton store ───────────────────────────────────────────────────────────
+// 所有 useAuth() 调用共享同一份状态，boot/listener 只初始化一次。
+interface AuthStore extends AuthState { justVerified: boolean; }
 
-  const magicLinkRef = useRef(
-    typeof window !== 'undefined' &&
-    (window.location.hash.includes('type=magiclink') || window.location.hash.includes('type=email'))
-  );
-  // 跟踪当前 userId，用于 SIGNED_OUT 时精准清除 cache
-  const currentUidRef = useRef<string | null>(null);
+let _store: AuthStore = { ...DEFAULT_AUTH_STATE, justVerified: false };
+let _initialized = false;
+let _currentUid: string | null = null;
+const _listeners = new Set<(s: AuthStore) => void>();
 
-  // Effect 1: Boot — 三段式，按速度从快到慢
-  useEffect(() => {
-    if (!supabase) { setState(s => ({ ...s, loading: false })); return; }
-    let cancelled = false;
+// 读取页面加载时的 hash（魔法链接），模块初始化即捕获，防止后续被清除后读不到
+const _magicLinkOnLoad =
+  typeof window !== 'undefined' &&
+  (window.location.hash.includes('type=magiclink') || window.location.hash.includes('type=email'));
+let _magicLinkHandled = false;
 
-    (async () => {
-      try {
-        // Step 1: 本地 session（Supabase SDK 缓存，无需网络，< 50ms）
-        const { data: { session: local } } = await supabase.auth.getSession();
-        if (cancelled) return;
+function _set(patch: Partial<AuthStore>) {
+  _store = { ..._store, ...patch };
+  _listeners.forEach(fn => fn(_store));
+}
 
-        if (local?.user && local.access_token) {
-          // 立即用 localStorage 里的 tier 显示 UI，0 等待
-          const cached = readTier(local.user.id);
-          currentUidRef.current = local.user.id;
-          setState(s => ({
-            ...s, user: local.user, session: local,
-            tier: cached?.tier ?? null,
-            emailVerified: cached?.ev ?? false,
-            loading: false,
-          }));
-          // 后台静默刷新 tier（stale-while-revalidate）
-          initializeUserData(local.user.id, local.user.user_metadata?.provider ?? 'email')
-            .then(tier => {
-              if (tier) writeTier(local.user.id, tier);
-              if (!cancelled) setState(s => s.user?.id === local.user.id
-                ? { ...s, tier, emailVerified: tier !== 'free_unverified' && tier !== null }
-                : s);
-            }).catch(() => {});
-          if (local.refresh_token) authProxy.saveSession(local.refresh_token).catch(() => {});
-          return;
-        }
+// ── Auth state listener（全局注册一次）────────────────────────────────────────
+function _initListener() {
+  if (!supabase) return;
+  supabase.auth.onAuthStateChange((_event, session) => {
+    const user = session?.user ?? null;
 
-        // Step 2: 无本地 session → 尝试 HttpOnly cookie（Cloud Run，可能冷启动）
-        const me = await authProxy.me();
-        // 等待期间用户已手动登录，不再干扰
-        if (cancelled || currentUidRef.current) return;
-        if (me.ok) {
-          await supabase.auth.setSession({ access_token: me.access_token!, refresh_token: me.refresh_token! });
-          return; // onAuthStateChange 接管
-        }
+    if (_event === 'SIGNED_OUT' || !user) {
+      if (_currentUid) clearTier(_currentUid);
+      _currentUid = null;
+      _set({ ...DEFAULT_AUTH_STATE, loading: false, justVerified: false });
+      return;
+    }
 
-        if (!cancelled) setState(s => ({ ...s, loading: false }));
-      } catch {
-        if (!cancelled) setState(s => ({ ...s, loading: false }));
-      }
-    })();
+    const prevUid = _currentUid;
+    _currentUid = user.id;
 
-    return () => { cancelled = true; };
-  }, []);
+    if (session?.refresh_token) authProxy.saveSession(session.refresh_token).catch(() => {});
 
-  // Effect 2: 监听所有 auth 事件
-  useEffect(() => {
-    if (!supabase) return;
+    // TOKEN_REFRESHED：同一用户只更新 session/user，不重置 tier/emailVerified（防闪烁）
+    if (_event === 'TOKEN_REFRESHED' && prevUid === user.id) {
+      _set({ user, session, loginProvider: (user.user_metadata?.provider ?? null) as LoginProvider | null });
+      return;
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const user = session?.user ?? null;
-
-      // SIGNED_OUT：清缓存 + 重置状态
-      if (_event === 'SIGNED_OUT' || !user) {
-        if (currentUidRef.current) clearTier(currentUidRef.current);
-        currentUidRef.current = null;
-        setState({ ...DEFAULT_AUTH_STATE, loading: false });
-        return;
-      }
-
-      const prevUid = currentUidRef.current;
-      currentUidRef.current = user.id;
-
-      // 持久化 refresh_token 到 HttpOnly cookie
-      if (session?.refresh_token) authProxy.saveSession(session.refresh_token).catch(() => {});
-
-      // TOKEN_REFRESHED（同一用户）：只更新 session/user，tier/emailVerified 原地不动
-      // 这是 0.5s 闪烁的根因修复点
-      if (_event === 'TOKEN_REFRESHED' && prevUid === user.id) {
-        setState(s => ({
-          ...s, user, session,
-          loginProvider: (user.user_metadata?.provider ?? null) as LoginProvider | null,
-        }));
-        return;
-      }
-
-      // SIGNED_IN / USER_UPDATED 等：先用缓存，后台刷新
-      const cached = readTier(user.id);
-      setState(s => ({
-        ...s, user, session,
-        tier: cached?.tier ?? null,
-        emailVerified: cached?.ev ?? false,
-        loginProvider: (user.user_metadata?.provider ?? null) as LoginProvider | null,
-        loading: false,
-        isPasswordRecovery: _event === 'PASSWORD_RECOVERY',
-      }));
-
-      // 魔法链接验证：升级 tier 并写缓存
-      if (magicLinkRef.current) {
-        magicLinkRef.current = false;
-        window.history.replaceState(null, '', window.location.pathname);
-        upgradeTierToFree(user.id)
-          .then(() => {
-            writeTier(user.id, 'free');
-            setState(s => s.user?.id === user.id ? { ...s, tier: 'free', emailVerified: true } : s);
-            setJustVerified(true);
-          })
-          .catch(() => {});
-        return; // 已知 tier = free，无需再查 DB
-      }
-
-      // 无缓存 或 首次 SIGNED_IN：查 DB 并写缓存
-      if (!cached || _event === 'SIGNED_IN') {
-        initializeUserData(user.id, user.user_metadata?.provider ?? 'email')
-          .then(tier => {
-            if (tier) writeTier(user.id, tier);
-            setState(s => s.user?.id === user.id
-              ? { ...s, tier, emailVerified: tier !== 'free_unverified' && tier !== null }
-              : s);
-          });
-      }
+    const cached = readTier(user.id);
+    _set({
+      user, session,
+      tier: cached?.tier ?? null,
+      emailVerified: cached?.ev ?? false,
+      loginProvider: (user.user_metadata?.provider ?? null) as LoginProvider | null,
+      loading: false,
+      isPasswordRecovery: _event === 'PASSWORD_RECOVERY',
     });
 
-    return () => subscription.unsubscribe();
+    // 魔法链接验证：升级 tier
+    if (_magicLinkOnLoad && !_magicLinkHandled) {
+      _magicLinkHandled = true;
+      window.history.replaceState(null, '', window.location.pathname);
+      upgradeTierToFree(user.id)
+        .then(() => {
+          writeTier(user.id, 'free');
+          if (_store.user?.id === user.id) _set({ tier: 'free', emailVerified: true, justVerified: true });
+        })
+        .catch(() => {});
+      return;
+    }
+
+    if (!cached || _event === 'SIGNED_IN') {
+      initializeUserData(user.id, user.user_metadata?.provider ?? 'email')
+        .then(tier => {
+          if (tier) writeTier(user.id, tier);
+          if (_store.user?.id === user.id)
+            _set({ tier, emailVerified: tier !== 'free_unverified' && tier !== null });
+        });
+    }
+  });
+}
+
+// ── Boot（全局执行一次）───────────────────────────────────────────────────────
+function _boot() {
+  if (_initialized) return;
+  _initialized = true;
+
+  if (!supabase) { _set({ loading: false }); return; }
+
+  _initListener();
+
+  (async () => {
+    try {
+      // Step 1: 本地 Supabase session（无网络，< 50ms）
+      const { data: { session: local } } = await supabase.auth.getSession();
+
+      if (local?.user && local.access_token) {
+        const cached = readTier(local.user.id);
+        _currentUid = local.user.id;
+        _set({
+          user: local.user, session: local,
+          tier: cached?.tier ?? null,
+          emailVerified: cached?.ev ?? false,
+          loading: false,
+        });
+        initializeUserData(local.user.id, local.user.user_metadata?.provider ?? 'email')
+          .then(tier => {
+            if (tier) writeTier(local.user.id, tier);
+            if (_store.user?.id === local.user.id)
+              _set({ tier, emailVerified: tier !== 'free_unverified' && tier !== null });
+          }).catch(() => {});
+        if (local.refresh_token) authProxy.saveSession(local.refresh_token).catch(() => {});
+        return;
+      }
+
+      // Step 2: 无本地 session → 尝试 HttpOnly cookie（仅此一次，不再 ×N）
+      const me = await authProxy.me();
+      if (_currentUid) return; // 等待期间已手动登录
+      if (me.ok) {
+        await supabase.auth.setSession({ access_token: me.access_token!, refresh_token: me.refresh_token! });
+        return; // onAuthStateChange 接管
+      }
+
+      _set({ loading: false });
+    } catch {
+      _set({ loading: false });
+    }
+  })();
+}
+
+// ── useAuth hook（纯订阅者，不再含任何 init 逻辑）────────────────────────────
+export function useAuth() {
+  const [store, setStore] = useState<AuthStore>(_store);
+
+  useEffect(() => {
+    _listeners.add(setStore);
+    _boot(); // 幂等：仅首次调用时真正执行
+    return () => { _listeners.delete(setStore); };
   }, []);
 
   return {
-    ...state,
-    justVerified,
-    clearJustVerified: useCallback(() => setJustVerified(false), []),
-    signInWithEmail:     useCallback((e: string, p: string) => signInWithEmail(e, p), []),
-    signUpWithEmail:     useCallback((e: string, p: string) => signUpWithEmail(e, p), []),
-    signInWithOAuth:     useCallback((p: OAuthProvider)     => signInWithOAuth(p), []),
-    signOut:             useCallback(()                      => signOut(), []),
-    resetPasswordForEmail: useCallback((e: string)          => resetPasswordForEmail(e), []),
-    clearPasswordRecovery: useCallback(() => setState(s => ({ ...s, isPasswordRecovery: false })), []),
+    ...store,
+    clearJustVerified:     useCallback(() => _set({ justVerified: false }), []),
+    clearPasswordRecovery: useCallback(() => _set({ isPasswordRecovery: false }), []),
+    signInWithEmail:       useCallback((e: string, p: string) => signInWithEmail(e, p), []),
+    signUpWithEmail:       useCallback((e: string, p: string) => signUpWithEmail(e, p), []),
+    signInWithOAuth:       useCallback((p: OAuthProvider)     => signInWithOAuth(p), []),
+    signOut:               useCallback(()                      => signOut(), []),
+    resetPasswordForEmail: useCallback((e: string)            => resetPasswordForEmail(e), []),
   };
 }
 
