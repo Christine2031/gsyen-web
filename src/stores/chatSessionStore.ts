@@ -35,7 +35,8 @@ async function _pull(userId: string) {
   }));
   const local    = chatSessionStore.loadAll();
   const remIds   = new Set(remote.map(s => s.id));
-  const localOnly = local.filter(s => !remIds.has(s.id));
+  const UUID_RE  = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const localOnly = local.filter(s => !remIds.has(s.id) && UUID_RE.test(s.id));
   for (const s of localOnly) await _upsert(s);
   const merged = [...remote, ...localOnly].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(merged));
