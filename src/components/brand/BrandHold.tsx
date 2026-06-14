@@ -229,31 +229,30 @@ export default function BrandHold({ lang }: { lang: 'zh' | 'en' }) {
           sub={expiring > 0 ? (zh ? `${expiring} 件即将过期` : `${expiring} expiring`) : undefined} />
       </div>
 
-      <div className="flex items-center justify-between px-6 pb-4 shrink-0 gap-4">
-        <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={() => setFilterCat('all')}
-            className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterCat === 'all' ? 'bg-[#1A73E8] text-white' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
-            {zh ? '全部' : 'All'}
-          </button>
-          {CATS.map(c => (
-            <button key={c.key} onClick={() => setFilterCat(filterCat === c.key ? 'all' : c.key)}
-              className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterCat === c.key ? 'bg-[#1A73E8] text-white' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
-              {zh ? c.zh : c.en}
-            </button>
-          ))}
-          <div className="w-px h-4 bg-[#DADCE0] shrink-0" />
-          {(Object.keys(STATUS_CFG) as HoldStatus[]).map(s => (
-            <button key={s} onClick={() => setFilterStatus(filterStatus === s ? 'all' : s)}
-              className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterStatus === s ? STATUS_CFG[s].cls + ' font-semibold' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
-              {zh ? STATUS_CFG[s].zh : STATUS_CFG[s].en}
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center gap-2 px-6 pb-4 shrink-0 flex-wrap">
         <button onClick={() => setShowAdd(true)}
-          className="shrink-0 flex items-center gap-1.5 px-4 py-1.5 bg-[#1A73E8] text-white rounded-lg fs-base font-sans hover:bg-[#1558B0] transition-all">
+          className="shrink-0 flex items-center gap-1 px-3 py-1 rounded-full fs-base font-sans font-medium bg-[#1A73E8] text-white hover:bg-[#1557B0] transition-all">
           <Plus className="w-3.5 h-3.5" />
-          {zh ? '新增' : 'Add'}
+          {zh ? '新增' : 'New'}
         </button>
+        <div className="w-px h-4 bg-[#DADCE0] mx-1 shrink-0" />
+        <button onClick={() => setFilterCat('all')}
+          className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterCat === 'all' && filterStatus === 'all' ? 'bg-[#1A73E8] text-white' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
+          {zh ? '全部' : 'All'}
+        </button>
+        {CATS.map(c => (
+          <button key={c.key} onClick={() => setFilterCat(filterCat === c.key ? 'all' : c.key)}
+            className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterCat === c.key ? 'bg-[#1A73E8] text-white' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
+            {zh ? c.zh : c.en}
+          </button>
+        ))}
+        <div className="w-px h-4 bg-[#DADCE0] shrink-0" />
+        {(Object.keys(STATUS_CFG) as HoldStatus[]).map(s => (
+          <button key={s} onClick={() => setFilterStatus(filterStatus === s ? 'all' : s)}
+            className={`px-3 py-1 rounded-full fs-base font-sans font-medium transition-all ${filterStatus === s ? STATUS_CFG[s].cls + ' font-semibold' : 'bg-white border border-[#DADCE0] text-[#5F6368] hover:bg-[#F1F3F4]'}`}>
+            {zh ? STATUS_CFG[s].zh : STATUS_CFG[s].en}
+          </button>
+        ))}
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-6">
