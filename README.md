@@ -12,8 +12,8 @@
 
 <br />
 
-[![Windows](https://img.shields.io/badge/Windows-下载-0078D4?style=flat&logo=windows&logoColor=white)](https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe)
-[![macOS](https://img.shields.io/badge/macOS-Beta-999999?style=flat&logo=apple&logoColor=white)](https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Mac.dmg)
+[![Windows](https://img.shields.io/badge/Windows-下载-0078D4?style=flat&logo=windows&logoColor=white)](https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com/gsyen-releases/GSYEN-Setup-Windows.exe)
+[![macOS](https://img.shields.io/badge/macOS-Beta-999999?style=flat&logo=apple&logoColor=white)](https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com/gsyen-releases/GSYEN-Setup-Mac-arm64.dmg)
 [![Web](https://img.shields.io/badge/Web-gsyen.com-1A1A1A?style=flat)](https://gsyen.com)
 [![License](https://img.shields.io/badge/License-Private-red?style=flat)](.)
 
@@ -41,8 +41,9 @@ GSYEN 是由**雍彻科技**开发的本地优先全功能工作套件，支持 
 
 | 平台 | 链接 | 状态 |
 |------|------|------|
-| Windows x64 | [GSYEN-Setup-Windows.exe](https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe) | 稳定版 |
-| macOS (Apple Silicon / Intel) | [GSYEN-Setup-Mac.dmg](https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Mac.dmg) | Beta |
+| Windows x64 | [GSYEN-Setup-Windows.exe](https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com/gsyen-releases/GSYEN-Setup-Windows.exe) | 稳定版 |
+| macOS Apple Silicon | [GSYEN-Setup-Mac-arm64.dmg](https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com/gsyen-releases/GSYEN-Setup-Mac-arm64.dmg) | Beta |
+| macOS Intel | [GSYEN-Setup-Mac-x64.dmg](https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com/gsyen-releases/GSYEN-Setup-Mac-x64.dmg) | Beta |
 | Web | [gsyen.com](https://gsyen.com) | 稳定版 |
 
 > macOS 首次打开：右键 → 打开 → 仍然打开（绕过 Gatekeeper）
@@ -87,7 +88,7 @@ GEMINI_API_KEY=
 数据库    Supabase (PostgreSQL)
 AI        Kimi · DeepSeek · Claude · GPT · Gemini · Qwen2.5 (本地)
 监控      Sentry
-分发      阿里云 OSS · GitHub Releases
+分发      Cloudflare R2 · GitHub Releases
 ```
 
 ## 自动发布

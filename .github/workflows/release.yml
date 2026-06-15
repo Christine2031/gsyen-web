@@ -51,7 +51,6 @@ jobs:
             ../gsyen-dist/latest.yml
 
       - name: Upload Windows to R2
-        continue-on-error: true
         run: |
           aws s3 cp "..\gsyen-dist\GSYEN-Setup-Windows.exe" s3://gsyen-releases/GSYEN-Setup-Windows.exe --endpoint-url https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com
         shell: pwsh
@@ -94,7 +93,6 @@ jobs:
             > **首次打开提示 "已损坏"？** 右键点击 GSYEN.app → 选"打开" → 点"打开"即可。此后双击正常启动。
 
       - name: Upload Mac to R2
-        continue-on-error: true
         run: |
           aws s3 cp "../gsyen-dist/GSYEN-Setup-Mac-arm64.dmg" s3://gsyen-releases/GSYEN-Setup-Mac-arm64.dmg --endpoint-url https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com
           aws s3 cp "../gsyen-dist/GSYEN-Setup-Mac-x64.dmg" s3://gsyen-releases/GSYEN-Setup-Mac-x64.dmg --endpoint-url https://4dceba8f9d03d121208467416a73c948.r2.cloudflarestorage.com
