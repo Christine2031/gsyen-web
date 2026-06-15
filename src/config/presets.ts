@@ -5,26 +5,21 @@ export interface PresetQuery {
 
 export const PRESET_QUERIES: PresetQuery[] = [
   {
-    zh: '帮我设计一个香氛品牌，想五个高雅脱俗的名字及奢华口号',
-    en: 'Design a high-end fragrance brand with 5 poetic names & luxury taglines'
+    zh: '明天下午三点有个产品会议，大概两小时',
+    en: 'Product meeting tomorrow at 3 PM, about 2 hours'
   },
   {
-    zh: '能帮我规划一份奢雅艺术画廊首展的整周日程看板安排吗？',
-    en: 'Schedule a week-long kanban calendar itinerary for a luxury gallery opening'
+    zh: '帮我保存：Citibank Online，用户名 ethan@gsyen.com，密码 MyBank@2024',
+    en: 'Save to vault: Citibank Online — user: ethan@gsyen.com / MyBank@2024'
   },
   {
-    zh: '作为一个经典瑞士手工腕表工坊，其品牌核心视觉符号设计有何建议？',
-    en: 'What iconic symbol and font parameters suit an elite artisan watchmaker?'
-  },
-  {
-    zh: '如何用复式记账法优雅地记录我的品牌初创资金与流转？',
-    en: 'Explain double-entry bookkeeping flow for our creative design workspace'
+    zh: '我刚买了 iPhone 16 Pro Max 钛金色 256G，花了 ¥9499',
+    en: 'Just bought iPhone 16 Pro Max Titanium 256GB for ¥9,499'
   }
 ];
 
 export const PRESET_SHORT_LABELS: { zh: string; en: string }[] = [
-  { zh: '品牌命名', en: 'Brand Name' },
-  { zh: '日程规划', en: 'Schedule'   },
-  { zh: '符号设计', en: 'Symbol'     },
-  { zh: '财务记账', en: 'Finance'    },
+  { zh: '明天3点开会', en: 'Tomorrow 3PM'  },
+  { zh: '保存密码',   en: 'Save Password' },
+  { zh: '买了iPhone', en: 'New Purchase'  },
 ];
