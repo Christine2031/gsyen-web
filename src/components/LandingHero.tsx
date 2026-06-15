@@ -61,16 +61,19 @@ const IOSIcon = () => (
   </svg>
 );
 
-const WINDOWS_OSS    = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Windows.exe';
-const MAC_OSS        = 'https://gsyen-releases.oss-cn-shenzhen.aliyuncs.com/GSYEN-Setup-Mac-arm64.dmg';
+const R2_BASE        = 'https://pub-e31e040936184655b82ef435a00e4676.r2.dev';
+const WINDOWS_R2     = `${R2_BASE}/GSYEN-Setup-Windows.exe`;
+const MAC_R2_ARM64   = `${R2_BASE}/GSYEN-Setup-Mac-arm64.dmg`;
+const MAC_R2_X64     = `${R2_BASE}/GSYEN-Setup-Mac-x64.dmg`;
 const WINDOWS_GITHUB = 'https://github.com/Christine2031/gsyen-web/releases/latest';
 const GITHUB_URL     = 'https://github.com/Christine2031/gsyen-web';
 const YOUTUBE_URL    = 'https://www.youtube.com/@iSgsyenTt';
 const DISCORD_SERVER = 'https://discord.gg/338tsy2Dup';
 
 const PLATFORMS = [
-  { label: 'Windows', icon: <WinIcon />,     available: true, soon: false, beta: false, href: WINDOWS_OSS },
-  { label: 'macOS',   icon: <AppleIcon />,   available: true, soon: false, beta: true,  href: MAC_OSS },
+  { label: 'Windows',       icon: <WinIcon />,   available: true, soon: false, beta: false, href: WINDOWS_R2 },
+  { label: 'macOS (M1/M2)', icon: <AppleIcon />, available: true, soon: false, beta: true,  href: MAC_R2_ARM64 },
+  { label: 'macOS (Intel)', icon: <AppleIcon />, available: true, soon: false, beta: true,  href: MAC_R2_X64 },
   { label: 'Android', icon: <AndroidIcon />, available: false, soon: true,  beta: false, href: null },
   { label: 'Linux',   icon: <LinuxIcon />,   available: false, soon: true,  beta: false, href: null },
   { label: 'iOS',     icon: <IOSIcon />,     available: false, soon: true,  beta: false, href: null },
@@ -198,7 +201,7 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           {/* Windows + GitHub stacked */}
           <div className="flex flex-col gap-1">
             <a
-              href={WINDOWS_OSS}
+              href={WINDOWS_R2}
               download
               className="flex items-center gap-2 px-4 py-2.5 border transition-colors border-[#F9F8F6]/25 bg-[#F9F8F6]/6 cursor-pointer hover:border-[#F9F8F6]/45 hover:bg-[#F9F8F6]/10"
             >
