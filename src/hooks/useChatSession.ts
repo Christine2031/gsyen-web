@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Dispatch, SetStateAction } from 'react';
 import { ChatMessage, StoredSession } from '../types/chat';
 import { chatSessionStore } from '../stores/chatSessionStore';
 import { ModelId } from '../config/models';
@@ -8,7 +8,7 @@ interface UseChatSessionReturn {
   sessions: StoredSession[];
   currentSessionId: string | null;
   currentTeamId: string | null;
-  setMessages: (msgs: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => void;
+  setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
   saveChat: (msgs: ChatMessage[], model: ModelId) => void;
   loadSession: (session: StoredSession) => void;
   deleteSession: (id: string) => void;
@@ -54,9 +54,9 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     return () => window.removeEventListener('chat-sessions-updated', handler);
   }, []);
 
-  const setMessages = useCallback((msgs: ChatMessage[] | ((prev: ChatMessage[]) => ChatMessage[])) => {
-    setMessagesState(msgs);
-  }, []);
+  const setMessages: Dispatch<SetStateAction<ChatMessage[]>> = useCallback(
+    (msgs) => setMessagesState(msgs), []
+  );
 
   const saveChat = useCallback((msgs: ChatMessage[], model: ModelId) => {
     setMessagesState(msgs);
