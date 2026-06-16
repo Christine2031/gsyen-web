@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useTypewriter } from '../hooks/useTypewriter';
 import { motion, AnimatePresence } from 'motion/react';
 import { Github } from 'lucide-react';
 import VintageCar from './VintageCar';
@@ -88,21 +89,7 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const zh = lang === 'zh';
 
-  const fullSlogan = zh ? '告诉我心中所想' : 'TELL ME YOUR HEART';
-  const [displayedSlogan, setDisplayedSlogan] = useState('');
-  useEffect(() => {
-    setDisplayedSlogan('');
-    let i = 0;
-    const start = setTimeout(() => {
-      const timer = setInterval(() => {
-        i++;
-        setDisplayedSlogan(fullSlogan.slice(0, i));
-        if (i >= fullSlogan.length) clearInterval(timer);
-      }, zh ? 200 : 90);
-      return () => clearInterval(timer);
-    }, 200);
-    return () => clearTimeout(start);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const { fullSlogan, displayed: displayedSlogan, showCursor } = useTypewriter(zh);
 
   return (
     <motion.div
@@ -186,15 +173,23 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           className="w-24 h-px bg-[#F9F8F6]/15"
         />
 
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8, duration: 0.6 }}
-          className="font-serif-sc text-base tracking-[0.18em] text-[#F9F8F6]/45 text-center"
-        >
-          {displayedSlogan}
-        </motion.p>
+        {/* Tagline — typewriter, ghost anchors first char */}
+        <div className="flex justify-center">
+          <style>{`.c-blink{animation:c-blink .85s step-end infinite}@keyframes c-blink{0%,100%{opacity:1}50%{opacity:0}}`}</style>
+          <div className="relative inline-block">
+            <span className="font-mono text-[18px] tracking-[0.28em] opacity-0 select-none pointer-events-none whitespace-nowrap">
+              {fullSlogan}
+            </span>
+            <div className="absolute left-0 top-0 flex items-center whitespace-nowrap">
+              <span className="font-mono text-[18px] tracking-[0.28em] text-[#F9F8F6]/90">
+                {displayedSlogan}
+              </span>
+              {showCursor && (
+                <span className="c-blink inline-block w-[2px] h-[1.1em] ml-[1px] align-middle bg-[#F9F8F6]/55" />
+              )}
+            </div>
+          </div>
+        </div>
 
         {/* Enter button */}
         <motion.button
