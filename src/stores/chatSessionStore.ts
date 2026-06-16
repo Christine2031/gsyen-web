@@ -2,7 +2,7 @@ import { ChatMessage, StoredSession } from '../types/chat';
 import { supabase } from '../lib/supabase';
 
 const SESSIONS_KEY     = 'gsyen_chat_sessions_v1';
-const CURRENT_CHAT_KEY = 'atelier_ai_chat';
+const CURRENT_CHAT_KEY = 'gsyen_current_chat';
 const SYNCED_KEY       = 'gsyen_chat_synced_ids';
 
 function getSyncedIds(): Set<string> {
