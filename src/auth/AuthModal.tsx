@@ -68,8 +68,16 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
       } else { onClose(); }
     } else {
       const { error: err } = await signUpWithEmail(email, password);
-      if (err) setError(err.message);
-      else { setVerifyMsg(zh ? `注册成功！请检查 ${email} 的收件箱，点击验证链接后即可登录。` : `Account created! Check ${email} for the confirmation link.`); }
+      if (err) {
+        if (err.message === 'email_already_registered') {
+          setTab('login');
+          setError(zh ? '此邮箱已注册，请直接登录' : 'Already registered — please log in.');
+        } else {
+          setError(err.message);
+        }
+      } else {
+        onClose(); // session returned, user is logged in immediately
+      }
     }
     setBusy(false);
   };
