@@ -107,10 +107,10 @@ export async function signUpWithEmail(email: string, password: string): Promise<
     return { success: true, user: result.user, session: null };
   }
 
-  // Auto-confirmed (dev env) — sync the Supabase client
+  // Sync the Supabase client with the session returned by the signup proxy
   const { data, error } = await supabase.auth.setSession({
     access_token: result.access_token!,
-    refresh_token: '',
+    refresh_token: result.refresh_token ?? '',
   });
   if (error) {
     return { success: false, error: formatAuthError(error, 'setSession') };

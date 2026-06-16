@@ -51,6 +51,7 @@ export const authProxy = {
         ok: true,
         user: json.user,
         access_token: json.access_token,
+        refresh_token: json.refresh_token,
         needsVerification: !!json.needsVerification,
       };
     } catch {
