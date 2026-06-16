@@ -5,6 +5,7 @@
 import { useRef } from 'react';
 import { Dropdown } from './CanvasEditorUI';
 import { WinCtrlButton, SidebarIcon, DocIcon, DrawIcon, NodeIcon, PreviewIcon } from '../gsyen-designer';
+import { useIsMaximized } from '../hooks/useIsMaximized';
 import {
   Palette, MenuSpec, MenuId, EditorMode,
   TITLE_H, MENU_H, SYS_FONT, isElectron, isMac,
@@ -41,6 +42,7 @@ export function CanvasChrome({
 }: Props) {
 
   const stopProp = (e: React.MouseEvent) => e.stopPropagation();
+  const maximized = useIsMaximized();
 
   return (
     <div onMouseEnter={onMouseEnter}>
@@ -105,7 +107,7 @@ export function CanvasChrome({
         <div className="flex items-center"
           style={isElectron ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {}}>
           {!isMac && <WinCtrlButton action="minimize" dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.minimize()} title="Minimize" />}
-          {!isMac && <WinCtrlButton action="maximize" dark={dark} onClick={() => isElectron && (window as any).electronAPI.window.maximize()} title="Maximize" />}
+          {!isMac && <WinCtrlButton action="maximize" dark={dark} maximized={maximized} onClick={() => isElectron && (window as any).electronAPI.window.maximize()} title={maximized ? 'Restore' : 'Maximize'} />}
           <WinCtrlButton action="close" dark={dark} onClick={onClose} title="退回 Chat  Esc" />
         </div>
       </div>

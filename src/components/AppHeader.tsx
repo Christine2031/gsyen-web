@@ -9,6 +9,7 @@ import AuthModal from '../auth/AuthModal';
 import ResetPasswordModal from '../auth/ResetPasswordModal';
 import EmailVerifiedModal from '../auth/EmailVerifiedModal';
 import { useAuth } from '../auth/useAuth';
+import { useIsMaximized } from '../hooks/useIsMaximized';
 import { TierBadge } from './AppHeaderTierBadge';
 
 /** 自定义 icon 公共 props — strokeWidth 按渲染尺寸反算可保持 1.5px 实际笔触 */
@@ -122,6 +123,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
   const { user, tier, emailVerified, signOut, isPasswordRecovery, clearPasswordRecovery, justVerified, clearJustVerified } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
+  const maximized = useIsMaximized();
 
   useEffect(() => {
     let raf = 0;
@@ -193,6 +195,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
             WebkitAppRegion:'no-drag' } as React.CSSProperties}>
             {(['minimize', 'maximize', 'close'] as const).map(action => (
               <WinCtrlButton key={action} action={action} redClose={action === 'close'}
+                maximized={maximized}
                 onClick={() => (window as any).electronAPI.window[action]()} />
             ))}
           </div>

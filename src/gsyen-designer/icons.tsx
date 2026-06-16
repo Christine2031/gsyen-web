@@ -23,6 +23,15 @@ export const CloseIcon = () => (
   </svg>
 );
 
+// 已最大化时显示：重叠双方块（前方块完整 + 后方块只露右上角 L）= Windows 标准「还原」
+export const RestoreIcon = () => (
+  <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+    <rect x="1" y="3" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <path d="M3 3V2.5A1.5 1.5 0 0 1 4.5 1H8.5A1.5 1.5 0 0 1 10 2.5V6.5A1.5 1.5 0 0 1 8.5 8H8"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
 // ── Sidebar 16×12 ──────────────────────────────────────────────────────────
 export const SidebarIcon = () => (
   <svg width="16" height="12" viewBox="0 0 16 12" fill="none">

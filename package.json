@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.79.131",
+  "version": "2.80.131",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -10,7 +10,7 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "vite build && electron-builder",
     "electron:preview": "cross-env NODE_ENV=production electron .",
     "version:help": "node -e \"console.log('\\n发布流程\\n──────────────────────────────────────\\n1. 改完代码\\n2. npm run version:fix    (小修 patch++)\\n   npm run version:feat   (新功能 功能点++)\\n   npm run version:era    (里程碑 大版本++)\\n3. npm run version:release  ← 一键：stage all + commit + tag + push\\n   → GitHub Actions 自动打 Windows .exe + Mac .dmg\\n   → Vercel 同步更新 Web\\n\\n版本规则  v{大版本}.{功能点}.{patch}\\n')\"",

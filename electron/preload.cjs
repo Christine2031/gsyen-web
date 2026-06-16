@@ -1,4 +1,7 @@
-require('@sentry/electron/preload');
+// Sentry 已在主进程(main.cjs)与渲染层(main.tsx)正确初始化，二者通过
+// sentry-ipc:// 自动桥接，preload 无需也不应再 require @sentry/electron/preload：
+// 沙箱 preload 加载不了 npm 包，会在第 1 行就崩、导致 electronAPI 永不暴露
+// （主页窗口三键消失）。此处只保留 electron 内置模块。
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
@@ -12,6 +15,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
     maximize:   () => ipcRenderer.invoke('window:maximize'),
     fullscreen: () => ipcRenderer.invoke('window:fullscreen'),
     close:      () => ipcRenderer.invoke('window:close'),
+    isMaximized: () => ipcRenderer.invoke('window:isMaximized'),
+    // 监听最大化状态变化；返回取消订阅函数（多个组件可独立订阅，互不干扰）
+    onMaximized: (fn) => {
+      const h = (_e, v) => fn(v);
+      ipcRenderer.on('window:maximized', h);
+      return () => ipcRenderer.removeListener('window:maximized', h);
+    },
   },
   updater: {
     install:  ()       => ipcRenderer.invoke('updater:install'),

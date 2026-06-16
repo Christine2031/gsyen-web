@@ -2,25 +2,27 @@
  * GSYEN Designer (gd) — WinCtrl
  * 窗口控制按钮，light/dark 两种配色，不依赖 Canvas Palette。
  */
-import { MinIcon, MaxIcon, CloseIcon } from './icons';
+import { MinIcon, MaxIcon, RestoreIcon, CloseIcon } from './icons';
 
 interface WinCtrlButtonProps {
   action: 'minimize' | 'maximize' | 'close';
   dark?: boolean;
   /** true = 关窗语义（背景红，× 白）；false = 导航语义（普通灰）*/
   redClose?: boolean;
+  /** 仅对 maximize 生效：窗口已最大化时显示「还原」重叠双方块 */
+  maximized?: boolean;
   onClick: () => void;
   title?: string;
 }
 
 const ICON = { minimize: MinIcon, maximize: MaxIcon, close: CloseIcon };
 
-export function WinCtrlButton({ action, dark = false, redClose = false, onClick, title }: WinCtrlButtonProps) {
+export function WinCtrlButton({ action, dark = false, redClose = false, maximized = false, onClick, title }: WinCtrlButtonProps) {
   const isRedClose = action === 'close' && redClose;
   const idle    = dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
   const hover   = isRedClose ? 'rgba(255,255,255,0.90)' : (dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)');
   const hoverBg = isRedClose ? '#C42B1C' : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)');
-  const Icon = ICON[action];
+  const Icon = action === 'maximize' && maximized ? RestoreIcon : ICON[action];
   return (
     <button title={title} onClick={onClick}
       style={{ width:32, height:22, margin:'0 3px', display:'flex', alignItems:'center', justifyContent:'center',

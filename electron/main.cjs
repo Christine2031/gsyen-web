@@ -185,6 +185,7 @@ ipcMain.handle('window:fullscreen', (e) => {
   if (w) toggleFullscreen(w);
 });
 ipcMain.handle('window:close', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+ipcMain.handle('window:isMaximized', (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false);
 
 // ── 窗口 ──────────────────────────────────────────────────────────────────────
 
@@ -230,6 +231,10 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+
+  // 最大化状态变化 → 通知渲染层切换 max/restore 图标
+  win.on('maximize',   () => win.webContents.send('window:maximized', true));
+  win.on('unmaximize', () => win.webContents.send('window:maximized', false));
 
   // macOS：native 全屏动画结束后触发淡入
   if (process.platform === 'darwin') {
