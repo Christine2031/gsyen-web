@@ -1,21 +1,31 @@
--- Add ON DELETE CASCADE to all foreign keys referencing auth.users
--- so that deleting a user from Supabase Auth automatically cleans up
--- all associated data across every public table.
+-- Add ON DELETE CASCADE to all public tables confirmed to exist in production.
+-- Source of truth: FK diagnostic CSV (2026-06-16).
+-- Run in Supabase SQL Editor.
 
--- gsyen_vault
-ALTER TABLE public.gsyen_vault
-  DROP CONSTRAINT IF EXISTS gsyen_vault_user_id_fkey,
-  ADD CONSTRAINT gsyen_vault_user_id_fkey
-    FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
--- gsyen_team_members
-ALTER TABLE public.gsyen_team_members
-  DROP CONSTRAINT IF EXISTS gsyen_team_members_user_id_fkey,
-  ADD CONSTRAINT gsyen_team_members_user_id_fkey
-    FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
-
--- gsyen_teams (owner)
-ALTER TABLE public.gsyen_teams
-  DROP CONSTRAINT IF EXISTS gsyen_teams_owner_id_fkey,
-  ADD CONSTRAINT gsyen_teams_owner_id_fkey
-    FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_kanban_tasks      DROP CONSTRAINT IF EXISTS gsyen_kanban_tasks_user_id_fkey,      ADD CONSTRAINT gsyen_kanban_tasks_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_kanban_cols       DROP CONSTRAINT IF EXISTS gsyen_kanban_cols_user_id_fkey,       ADD CONSTRAINT gsyen_kanban_cols_user_id_fkey       FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_kanban_cards      DROP CONSTRAINT IF EXISTS gsyen_kanban_cards_user_id_fkey,      ADD CONSTRAINT gsyen_kanban_cards_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_calendar_events   DROP CONSTRAINT IF EXISTS gsyen_calendar_events_user_id_fkey,   ADD CONSTRAINT gsyen_calendar_events_user_id_fkey   FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_emails            DROP CONSTRAINT IF EXISTS gsyen_emails_user_id_fkey,            ADD CONSTRAINT gsyen_emails_user_id_fkey            FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_chat_sessions     DROP CONSTRAINT IF EXISTS gsyen_chat_sessions_user_id_fkey,     ADD CONSTRAINT gsyen_chat_sessions_user_id_fkey     FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_user_tiers        DROP CONSTRAINT IF EXISTS gsyen_user_tiers_user_id_fkey,        ADD CONSTRAINT gsyen_user_tiers_user_id_fkey        FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_teams             DROP CONSTRAINT IF EXISTS gsyen_teams_owner_id_fkey,            ADD CONSTRAINT gsyen_teams_owner_id_fkey            FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_team_members      DROP CONSTRAINT IF EXISTS gsyen_team_members_user_id_fkey,      ADD CONSTRAINT gsyen_team_members_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_events            DROP CONSTRAINT IF EXISTS gsyen_events_user_id_fkey,            ADD CONSTRAINT gsyen_events_user_id_fkey            FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_transactions      DROP CONSTRAINT IF EXISTS gsyen_transactions_user_id_fkey,      ADD CONSTRAINT gsyen_transactions_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_orders            DROP CONSTRAINT IF EXISTS gsyen_orders_user_id_fkey,            ADD CONSTRAINT gsyen_orders_user_id_fkey            FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_canvas_docs       DROP CONSTRAINT IF EXISTS gsyen_canvas_docs_user_id_fkey,       ADD CONSTRAINT gsyen_canvas_docs_user_id_fkey       FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_vault             DROP CONSTRAINT IF EXISTS gsyen_vault_user_id_fkey,             ADD CONSTRAINT gsyen_vault_user_id_fkey             FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_prism_profile     DROP CONSTRAINT IF EXISTS gsyen_prism_profile_user_id_fkey,     ADD CONSTRAINT gsyen_prism_profile_user_id_fkey     FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.gsyen_prism_corpus      DROP CONSTRAINT IF EXISTS gsyen_prism_corpus_user_id_fkey,      ADD CONSTRAINT gsyen_prism_corpus_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.providers               DROP CONSTRAINT IF EXISTS providers_user_id_fkey,               ADD CONSTRAINT providers_user_id_fkey               FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.budgets                 DROP CONSTRAINT IF EXISTS budgets_user_id_fkey,                 ADD CONSTRAINT budgets_user_id_fkey                 FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.user_tiers              DROP CONSTRAINT IF EXISTS user_tiers_user_id_fkey,              ADD CONSTRAINT user_tiers_user_id_fkey              FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.user_tiers              DROP CONSTRAINT IF EXISTS user_tiers_granted_by_fkey,           ADD CONSTRAINT user_tiers_granted_by_fkey           FOREIGN KEY (granted_by) REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.network_nodes           DROP CONSTRAINT IF EXISTS network_nodes_user_id_fkey,           ADD CONSTRAINT network_nodes_user_id_fkey           FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.usage_snapshots         DROP CONSTRAINT IF EXISTS usage_snapshots_user_id_fkey,         ADD CONSTRAINT usage_snapshots_user_id_fkey         FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.network_snapshots       DROP CONSTRAINT IF EXISTS network_snapshots_user_id_fkey,       ADD CONSTRAINT network_snapshots_user_id_fkey       FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.subscriptions           DROP CONSTRAINT IF EXISTS subscriptions_user_id_fkey,           ADD CONSTRAINT subscriptions_user_id_fkey           FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.sanyuanlou_members      DROP CONSTRAINT IF EXISTS sanyuanlou_members_user_id_fkey,      ADD CONSTRAINT sanyuanlou_members_user_id_fkey      FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.teams                   DROP CONSTRAINT IF EXISTS teams_owner_id_fkey,                  ADD CONSTRAINT teams_owner_id_fkey                  FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.team_members            DROP CONSTRAINT IF EXISTS team_members_user_id_fkey,            ADD CONSTRAINT team_members_user_id_fkey            FOREIGN KEY (user_id)  REFERENCES auth.users(id) ON DELETE CASCADE;
