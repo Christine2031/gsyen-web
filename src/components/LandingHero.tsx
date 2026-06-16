@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Github } from 'lucide-react';
 import VintageCar from './VintageCar';
@@ -87,6 +87,22 @@ interface LandingHeroProps {
 export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
   const zh = lang === 'zh';
+
+  const fullSlogan = zh ? '告诉我心中所想' : 'TELL ME YOUR HEART';
+  const [displayedSlogan, setDisplayedSlogan] = useState('');
+  useEffect(() => {
+    setDisplayedSlogan('');
+    let i = 0;
+    const start = setTimeout(() => {
+      const timer = setInterval(() => {
+        i++;
+        setDisplayedSlogan(fullSlogan.slice(0, i));
+        if (i >= fullSlogan.length) clearInterval(timer);
+      }, zh ? 200 : 90);
+      return () => clearInterval(timer);
+    }, 200);
+    return () => clearTimeout(start);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <motion.div
@@ -177,7 +193,7 @@ export default function LandingHero({ lang, onEnter }: LandingHeroProps) {
           transition={{ delay: 0.8, duration: 0.6 }}
           className="font-serif-sc text-base tracking-[0.18em] text-[#F9F8F6]/45 text-center"
         >
-          {lang === 'zh' ? '洞见疆域 · 策谋未来' : 'SEE BEYOND · SHAPE AHEAD'}
+          {displayedSlogan}
         </motion.p>
 
         {/* Enter button */}
