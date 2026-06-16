@@ -27,6 +27,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
   const [error, setError]       = useState('');
+  const [notice, setNotice]     = useState(''); // 善意提示（黄底黑字），区别于红色 error
   const [verifyMsg, setVerifyMsg] = useState('');
   const [notFound, setNotFound] = useState(false);
   const [busy, setBusy]         = useState(false);
@@ -41,7 +42,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     return () => window.removeEventListener('keydown', fn);
   }, [onClose]);
 
-  const reset = () => { setError(''); setVerifyMsg(''); setNotFound(false); };
+  const reset = () => { setError(''); setNotice(''); setVerifyMsg(''); setNotFound(false); };
   const switchToRegister = () => { reset(); setTab('register'); setMode('auth'); };
 
   const handleGoogle = async () => {
@@ -71,7 +72,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
       if (err) {
         if (err.message?.toLowerCase() === 'email_already_registered') {
           setTab('login');
-          setError(zh ? '此邮箱已注册，请直接登录' : 'Already registered — please log in.');
+          setNotice(zh ? '此邮箱已注册，请直接登录' : 'Already registered — please log in.');
         } else {
           setError(err.message);
         }
@@ -254,6 +255,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
                     <RegisterCTABadge onClick={switchToRegister} />
                   </div>
                 )}
+                {notice && <div style={{ marginBottom: 14, padding: '9px 12px', background: '#E8C04A', color: '#1A1A1A', fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', lineHeight: 1.6 }}>{notice}</div>}
                 {error && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: '#C42B1C', lineHeight: 1.6 }}>{error}</div>}
                 {verifyMsg && <div style={{ marginBottom: 14, fontFamily: 'monospace', fontSize: 10, letterSpacing: '0.05em', color: 'rgba(249,248,246,0.62)', lineHeight: 1.6 }}>{verifyMsg}</div>}
 
