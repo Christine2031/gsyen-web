@@ -69,7 +69,7 @@ export default function AuthModal({ lang, initialTab = 'login', onClose }: Props
     } else {
       const { error: err } = await signUpWithEmail(email, password);
       if (err) {
-        if (err.message === 'email_already_registered') {
+        if (err.message?.toLowerCase() === 'email_already_registered') {
           setTab('login');
           setError(zh ? '此邮箱已注册，请直接登录' : 'Already registered — please log in.');
         } else {
