@@ -48,4 +48,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   isElectron: true,
   platform: process.platform,
+  showOpenDialog: (opts)           => ipcRenderer.invoke('fs:showOpenDialog', opts),
+  readDir:        (dirPath)        => ipcRenderer.invoke('fs:readDir',        dirPath),
+  readFile:       (filePath)       => ipcRenderer.invoke('fs:readFile',       filePath),
+  writeFile:      (filePath, text) => ipcRenderer.invoke('fs:writeFile',      filePath, text),
 });

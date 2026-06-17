@@ -26,7 +26,9 @@ interface Props {
   docType:     'doc' | 'canvas' | 'nodes';
   setDocType:  (t: 'doc' | 'canvas' | 'nodes') => void;
   onAddCard?:  () => void;
-  onClose:     () => void;
+  onClose:         () => void;
+  sidebarOpen:     boolean;
+  onSidebarToggle: () => void;
   /* style */
   P: Palette; dark: boolean;
   onMouseEnter: () => void;
@@ -38,6 +40,7 @@ export function CanvasChrome({
   title, titleEdit, onTitleChange, setTitleEdit, titleInputRef,
   menus, activeMenu, setActiveMenu, mode, setMode, docType,
   setDocType, onAddCard, onClose,
+  sidebarOpen, onSidebarToggle,
   P, dark, onMouseEnter, menuBarRef,
 }: Props) {
 
@@ -53,12 +56,14 @@ export function CanvasChrome({
         ...(isElectron ? { WebkitAppRegion: 'drag' } as React.CSSProperties : {}) }}>
 
         {/* Sidebar icon */}
-        <button onClick={stopProp}
+        <button onClick={e => { e.stopPropagation(); onSidebarToggle(); }}
           style={{ width: 42, height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: P.menuFg, background: 'transparent', border: 'none', cursor: 'pointer', flexShrink: 0,
+            color: sidebarOpen ? P.menuFgHover : P.menuFg,
+            background: sidebarOpen ? `${P.fg}0A` : 'transparent',
+            border: 'none', cursor: 'pointer', flexShrink: 0,
             ...(isElectron ? { WebkitAppRegion: 'no-drag' } as React.CSSProperties : {}) }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.menuFgHover}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = P.menuFg}>
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = sidebarOpen ? P.menuFgHover : P.menuFg}>
           <SidebarIcon />
         </button>
 
