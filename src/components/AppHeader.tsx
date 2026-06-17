@@ -120,7 +120,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
   const [compact, setCompact] = useState(window.innerWidth < 1100);
   const [showAbout, setShowAbout] = useState(false);
   const [authModal, setAuthModal] = useState<'login' | 'register' | null>(null);
-  const { user, tier, emailVerified, signOut, isPasswordRecovery, clearPasswordRecovery, justVerified, clearJustVerified } = useAuth();
+  const { user, tier, emailVerified, loading: authLoading, signOut, isPasswordRecovery, clearPasswordRecovery, justVerified, clearJustVerified } = useAuth();
   const isElectron = !!(window as any).electronAPI?.isElectron;
   const isMac = (window as any).electronAPI?.platform === 'darwin';
   const maximized = useIsMaximized();
@@ -217,7 +217,10 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
           {/* 竖线 */}
           <div className="w-px h-3.5 bg-[#1A1A1A]/15 shrink-0" />
 
-          {user ? (
+          {authLoading ? (
+            /* auth 初始化中：空占位，不闪登录按钮 */
+            <div className="w-[120px] h-6" />
+          ) : user ? (
             /* 已登录：邮箱缩写 + 等级徽章 + 登出 */
             <>
               {activeTeam ? (
