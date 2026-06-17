@@ -31,16 +31,19 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     const saved = chatSessionStore.loadCurrentChat();
     if (saved.length > 0) {
       setMessagesState(saved);
-      // 刷新后恢复 sessionIdRef，防止 save prompt 触发时新建重复 session
-      const lastUserMsg = [...saved].reverse().find(m => m.role === 'user');
-      if (lastUserMsg) {
-        const match = allSessions.find(s => s.messages.some(m => m.id === lastUserMsg.id));
-        if (match) {
-          sessionIdRef.current = match.id;
-          teamIdRef.current    = match.teamId ?? null;
-          setCurrentSessionId(match.id);
-          setCurrentTeamId(match.teamId ?? null);
-        }
+      // 优先用持久化的 session ID 直接恢复，不依赖消息匹配
+      const savedId = localStorage.getItem('gsyen_current_session_id');
+      const match = savedId
+        ? allSessions.find(s => s.id === savedId)
+        : allSessions.find(s => {
+            const lastUserMsg = [...saved].reverse().find(m => m.role === 'user');
+            return lastUserMsg && s.messages.some(m => m.id === lastUserMsg.id);
+          });
+      if (match) {
+        sessionIdRef.current = match.id;
+        teamIdRef.current    = match.teamId ?? null;
+        setCurrentSessionId(match.id);
+        setCurrentTeamId(match.teamId ?? null);
       }
     } else {
       setMessagesState([defaultGreeting(lang)]);
@@ -66,6 +69,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
         sessionIdRef.current = crypto.randomUUID();
         setCurrentSessionId(sessionIdRef.current);
       }
+      localStorage.setItem('gsyen_current_session_id', sessionIdRef.current);
       const updated = chatSessionStore.upsert(
         sessionIdRef.current, msgs, model, teamIdRef.current ?? undefined
       );
@@ -81,6 +85,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     setCurrentTeamId(session.teamId ?? null);
     setMessagesState(session.messages);
     chatSessionStore.saveCurrentChat(session.messages);
+    localStorage.setItem('gsyen_current_session_id', session.id);
   }, []);
 
   const deleteSession = useCallback((id: string) => {
@@ -93,6 +98,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
       setCurrentTeamId(null);
       setMessagesState([defaultGreeting(lang)]);
       chatSessionStore.clearCurrentChat();
+      localStorage.removeItem('gsyen_current_session_id');
     }
   }, [lang]);
 
@@ -104,6 +110,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     setCurrentTeamId(null);
     setMessagesState([]);
     chatSessionStore.clearCurrentChat();
+    localStorage.setItem('gsyen_current_session_id', id);
     const updated = chatSessionStore.upsert(id, [], model);
     setSessions(updated);
   }, []);

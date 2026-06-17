@@ -16,7 +16,9 @@ function parseBoldText(text: string, isAI: boolean): React.ReactNode {
  * Supports: **bold**, ## headings, ### headings, bullet lists, numbered lists, > blockquotes.
  */
 export function renderMessageContent(text: string, isAI: boolean): React.ReactNode[] {
-  return text.split('\n').map((line, i) => {
+  // Strip action code blocks (schedule/ledger/etc.) — ActionCardView renders them visually
+  const stripped = text.replace(/```\w+\n[\s\S]*?```/g, '').replace(/\n{3,}/g, '\n\n').trim();
+  return stripped.split('\n').map((line, i) => {
     // Blockquote > — 暗色引用块
     if (line.trim().startsWith('> ')) {
       return (

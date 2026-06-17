@@ -14,4 +14,4 @@ export const MODELS: ModelConfig[] = [
   { id: 'gemini',   label: 'GEMINI' },
 ];
 
-export const DEFAULT_MODEL: ModelId = 'ethan';
+export const DEFAULT_MODEL: ModelId = 'kimi';

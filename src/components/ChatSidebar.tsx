@@ -9,6 +9,7 @@ import { StoredSession } from '../types/chat';
 import { joinTeam } from '../hooks/useTeams';
 import { useAuth } from '../auth/useAuth';
 import { ChatUpdaterCard } from './ChatUpdaterCard';
+import { ChatVaultCard } from './ChatVaultCard';
 
 export interface Team {
   id: string;
@@ -131,6 +132,7 @@ export function ChatSidebar({
           )}
         </div>
 
+        <ChatVaultCard lang={lang} />
         <ChatUpdaterCard lang={lang} />
       </div>
 

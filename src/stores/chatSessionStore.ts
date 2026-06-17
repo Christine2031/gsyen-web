@@ -1,9 +1,17 @@
 import { ChatMessage, StoredSession } from '../types/chat';
 import { supabase } from '../lib/supabase';
+import { localVaultService } from '../services/localVaultService';
 
-const SESSIONS_KEY     = 'gsyen_chat_sessions_v1';
+const SESSIONS_KEY     = 'gsyen_sessions_cache';   // renamed from gsyen_chat_sessions_v1
 const CURRENT_CHAT_KEY = 'gsyen_current_chat';
 const SYNCED_KEY       = 'gsyen_chat_synced_ids';
+
+// One-time migration from old key name
+const _old = localStorage.getItem('gsyen_chat_sessions_v1');
+if (_old) {
+  localStorage.setItem(SESSIONS_KEY, _old);
+  localStorage.removeItem('gsyen_chat_sessions_v1');
+}
 
 function getSyncedIds(): Set<string> {
   try { return new Set(JSON.parse(localStorage.getItem(SYNCED_KEY) || '[]')); }
@@ -35,26 +43,40 @@ async function _removeRemote(id: string) {
 
 async function _pull(userId: string) {
   if (!supabase) return;
-  // No user_id filter — RLS returns own sessions + team sessions the user can see
   const { data, error } = await supabase.from('gsyen_chat_sessions')
     .select('*').order('updated_at', { ascending: false }).limit(200);
   if (error) { console.error('[sync] _pull error', error); return; }
   if (!data) return;
+
   const remote: StoredSession[] = data.map((r: any) => ({
     id: r.id, title: r.title, model: r.model,
     messages: r.messages ?? [],
     updatedAt: new Date(r.updated_at).toISOString(),
     teamId: r.team_id ?? undefined,
   }));
-  const local   = chatSessionStore.loadAll();
+
+  const local      = chatSessionStore.loadAll();
   const remIds     = new Set(remote.map(s => s.id));
   const UUID_RE    = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const syncedIds  = getSyncedIds();
   const localOnly  = local.filter(s => !remIds.has(s.id) && UUID_RE.test(s.id) && !s.teamId && !syncedIds.has(s.id));
   for (const s of localOnly) await _upsert(s);
   for (const s of remote) addSyncedId(s.id);
+
   const merged = [...remote, ...localOnly].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(merged));
+
+  // New device: auto-restore most recent session so main chat area isn't blank
+  const currentChat = localStorage.getItem(CURRENT_CHAT_KEY);
+  const hasCurrentChat = currentChat && currentChat !== '[]';
+  if (!hasCurrentChat && merged.length > 0) {
+    const first = merged[0];
+    if (first.messages.length > 0) {
+      localStorage.setItem(CURRENT_CHAT_KEY, JSON.stringify(first.messages));
+      localStorage.setItem('gsyen_current_session_id', first.id);
+    }
+  }
+
   window.dispatchEvent(new CustomEvent('chat-sessions-updated'));
 }
 
@@ -63,7 +85,6 @@ let _rt: any = null;
 
 function _subscribeRealtime(uid: string) {
   _rt?.unsubscribe();
-  // Subscribe to both own sessions and team sessions (RLS handles row visibility)
   _rt = supabase!
     .channel(`gsyen_chat_sessions:${uid}`)
     .on('postgres_changes',
@@ -87,6 +108,7 @@ supabase?.auth.onAuthStateChange((_ev, session) => {
     localStorage.removeItem(SESSIONS_KEY);
     localStorage.removeItem(CURRENT_CHAT_KEY);
     localStorage.removeItem(SYNCED_KEY);
+    localStorage.removeItem('gsyen_current_session_id');
     window.dispatchEvent(new CustomEvent('chat-sessions-updated'));
   } else {
     _uid = newUid;
@@ -97,14 +119,10 @@ export const chatSessionStore = {
   // ─── Sessions list ───────────────────────────────────────────────────────
 
   loadAll(): StoredSession[] {
-    try {
-      return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]');
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem(SESSIONS_KEY) || '[]'); }
+    catch { return []; }
   },
 
-  /** Insert or update a session, re-sorts by updatedAt desc */
   upsert(id: string, msgs: ChatMessage[], model: string, teamId?: string): StoredSession[] {
     const firstUser = msgs.find(m => m.role === 'user');
     const raw = firstUser?.content ?? '';
@@ -121,11 +139,12 @@ export const chatSessionStore = {
     if (_uid) {
       localStorage.setItem(SESSIONS_KEY, JSON.stringify(sorted));
       _upsert(record);
+      // Real-time local vault write (fire and forget)
+      localVaultService.saveSession(record);
     }
     return sorted;
   },
 
-  /** Find existing team session by teamId */
   findTeamSession(teamId: string): StoredSession | null {
     return this.loadAll().find(s => s.teamId === teamId) ?? null;
   },
@@ -140,11 +159,8 @@ export const chatSessionStore = {
   // ─── Current active chat ─────────────────────────────────────────────────
 
   loadCurrentChat(): ChatMessage[] {
-    try {
-      return JSON.parse(localStorage.getItem(CURRENT_CHAT_KEY) || '[]');
-    } catch {
-      return [];
-    }
+    try { return JSON.parse(localStorage.getItem(CURRENT_CHAT_KEY) || '[]'); }
+    catch { return []; }
   },
 
   saveCurrentChat(msgs: ChatMessage[]): void {
