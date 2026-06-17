@@ -28,8 +28,9 @@ export default function App() {
   const { user } = useAuth();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const isElectron = !!(window as any).electronAPI?.isElectron;
-  // 用快照初始化：用户刷新页面时快照已在，showLanding 初始化为 false，零 flash
-  const [showLanding, setShowLanding] = useState(!isElectron && !user);
+  // 直接读 localStorage：比走 React 状态更早，JS 执行即确定，无任何延迟
+  const hadSession = !!localStorage.getItem('gsyen_user_snap');
+  const [showLanding, setShowLanding] = useState(!isElectron && !hadSession);
 
   const [activeSpace, setActiveSpace] = useState<ActiveSpace>('chat');
   const [brandTab, setBrandTab] = useState<BrandTab | undefined>(undefined);
