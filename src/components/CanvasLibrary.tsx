@@ -71,7 +71,7 @@ export function CanvasLibrary({ open, P }: Props) {
             type="file"
             // @ts-ignore — webkitdirectory 是 Electron/Chrome 扩展属性
             webkitdirectory=""
-            style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
+            style={{ position: 'fixed', top: '-100px', left: '-100px', width: '1px', height: '1px', opacity: 0 }}
             onChange={handleInputChange}
           />
         )}
