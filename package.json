@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.80.138",
+  "version": "2.80.139",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -94,9 +94,8 @@
       "target": "AppImage"
     },
     "publish": {
-      "provider": "github",
-      "owner": "Christine2031",
-      "repo": "gsyen-web"
+      "provider": "generic",
+      "url": "https://pub-e31e040936184655b82ef435a00e4676.r2.dev"
     }
   },
   "dependencies": {
