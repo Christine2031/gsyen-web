@@ -81,10 +81,14 @@ function _initListener() {
     const user = session?.user ?? null;
 
     if (_event === 'SIGNED_OUT' || !user) {
-      if (_currentUid) clearTier(_currentUid);
-      _currentUid = null;
-      _clearSnap();
-      _set({ ...DEFAULT_AUTH_STATE, loading: false, justVerified: false });
+      // bootstrap 阶段 _currentUid=null，Supabase 会发 INITIAL_SESSION(null)
+      // 忽略这个事件，避免清掉快照。只有已确认过 session 后的真实登出才处理。
+      if (_currentUid) {
+        clearTier(_currentUid);
+        _currentUid = null;
+        _clearSnap();
+        _set({ ...DEFAULT_AUTH_STATE, loading: false, justVerified: false });
+      }
       return;
     }
 
