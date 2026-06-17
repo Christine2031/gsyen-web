@@ -75,14 +75,6 @@ export function CanvasLibrary({ open, P }: Props) {
           />
         )}
 
-        {/* Header */}
-        <div style={{ height: 32, display: 'flex', alignItems: 'center',
-          padding: '0 12px', borderBottom: `0.5px solid ${P.border}`, flexShrink: 0,
-          position: 'relative', zIndex: 25 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', fontFamily: SYS_FONT,
-            color: P.fg, textTransform: 'uppercase' }}>Library</span>
-        </div>
-
         {/* Folder list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
 
