@@ -7,6 +7,7 @@ const BASE = (import.meta.env.VITE_GSYEN_API_URL as string | undefined) || 'http
 
 export interface AuthProxyResult {
   ok: boolean;
+  status?: number;   // HTTP 状态码，0 = 网络错误
   user?: any;
   access_token?: string;
   refresh_token?: string;
@@ -66,17 +67,17 @@ export const authProxy = {
   async me(): Promise<AuthProxyResult> {
     try {
       const r = await fetch(`${BASE}/api/auth/me`, { credentials: 'include' });
-      if (!r.ok) return { ok: false };
+      if (!r.ok) return { ok: false, status: r.status };
       const json = await r.json();
       return {
-        ok: true,
+        ok: true, status: 200,
         user: json.user,
         access_token: json.access_token,
         refresh_token: json.refresh_token,
         expires_at: json.expires_at,
       };
     } catch {
-      return { ok: false };
+      return { ok: false, status: 0 }; // 0 = 网络错误
     }
   },
 

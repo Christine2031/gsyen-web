@@ -105,10 +105,11 @@ supabase?.auth.onAuthStateChange((_ev, session) => {
     _uid = null;
     _rt?.unsubscribe();
     _rt = null;
-    localStorage.removeItem(SESSIONS_KEY);
-    localStorage.removeItem(CURRENT_CHAT_KEY);
-    localStorage.removeItem(SYNCED_KEY);
-    localStorage.removeItem('gsyen_current_session_id');
+    const theme    = localStorage.getItem('theme');
+    const fontSize = localStorage.getItem('gsyen_font_size');
+    localStorage.clear();
+    if (theme)    localStorage.setItem('theme', theme);
+    if (fontSize) localStorage.setItem('gsyen_font_size', fontSize);
     window.dispatchEvent(new CustomEvent('chat-sessions-updated'));
   } else {
     _uid = newUid;

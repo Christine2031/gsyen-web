@@ -16,7 +16,7 @@ import LandingHero from './components/LandingHero';
 import AppHeader, { ActiveSpace } from './components/AppHeader';
 import BrandLab, { type BrandTab } from './components/brand/BrandLab';
 import { FullscreenFade } from './components/FullscreenFade';
-import { supabase } from './auth/supabaseClient';
+import { useAuth } from './auth/useAuth';
 import { useTeams } from './hooks/useTeams';
 
 /**
@@ -25,9 +25,13 @@ import { useTeams } from './hooks/useTeams';
  */
 export default function App() {
   useTeams(); // 登录后立即预取团队数据，所有子模块拿缓存秒出
+  const { user } = useAuth();
   const [lang, setLang] = useState<'zh' | 'en'>('zh');
   const isElectron = !!(window as any).electronAPI?.isElectron;
-  const [showLanding, setShowLanding] = useState(!isElectron);
+  // 直接读 localStorage：比走 React 状态更早，JS 执行即确定，无任何延迟
+  const hadSession = !!localStorage.getItem('gsyen_user_snap');
+  const [showLanding, setShowLanding] = useState(!isElectron && !hadSession);
+
   const [activeSpace, setActiveSpace] = useState<ActiveSpace>('chat');
   const [brandTab, setBrandTab] = useState<BrandTab | undefined>(undefined);
   const [activeTeam, setActiveTeam] = useState(false);
@@ -42,13 +46,10 @@ export default function App() {
     if (space === 'brand') setBrandTab('contacts');
   };
 
+  // useAuth 已包含 onAuthStateChange 监听，此处只需跟随 user 变化
   useEffect(() => {
-    if (!supabase) return;
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setShowLanding(!session?.user);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+    setShowLanding(!isElectron && !user);
+  }, [user, isElectron]);
 
   return (
     <div className="h-screen overflow-y-hidden overflow-x-visible bg-[#F9F8F6] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F8F6]" id="logo-designer-root">

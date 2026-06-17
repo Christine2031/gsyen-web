@@ -20,6 +20,10 @@ import { iaWriterTheme, focusModeExt, sentenceFocusExt, typewriterExt, baseExten
 import ReactMarkdown from 'react-markdown';
 import { MermaidBlock } from './MermaidBlock';
 import { CanvasStatsPill } from './CanvasStatsPill';
+import { CanvasLibrary } from './CanvasLibrary';
+import { CanvasDocList } from './CanvasDocList';
+import type { FileEntry } from '../hooks/useFileSystem';
+import { fsAdapter } from '../hooks/useFileSystem';
 
 interface Props { docId: string | undefined; onClose: () => void; }
 
@@ -38,6 +42,8 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const [fontSize,      setFontSize]      = useState(17);
   const [font,          setFont]          = useState<FontChoice>('mono');
   const [titleEdit,     setTitleEdit]     = useState(false);
+  const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [activeFsFile,  setActiveFsFile]  = useState<FileEntry | null>(null);
 
   const [activeMenu, _setActiveMenu] = useState<MenuId>(null);
   const activeMenuRef  = useRef<MenuId>(null);
@@ -94,7 +100,17 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   }, [docId]);
 
   const onTitleChange = useCallback((v: string) => { setTitle(v); save(v, content); }, [content, save]);
-  const onContent     = useCallback((v: string) => { setContent(v); save(title, v); }, [title, save]);
+  const onContent     = useCallback((v: string) => {
+    setContent(v); save(title, v);
+    if (activeFsFile) fsAdapter.writeFile(activeFsFile, v).catch(() => {});
+  }, [title, save, activeFsFile]);
+
+  const onFsFileSelect = useCallback((entry: FileEntry, text: string) => {
+    setActiveFsFile(entry);
+    setContent(text);
+    setTitle(entry.name.replace(/\.md$/, ''));
+    if (docId) canvasStore.update(docId, { content: text });
+  }, [docId]);
 
   /* ── extensions ── */
   const extensions = useMemo(() => [
@@ -211,9 +227,13 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
       {/* Content — 三个面板常驻 DOM，display 切换避免重复挂载卸载 */}
       <div style={{ position:'absolute', inset:0, paddingTop:CHROME_H, paddingBottom:0, overflow:'hidden' }}>
-        {/* Doc */}
+        {/* Doc — three-pane: Library | DocList | Editor */}
         <div style={{ display: docType === 'doc' ? 'flex' : 'none', width:'100%', height:'100%' }}>
-          {mode === 'split' ? <>{EditorPane}{PreviewPane}</> : mode === 'preview' ? PreviewPane : EditorPane}
+          <CanvasLibrary open={sidebarOpen} P={P} dark={dark} />
+          <CanvasDocList open={sidebarOpen} onFileSelect={onFsFileSelect} P={P} />
+          <div style={{ flex: 1, display: 'flex', minWidth: 0 }}>
+            {mode === 'split' ? <>{EditorPane}{PreviewPane}</> : mode === 'preview' ? PreviewPane : EditorPane}
+          </div>
         </div>
         {/* Whiteboard */}
         {docId && (
@@ -238,6 +258,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           setDocType={(t) => { setDocType(t); if (docId) canvasStore.update(docId, { type: t }); setActiveMenu(null); }}
           onAddCard={() => nodeEditorRef.current?.addCard()}
           onClose={onClose}
+          sidebarOpen={sidebarOpen} onSidebarToggle={() => setSidebarOpen(o => !o)}
           P={P} dark={dark} onMouseEnter={showChrome} menuBarRef={menuBarRef} />
       </div>
 

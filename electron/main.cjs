@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, screen, globalShortcut } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, Tray, Menu, nativeImage, screen, globalShortcut, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const Sentry = require('@sentry/electron/main');
 const path = require('path');
@@ -171,6 +171,8 @@ ipcMain.handle('canvas:delete', (_e, id) => {
 
 ipcMain.handle('app:getPath',    () => app.getPath('userData'));
 ipcMain.handle('app:getVersion', () => app.getVersion());
+
+require('./ipc-library-fs.cjs')(ipcMain);
 
 // ── 窗口控制 IPC ──────────────────────────────────────────────────────────────
 
