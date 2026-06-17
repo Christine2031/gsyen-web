@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "redirects": [
-    { "source": "/branch", "destination": "https://gsyen-web-git-dev-christine-li-s-projects.vercel.app", "permanent": false }
+    { "source": "/branch", "destination": "https://branch.gsyen.com", "permanent": false }
   ],
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
