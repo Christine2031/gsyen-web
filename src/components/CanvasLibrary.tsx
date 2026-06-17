@@ -4,7 +4,6 @@
  */
 import { useState } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
-import { fsAdapter } from '../hooks/useFileSystem';
 import { SYS_FONT } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
 
@@ -17,12 +16,6 @@ const CloudIcon = ({ color }: { color: string }) => (
   </svg>
 );
 
-const EmptyFolderIcon = ({ color }: { color: string }) => (
-  <svg width="28" height="28" viewBox="0 0 13 13" fill="none" stroke={color}
-    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
-    <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
-  </svg>
-);
 
 export function CanvasLibrary({ open, P }: Props) {
   const { folders, selectedFolder, loading } = useLibraryStore();
@@ -40,19 +33,6 @@ export function CanvasLibrary({ open, P }: Props) {
         {/* Folder list */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
 
-          {folders.length === 0 && (
-            <div style={{ padding: '24px 12px 16px', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 8, textAlign: 'center',
-              fontSize: 11, color: P.dim, lineHeight: 1.6, fontFamily: SYS_FONT }}>
-              <EmptyFolderIcon color={P.menuFg} />
-              <div>
-                点击 + 添加文件夹
-                {fsAdapter.env === 'web' && (
-                  <div style={{ marginTop: 4, fontSize: 10 }}>Web 模式：刷新后需重新授权</div>
-                )}
-              </div>
-            </div>
-          )}
 
           {folders.map(folder => {
             const isActive  = selectedFolder?.id === folder.id;
