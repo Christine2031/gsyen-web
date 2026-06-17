@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AnimatePresence } from 'motion/react';
 
 import ScheduleModule from './components/ScheduleModule';
@@ -35,6 +35,7 @@ export default function App() {
   const [activeSpace, setActiveSpace] = useState<ActiveSpace>('chat');
   const [brandTab, setBrandTab] = useState<BrandTab | undefined>(undefined);
   const [activeTeam, setActiveTeam] = useState(false);
+  const testInputRef = useRef<HTMLInputElement>(null);
 
   const handleMemberClick = () => {
     setActiveSpace('brand');
@@ -53,6 +54,19 @@ export default function App() {
 
   return (
     <div className="h-screen overflow-y-hidden overflow-x-visible bg-[#F9F8F6] text-[#1A1A1A] flex flex-col font-sans selection:bg-[#1A1A1A] selection:text-[#F9F8F6]" id="logo-designer-root">
+      {/* 诊断：在 App 根节点（非 portal）测试 webkitdirectory — 确认后删 */}
+      {isElectron && (
+        <div style={{ position: 'fixed', bottom: 12, right: 12, zIndex: 99999, display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input ref={testInputRef} type="file"
+            // @ts-ignore
+            webkitdirectory="" style={{ position: 'absolute', width: 0, height: 0, opacity: 0, overflow: 'hidden' }}
+            onChange={e => { const f = e.target.files?.[0]; alert('文件夹测试成功: ' + ((f as any)?.path ?? f?.name ?? '无')); e.target.value = ''; }} />
+          <button onClick={() => testInputRef.current?.click()}
+            style={{ background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: 4, padding: '6px 10px', fontSize: 11, fontFamily: 'monospace', cursor: 'pointer', letterSpacing: '0.08em' }}>
+            TEST FOLDER
+          </button>
+        </div>
+      )}
       <AnimatePresence>
         {showLanding && <LandingHero lang={lang} onEnter={() => setShowLanding(false)} />}
       </AnimatePresence>
