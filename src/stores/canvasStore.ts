@@ -74,16 +74,35 @@ async function _delete(id: string) {
   await supabase.from('gsyen_canvas_docs').delete().eq('id', id).eq('user_id', _uid);
 }
 
+function _inferType(content: string, stored: CanvasType): CanvasType {
+  if (stored !== 'doc') return stored;
+  const c = content?.trim() ?? '';
+  if (!c.startsWith('{')) return 'doc';
+  try {
+    const p = JSON.parse(c);
+    if ('elements' in p || p.type === 'excalidraw') return 'canvas';
+    if ('nodes' in p && 'edges' in p)               return 'nodes';
+  } catch {}
+  return 'doc';
+}
+
 async function _pull(userId: string) {
   if (!supabase) return;
   const { data } = await supabase.from('gsyen_canvas_docs')
     .select('*').eq('user_id', userId).order('updated_at', { ascending: false });
   if (!data) return;
-  const remote: CanvasDoc[] = data.map((r: any) => ({
-    id: r.id, title: r.title, content: r.content,
-    type: r.type as CanvasType, scope: r.scope as 'self' | 'shared',
-    tags: r.tags ?? [], createdAt: r.created_at, updatedAt: r.updated_at,
-  }));
+  const toFix: CanvasDoc[] = [];
+  const remote: CanvasDoc[] = data.map((r: any) => {
+    const type = _inferType(r.content, r.type as CanvasType);
+    const doc: CanvasDoc = {
+      id: r.id, title: r.title, content: r.content,
+      type, scope: r.scope as 'self' | 'shared',
+      tags: r.tags ?? [], createdAt: r.created_at, updatedAt: r.updated_at,
+    };
+    if (type !== r.type) toFix.push(doc);
+    return doc;
+  });
+  for (const doc of toFix) void _upsert(doc);
   const local     = load();
   const remIds    = new Set(remote.map(d => d.id));
   const localOnly = local.filter(d => !remIds.has(d.id));
