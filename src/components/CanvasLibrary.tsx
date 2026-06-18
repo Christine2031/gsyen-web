@@ -51,11 +51,11 @@ export function CanvasLibrary({ open, P, dark }: Props) {
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [ctxFolder, setCtxFolder] = useState<{ id: string; x: number; y: number } | null>(null);
 
-  // track folder list changes to re-trigger entrance animation
-  const folderKeyRef  = useRef(0);
-  const prevFolders   = useRef(folders);
-  if (prevFolders.current !== folders) { prevFolders.current = folders; folderKeyRef.current += 1; }
-  const folderKey = folderKeyRef.current;
+  // 只对新增的 folder 播放入场动画，已有的纹丝不动
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const newIds = new Set(folders.filter(f => !knownIdsRef.current.has(f.id)).map(f => f.id));
+  knownIdsRef.current = new Set(folders.map(f => f.id));
+
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupY, setPopupY] = useState(0);
   const [popupX, setPopupX] = useState(0);
@@ -145,7 +145,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
             const isActive  = selectedFolder?.id === folder.id;
             const isHovered = hoveredId === folder.id;
             return (
-              <div key={`${folderKey}-${folder.id}`} className="gs-list-item"
+              <div key={folder.id} className={newIds.has(folder.id) ? 'gs-list-item' : ''}
                 onClick={() => libraryStore.selectFolder(folder)}
                 onContextMenu={e => { e.preventDefault(); setCtxFolder({ id: folder.id, x: e.clientX, y: e.clientY }); }}
                 onMouseEnter={() => setHoveredId(folder.id)}
