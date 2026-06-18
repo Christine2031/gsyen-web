@@ -6,7 +6,30 @@ const { dialog, BrowserWindow, Menu } = require('electron');
 const fs   = require('fs');
 const path = require('path');
 
+let _watcher    = null;
+let _watchTimer = null;
+
 module.exports = function registerLibraryFsHandlers(ipcMain) {
+
+  // ── fs.watch：监听当前选中文件夹，有变化推事件到渲染层 ─────────────────────
+  ipcMain.on('library:watchFolder', (event, folderPath) => {
+    if (_watcher) { _watcher.close(); _watcher = null; }
+    if (!folderPath) return;
+    try {
+      _watcher = fs.watch(folderPath, { recursive: false }, () => {
+        clearTimeout(_watchTimer);
+        _watchTimer = setTimeout(() => {
+          if (!event.sender.isDestroyed()) event.sender.send('library:folderChanged', folderPath);
+        }, 300); // 300ms debounce 防止重复触发
+      });
+      _watcher.on('error', () => { _watcher = null; });
+    } catch {}
+  });
+
+  ipcMain.on('library:unwatchFolder', () => {
+    if (_watcher) { _watcher.close(); _watcher = null; }
+  });
+
   ipcMain.on('library:showMenu', (event, pos) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) return;

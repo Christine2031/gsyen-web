@@ -9,6 +9,9 @@ import { useState, useEffect } from 'react';
 const EL_PATHS_KEY    = 'gsyen_library_paths';
 const EL_SELECTED_KEY = 'gsyen_library_selected';
 
+// readDir 结果缓存：folderSource.id → FileEntry[]
+const _dirCache = new Map<string, FileEntry[]>();
+
 interface LibraryState {
   folders:        FolderSource[];
   selectedFolder: FolderSource | null;
@@ -62,7 +65,10 @@ export const libraryStore = {
   },
 
   clearFolder() {
-    if (fsAdapter.env === 'electron') localStorage.removeItem(EL_SELECTED_KEY);
+    if (fsAdapter.env === 'electron') {
+      localStorage.removeItem(EL_SELECTED_KEY);
+      (window as any).electronAPI?.library?.unwatchFolder?.();
+    }
     _set({ selectedFolder: null, files: [], selectedFile: null, navStack: [], navFiles: [], navLoading: false });
   },
 
@@ -88,10 +94,19 @@ export const libraryStore = {
 
   async selectFolder(src: FolderSource) {
     if (fsAdapter.env === 'electron') localStorage.setItem(EL_SELECTED_KEY, src.id);
+    // 缓存命中 → 立刻显示，不 loading
+    const cached = _dirCache.get(src.id);
+    if (cached) {
+      _set({ selectedFolder: src, files: cached, loading: false, selectedFile: null, navStack: [], navFiles: [] });
+      (window as any).electronAPI?.library?.watchFolder?.(src.path);
+      return;
+    }
     _set({ selectedFolder: src, loading: true, files: [], selectedFile: null, navStack: [], navFiles: [] });
     try {
       const files = await fsAdapter.readDir(src);
+      _dirCache.set(src.id, files);
       _set({ files, loading: false });
+      (window as any).electronAPI?.library?.watchFolder?.(src.path);
     } catch {
       _set({ loading: false });
     }
@@ -130,10 +145,22 @@ export const libraryStore = {
       _set({ navFiles });
     } else if (_s.selectedFolder) {
       const files = await fsAdapter.readDir(_s.selectedFolder);
+      _dirCache.set(_s.selectedFolder.id, files); // 刷新缓存
       _set({ files });
     }
   },
 };
+
+// fs.watch 事件订阅：文件夹有变化 → 失效缓存 → 自动刷新
+function _initFsWatcher() {
+  const api = (window as any).electronAPI;
+  if (!api?.library?.onFolderChanged) return;
+  api.library.onFolderChanged(() => {
+    if (_s.selectedFolder) _dirCache.delete(_s.selectedFolder.id);
+    libraryStore.refreshCurrent();
+  });
+}
+if (typeof window !== 'undefined') setTimeout(_initFsWatcher, 0);
 
 export function useLibraryStore() {
   const [state, setState] = useState(_s);
