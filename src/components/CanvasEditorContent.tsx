@@ -336,17 +336,22 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
             opacity: editorFade, transition: 'opacity 0.13s ease' }}>
             {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
           </div>
-          {/* Whiteboard */}
+          {/* Whiteboard — visibility 而非 display:none，保持 Excalidraw 已初始化，消除首次切换卡顿 */}
           {docId && (
-            <div style={{ display: docType === 'canvas' ? 'block' : 'none',
+            <div style={{
+              visibility: docType === 'canvas' ? 'visible' : 'hidden',
+              pointerEvents: docType === 'canvas' ? 'auto' : 'none',
               position: 'absolute', inset: 0, paddingTop: CHROME_H + 1 }}>
               <CanvasDrawEditor docId={docId} dark={dark} />
             </div>
           )}
-          {/* Node Canvas */}
+          {/* Node Canvas — 同上 */}
           {docId && (
-            <div style={{ display: docType === 'nodes' ? 'flex' : 'none',
-              position: 'absolute', inset: 0, paddingTop: CHROME_H + 1 }}>
+            <div style={{
+              visibility: docType === 'nodes' ? 'visible' : 'hidden',
+              pointerEvents: docType === 'nodes' ? 'auto' : 'none',
+              position: 'absolute', inset: 0, paddingTop: CHROME_H + 1,
+              display: 'flex' }}>
               <CanvasNodeEditor ref={nodeEditorRef} docId={docId} dark={dark} />
             </div>
           )}
