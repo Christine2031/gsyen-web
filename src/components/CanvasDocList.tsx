@@ -1,37 +1,42 @@
 /**
- * CanvasDocList — iA Writer 风格平铺文档列表
- * 当前文件夹的 .md/.txt 文件，按最近修改排序，点击打开。
+ * CanvasDocList — 中栏文件列表（header/Sort By Date 已移至 CanvasChrome）
+ * 只负责：子文件夹 + 文件列表渲染，导航通过 libraryStore.pushNav
  */
 import { useState, useCallback } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
 import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
-import { SYS_FONT } from './CanvasEditorTypes';
+import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
+import { DocIcon, DrawIcon, NodeIcon } from '../gsyen-designer';
+import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 
-interface Props { open: boolean; onFileSelect: (e: FileEntry, c: string) => void; P: Palette; }
+interface Props { open: boolean; onFileSelect: (e: FileEntry, c: string) => void; P: Palette; onBack: () => void; onNew: () => void; }
 
 function relativeDate(ts?: number): string {
   if (!ts) return '';
   const diff = Date.now() - ts;
   if (diff < 86_400_000)  return '今天';
   if (diff < 172_800_000) return '昨天';
-  return new Date(ts).toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' });
+  return new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
 }
 
-const EmptyDocIcon = ({ color }: { color: string }) => (
-  <svg width="24" height="24" viewBox="0 0 13 13" fill="none" stroke={color}
-    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
-    <rect x="2" y="1" width="9" height="11" rx="1.5" />
-    <line x1="4" y1="4.5" x2="9" y2="4.5" />
-    <line x1="4" y1="6.5" x2="9" y2="6.5" />
-    <line x1="4" y1="8.5" x2="7" y2="8.5" />
-  </svg>
-);
+function fileIcon(name: string) {
+  if (/\.excalidraw$/i.test(name)) return DrawIcon;
+  if (/\.canvas$/i.test(name))     return NodeIcon;
+  return DocIcon;
+}
 
-export function CanvasDocList({ open, onFileSelect, P }: Props) {
-  const { selectedFolder, files, selectedFile, loading } = useLibraryStore();
+export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
+  const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile } = useLibraryStore();
+  const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
+  const { doclistW } = useCanvasPanelWidths();
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+
+  const inSub        = navStack.length > 0;
+  const displayFiles = inSub ? navFiles : files;
+  const isLoading    = inSub ? navLoading : loading;
+  const shown        = open;
 
   const handleSelect = useCallback(async (file: FileEntry) => {
     libraryStore.setSelectedFile(file);
@@ -39,78 +44,127 @@ export function CanvasDocList({ open, onFileSelect, P }: Props) {
     onFileSelect(file, content);
   }, [onFileSelect]);
 
-  const handleNew = useCallback(async () => {
-    if (!selectedFolder) return;
-    const name = `新文档-${Date.now()}.md`;
-    const blank: FileEntry = {
-      name,
-      path: selectedFolder.path ? `${selectedFolder.path}/${name}` : name,
-      isMarkdown: true,
-    };
-    if (selectedFolder.handle) {
-      const fh = await (selectedFolder.handle as any).getFileHandle(name, { create: true });
-      const w  = await fh.createWritable(); await w.write(''); await w.close();
-      blank.handle = fh;
-    }
-    onFileSelect(blank, '');
-    libraryStore.setSelectedFile(blank);
-    await libraryStore.selectFolder(selectedFolder);
-  }, [selectedFolder, onFileSelect]);
+  const handleDirClick = useCallback(async (entry: FileEntry) => {
+    const src = entry.dirHandle
+      ? { id: entry.path, name: entry.name, handle: entry.dirHandle, env: 'web' as const }
+      : { id: entry.path, name: entry.name, path: entry.path, env: 'electron' as const };
+    await libraryStore.pushNav(src);
+  }, []);
 
   return (
-    <div style={{ width: open && selectedFolder ? 200 : 0, overflow: 'hidden', flexShrink: 0,
+    <div style={{ width: shown ? doclistW : 0, overflow: 'hidden', flexShrink: 0,
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       borderRight: `0.5px solid ${P.border}`, display: 'flex', flexDirection: 'column',
-      background: `${P.chrome}CC` }}>
-      <div style={{ width: 200, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      background: P.chrome }}>
+      <div style={{ width: doclistW, height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Header */}
-        <div style={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 12px', borderBottom: `0.5px solid ${P.border}`, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: P.menuFg, fontWeight: 500, fontFamily: SYS_FONT,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 148 }}>
-            {selectedFolder?.name ?? ''}
+        {/* ─ Header: ← name + ─ */}
+        <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
+          padding: '0 6px 0 4px' }}>
+          <button onClick={onBack}
+            style={{ padding: '6px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
+              color: P.menuFg, display: 'flex', alignItems: 'center' }}>
+            <svg width="7" height="11" viewBox="0 0 7 11" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 1L1 5.5L6 10"/>
+            </svg>
+          </button>
+          <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textAlign: 'center' }}>
+            {currentName}
           </span>
-          <button onClick={handleNew} title="新建文档"
-            style={{ fontSize: 16, color: P.menuFg, background: 'transparent',
-              border: 'none', cursor: 'pointer', padding: '0 2px', lineHeight: 1, fontFamily: SYS_FONT }}>+</button>
+          <button onClick={onNew}
+            style={{ padding: '4px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
+              color: P.menuFg, display: 'flex', alignItems: 'center' }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
+              strokeWidth="1.5" strokeLinecap="round">
+              <path d="M6 1v10M1 6h10"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Flat list */}
+        {/* ─ Sort row ─ */}
+        <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
+          gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}` }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
+            userSelect: 'none' }}>Sort By Date</span>
+          <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg}
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 1L4 4L7 1"/>
+          </svg>
+        </div>
+
+        {/* ─ File + Dir list ─ */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
-
-          {loading && (
-            <div style={{ padding: '12px', fontSize: 11, color: P.dim, fontFamily: SYS_FONT }}>读取中...</div>
-          )}
-
-          {!loading && files.length === 0 && selectedFolder && (
-            <div style={{ padding: '24px 12px 16px', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 8, textAlign: 'center',
-              fontSize: 11, color: P.dim, lineHeight: 1.6, fontFamily: SYS_FONT }}>
-              <EmptyDocIcon color={P.menuFg} />
-              <div>文件夹为空<br/>点击 + 新建文档</div>
+          {isLoading && (
+            <div style={{ padding: '12px', fontSize: 11, color: P.dim, fontFamily: SYS_FONT }}>
+              读取中...
             </div>
           )}
 
-          {files.map(file => {
-            const active  = selectedFile?.path === file.path;
-            const hovered = hoveredPath === file.path;
-            return (
-              <div key={file.path} onClick={() => handleSelect(file)}
-                onMouseEnter={() => setHoveredPath(file.path)}
-                onMouseLeave={() => setHoveredPath(null)}
-                style={{ padding: '8px 12px', cursor: 'pointer',
-                  borderBottom: `0.5px solid ${P.border}`,
-                  borderLeft: active ? `2px solid ${P.accent}` : '2px solid transparent',
-                  background: active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent',
-                  transition: 'background 0.12s' }}>
-                <div style={{ fontSize: 12, color: P.fg, fontWeight: active ? 500 : 400,
-                  fontFamily: SYS_FONT,
-                  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {file.name.replace(/\.(md|txt)$/i, '')}
+          {displayFiles.map(entry => {
+            const active  = !entry.isDirectory && selectedFile?.path === entry.path;
+            const hovered = hoveredPath === entry.path;
+            const bg = active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent';
+
+            if (entry.isDirectory) {
+              return (
+                <div key={entry.path} onClick={() => handleDirClick(entry)}
+                  onMouseEnter={() => setHoveredPath(entry.path)}
+                  onMouseLeave={() => setHoveredPath(null)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '0 10px 0 12px', height: 36, cursor: 'pointer',
+                    borderBottom: `0.5px solid ${P.border}`,
+                    borderLeft: '2px solid transparent',
+                    background: bg, transition: 'background 0.12s' }}>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
+                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                    style={{ color: P.menuFg, flexShrink: 0 }}>
+                    <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
+                  </svg>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.name}
+                  </span>
+                  <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke={P.menuFg}
+                    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                    <path d="M1 1L4 4L1 7"/>
+                  </svg>
                 </div>
-                <div style={{ fontSize: 10, color: P.dim, marginTop: 2, fontFamily: SYS_FONT }}>
-                  {relativeDate(file.lastModified)}
+              );
+            }
+
+            const Icon = fileIcon(entry.name);
+            return (
+              <div key={entry.path} onClick={() => handleSelect(entry)}
+                onMouseEnter={() => setHoveredPath(entry.path)}
+                onMouseLeave={() => setHoveredPath(null)}
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
+                  padding: '8px 10px 8px 12px', cursor: 'pointer',
+                  borderBottom: `0.5px solid ${P.border}`,
+                  borderLeft: active ? '2px solid #55AAFF' : '2px solid transparent',
+                  background: bg, transition: 'background 0.12s', minHeight: 44 }}>
+                <span style={{ color: active ? P.fg : P.menuFg, display: 'flex', flexShrink: 0, marginTop: 1 }}>
+                  <Icon />
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+                    <span style={{ flex: 1, fontSize: 13, color: active ? P.fg : P.menuFg,
+                      fontWeight: 500, fontFamily: SYS_FONT,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
+                    </span>
+                    <span style={{ fontSize: 10, color: P.dim, fontFamily: SYS_FONT, flexShrink: 0 }}>
+                      {relativeDate(entry.lastModified)}
+                    </span>
+                  </div>
+                  {entry.preview && (
+                    <div style={{ fontSize: 11, color: P.dim, fontFamily: SYS_FONT,
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      marginTop: 2, lineHeight: 1.4 }}>
+                      {entry.preview}
+                    </div>
+                  )}
                 </div>
               </div>
             );

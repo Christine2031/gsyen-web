@@ -172,21 +172,7 @@ ipcMain.handle('canvas:delete', (_e, id) => {
 ipcMain.handle('app:getPath',    () => app.getPath('userData'));
 ipcMain.handle('app:getVersion', () => app.getVersion());
 
-// ── 文件系统（Library 面板）IPC ───────────────────────────────────────────────
-
-ipcMain.handle('fs:showOpenDialog', (e, opts) =>
-  dialog.showOpenDialog(BrowserWindow.fromWebContents(e.sender), opts));
-
-ipcMain.handle('fs:readDir', (_e, dirPath) =>
-  fs.readdirSync(dirPath, { withFileTypes: true }).map(d => ({
-    name:         d.name,
-    isDir:        d.isDirectory(),
-    lastModified: fs.statSync(path.join(dirPath, d.name)).mtimeMs,
-  })));
-
-ipcMain.handle('fs:readFile',  (_e, filePath)       => fs.readFileSync(filePath, 'utf8'));
-ipcMain.handle('fs:writeFile', (_e, filePath, text) => { fs.writeFileSync(filePath, text, 'utf8'); return true; });
-
+// ── Library 文件系统 IPC ──────────────────────────────────────────────────────
 require('./ipc-library-fs.cjs')(ipcMain);
 
 // ── 窗口控制 IPC ──────────────────────────────────────────────────────────────

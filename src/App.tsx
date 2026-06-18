@@ -35,7 +35,6 @@ export default function App() {
   const [activeSpace, setActiveSpace] = useState<ActiveSpace>('chat');
   const [brandTab, setBrandTab] = useState<BrandTab | undefined>(undefined);
   const [activeTeam, setActiveTeam] = useState(false);
-
   const handleMemberClick = () => {
     setActiveSpace('brand');
     setBrandTab('member');

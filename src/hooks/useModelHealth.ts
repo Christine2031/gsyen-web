@@ -15,7 +15,8 @@ export function useModelHealth(selectedModel: ModelId, intervalMs = 30_000): Mod
 
   const check = async () => {
     try {
-      const r = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+      const base = window.location.protocol === 'file:' ? 'https://gsyen.com' : '';
+      const r = await fetch(`${base}/api/health`, { signal: AbortSignal.timeout(5000) });
       const d = await r.json();
       const modelStatus = d.models?.[selectedModel];
 

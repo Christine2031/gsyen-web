@@ -21,7 +21,7 @@ interface Params {
   importFile:   () => void;
   exportMd:     () => void;
   printDoc:     () => void;
-  toggleDocType:() => void;
+  createFile:   (type: 'doc' | 'canvas' | 'nodes') => void;
   onClose:      () => void;
 }
 
@@ -105,7 +105,10 @@ export function useCanvasMenus(p: Params): MenuSpec[] {
       { label: 'Larger Text',  shortcut: 'Ctrl++', action: () => { p.setFontSize(s => Math.min(24, s + 1)); p.setActiveMenu(null); } },
       { label: 'Smaller Text', shortcut: 'Ctrl+−', action: () => { p.setFontSize(s => Math.max(13, s - 1)); p.setActiveMenu(null); } },
       '---',
-      { label: p.docType === 'doc' ? 'Switch to Whiteboard' : p.docType === 'canvas' ? 'Switch to Node Canvas' : 'Switch to Document', action: p.toggleDocType },
+      '---',
+      { label: 'New Document',    action: () => p.createFile('doc')    },
+      { label: 'New Whiteboard',  action: () => p.createFile('canvas') },
+      { label: 'New Node Canvas', action: () => p.createFile('nodes')  },
     ]},
     { id: 'help', label: 'Help', items: [
       { label: 'Keyboard Shortcuts', disabled: true },
@@ -113,5 +116,5 @@ export function useCanvasMenus(p: Params): MenuSpec[] {
       { label: 'About CANVAS', disabled: true },
     ]},
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  ], [p.words, p.chars, p.readMin, p.mode, p.dark, p.tw, p.focusMode, p.lineLen, p.font, p.docType]);
+  ], [p.words, p.chars, p.readMin, p.mode, p.dark, p.tw, p.focusMode, p.lineLen, p.font]);
 }

@@ -46,6 +46,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     getGatewayMode:  ()     => ipcRenderer.invoke('v2ray:getGatewayMode'),
     setGatewayMode:  (mode) => ipcRenderer.invoke('v2ray:setGatewayMode', mode),
   },
+  library: {
+    showMenu:     (pos) => ipcRenderer.send('library:showMenu', pos),
+    onMenuResult: (fn)  => ipcRenderer.once('library:menuResult', (_e, action) => fn(action)),
+  },
   isElectron: true,
   platform: process.platform,
   showOpenDialog: (opts)           => ipcRenderer.invoke('fs:showOpenDialog', opts),

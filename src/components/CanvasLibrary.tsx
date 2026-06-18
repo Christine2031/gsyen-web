@@ -1,12 +1,13 @@
 /**
- * CanvasLibrary — 三栏布局左栏：文件夹树
- * 支持 Web (File System Access API) 和 Electron (fs IPC)。
+ * CanvasLibrary — 左栏文件夹列表（header 已移至 CanvasChrome）
+ * 只负责：folder list + Add to Library popup + 底部按钮
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
-import { fsAdapter } from '../hooks/useFileSystem';
-import { SYS_FONT } from './CanvasEditorTypes';
+import { SYS_FONT, TITLE_H, isElectron } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
+import type { FolderSource } from '../hooks/useFileSystem';
+import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 
 interface Props { open: boolean; P: Palette; dark: boolean; }
 
@@ -17,86 +18,175 @@ const CloudIcon = ({ color }: { color: string }) => (
   </svg>
 );
 
-const EmptyFolderIcon = ({ color }: { color: string }) => (
-  <svg width="28" height="28" viewBox="0 0 13 13" fill="none" stroke={color}
-    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.35 }}>
-    <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
-  </svg>
-);
+async function pickFiles(): Promise<FolderSource[]> {
+  const api = (window as any).electronAPI;
+  if (api?.showOpenDialog) {
+    const r = await api.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],
+      filters: [{ name: 'Documents', extensions: ['md', 'txt', 'canvas', 'excalidraw'] }],
+    });
+    if (r?.canceled || !r?.filePaths?.length) return [];
+    const seen = new Set<string>();
+    return (r.filePaths as string[])
+      .map((p: string) => {
+        const parts = p.split(/[\\/]/); parts.pop();
+        const dir = parts.join('/') || p;
+        const name = parts[parts.length - 1] ?? dir;
+        return { id: dir, name, path: dir, env: 'electron' as const };
+      })
+      .filter(src => { if (seen.has(src.id)) return false; seen.add(src.id); return true; });
+  }
+  try {
+    const handles: FileSystemFileHandle[] = await (window as any).showOpenFilePicker({ multiple: true });
+    return handles.map(h => ({ id: h.name, name: h.name, env: 'web' as const, handle: undefined }));
+  } catch { return []; }
+}
 
-export function CanvasLibrary({ open, P }: Props) {
+export function CanvasLibrary({ open, P, dark }: Props) {
   const { folders, selectedFolder, loading } = useLibraryStore();
+  const { libW } = useCanvasPanelWidths();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [popupDir, setPopupDir] = useState<'up'|'down'>('up');
+  const [popupAnchor, setPopupAnchor] = useState(0);
+  const popupRef  = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!popupOpen) return;
+    const fn = (e: MouseEvent) => {
+      if (
+        popupRef.current && !popupRef.current.contains(e.target as Node) &&
+        triggerRef.current && !triggerRef.current.contains(e.target as Node)
+      ) setPopupOpen(false);
+    };
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, [popupOpen]);
+
+  const handleToggle = () => {
+    if (isElectron) {
+      const api = (window as any).electronAPI;
+      api.library.onMenuResult((action: string) => {
+        if (action === 'files')  handleAddFiles();
+        if (action === 'folder') handleAddFolder();
+      });
+      api.library.showMenu();
+    } else {
+      setPopupOpen(o => !o);
+    }
+  };
+
+  const handleAddFolder = () => { setPopupOpen(false); libraryStore.addFolder(); };
+  const handleAddFiles  = async () => {
+    setPopupOpen(false);
+    const sources = await pickFiles();
+    for (const src of sources) libraryStore.addFolderSource(src);
+  };
 
   return (
-    <div style={{ width: open ? 148 : 0, overflow: 'hidden', flexShrink: 0,
+    <div style={{ width: open ? libW : 0, overflow: 'hidden', flexShrink: 0,
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       background: P.chrome, borderRight: `0.5px solid ${P.border}`,
-      display: 'flex', flexDirection: 'column' }}>
-      <div style={{ width: 148, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      display: 'flex', flexDirection: 'column', position: 'relative' }}>
+      <div style={{ width: libW, height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-        {/* Header */}
-        <div style={{ height: 32, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 12px', borderBottom: `0.5px solid ${P.border}`, flexShrink: 0 }}>
-          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.12em', fontFamily: SYS_FONT,
-            color: P.fg, textTransform: 'uppercase' }}>Library</span>
-          <button onClick={() => libraryStore.addFolder()} title="添加文件夹"
-            style={{ fontSize: 18, lineHeight: 1, color: P.menuFg, background: 'transparent',
-              border: 'none', cursor: 'pointer', padding: '0 2px', fontFamily: SYS_FONT }}>+</button>
+        {/* ─ Header ─ */}
+        <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
+          padding: '0 4px 0 10px' }}>
+          <span style={{ flex: 1, fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
+            fontFamily: SYS_FONT, color: P.dim, textTransform: 'uppercase', userSelect: 'none' }}>
+            Library
+          </span>
+          <button onClick={() => {}} title="Settings"
+            style={{ padding: 4, background: 'transparent', border: 'none', cursor: 'pointer',
+              color: P.menuFg, display: 'flex', alignItems: 'center' }}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18.6 9.6L20.9 10.4L20.9 13.6L18.6 14.4L17.4 16.5L17.8 18.9L15.1 20.5L13.2 18.9L10.8 18.9L8.9 20.5L6.2 18.9L6.6 16.5L5.4 14.4L3.1 13.6L3.1 10.4L5.4 9.6L6.6 7.5L6.2 5.1L8.9 3.5L10.8 5.1L13.2 5.1L15.1 3.5L17.8 5.1L17.4 7.5Z"/>
+              <circle cx="12" cy="12" r="3.5"/>
+            </svg>
+          </button>
         </div>
 
-        {/* Folder list */}
+        {/* ─ Folder list ─ */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 0' }}>
-
-          {folders.length === 0 && (
-            <div style={{ padding: '24px 12px 16px', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 8, textAlign: 'center',
-              fontSize: 11, color: P.dim, lineHeight: 1.6, fontFamily: SYS_FONT }}>
-              <EmptyFolderIcon color={P.menuFg} />
-              <div>
-                点击 + 添加文件夹
-                {fsAdapter.env === 'web' && (
-                  <div style={{ marginTop: 4, fontSize: 10 }}>Web 模式：刷新后需重新授权</div>
-                )}
-              </div>
-            </div>
-          )}
-
           {folders.map(folder => {
             const isActive  = selectedFolder?.id === folder.id;
             const isHovered = hoveredId === folder.id;
             return (
-              <div key={folder.id}
-                onClick={() => libraryStore.selectFolder(folder)}
+              <div key={folder.id} onClick={() => libraryStore.selectFolder(folder)}
                 onMouseEnter={() => setHoveredId(folder.id)}
                 onMouseLeave={() => setHoveredId(null)}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, height: 28,
-                  padding: '0 10px', cursor: 'pointer', fontSize: 12, margin: '0 4px',
+                  padding: '0 10px', cursor: 'pointer', fontSize: 13, margin: '0 4px',
                   borderRadius: 4, fontFamily: SYS_FONT,
-                  color: isActive ? P.fg : P.menuFg,
+                  fontWeight: 500, color: isActive ? P.fg : P.menuFg,
                   background: isActive ? `${P.fg}12` : isHovered ? `${P.fg}06` : 'transparent',
                   transition: 'background 0.12s' }}>
-
                 <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
                   stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
                 </svg>
-
                 <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {folder.name}
                 </span>
-
-                {folder.env === 'web' && <CloudIcon color={isActive ? P.fg : P.menuFg} />}
+                {folder.env === 'web'
+                  ? <CloudIcon color={isActive ? P.fg : P.menuFg} />
+                  : <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke="currentColor"
+                      strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                      style={{ color: P.dim, flexShrink: 0 }}>
+                      <path d="M1 1L4 4L1 7"/>
+                    </svg>
+                }
               </div>
             );
           })}
-
           {loading && (
             <div style={{ padding: '8px 12px', fontSize: 11, color: P.dim, fontFamily: SYS_FONT }}>
               读取中...
             </div>
           )}
         </div>
+
+        {/* ─ Popup ─ */}
+        <div ref={popupRef}
+          style={{ position: 'fixed', left: 0, width: libW, zIndex: 200,
+            ...(popupDir === 'down' ? { top: popupAnchor } : { bottom: popupAnchor }),
+            background: P.chrome, borderRadius: 8,
+            boxShadow: `0 4px 24px rgba(0,0,0,${dark ? 0.45 : 0.14})`,
+            maxHeight: popupOpen ? '200px' : '0px',
+            opacity: popupOpen ? 1 : 0,
+            pointerEvents: popupOpen ? 'auto' : 'none',
+            transition: 'max-height 0.22s cubic-bezier(0.4,0,0.2,1), opacity 0.15s ease',
+            overflow: 'hidden' }}>
+            {[
+              { label: 'Add files to the Library',  action: handleAddFiles  },
+              { label: 'Add folder to the Library', action: handleAddFolder },
+            ].map(({ label, action }) => (
+              <button key={label} onClick={action}
+                style={{ width: '100%', padding: '10px 14px', textAlign: 'left',
+                  background: 'transparent', border: 'none', cursor: 'pointer', display: 'block',
+                  fontSize: 13, fontFamily: SYS_FONT, color: P.fg, whiteSpace: 'nowrap' }}
+                onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}09`}
+                onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+        {/* ─ Bottom trigger ─ */}
+        <button ref={triggerRef} onClick={handleToggle}
+          style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5,
+            padding: '0 8px', flexShrink: 0, width: '100%',
+            background: 'transparent',
+            border: 'none', cursor: 'pointer', fontFamily: SYS_FONT,
+            fontSize: 13, fontWeight: 500, color: P.menuFg, whiteSpace: 'nowrap', overflow: 'hidden' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}06`}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+          <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1, flexShrink: 0 }}>+</span>
+          <span>Add to Library</span>
+        </button>
 
       </div>
     </div>
