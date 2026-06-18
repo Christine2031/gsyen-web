@@ -29,9 +29,9 @@ export function invalidatePrefetch(path: string) { _prefetchCache.delete(path); 
 function relativeDate(ts?: number): string {
   if (!ts) return '';
   const diff = Date.now() - ts;
-  if (diff < 86_400_000)  return '今天';
-  if (diff < 172_800_000) return '昨天';
-  return new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+  if (diff < 86_400_000)  return 'Today';
+  if (diff < 172_800_000) return 'Yesterday';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function fileIcon(name: string) {

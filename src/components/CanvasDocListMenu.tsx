@@ -41,19 +41,19 @@ export function CanvasDocListMenu({ ctxMenu, P, dark, onRename, onShowInExplorer
           : '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
         border: `0.5px solid ${P.border}`, minWidth: 220, fontFamily: SYS_FONT }}>
       <button style={base} onMouseEnter={hov} onMouseLeave={lea}
-        onClick={() => onRename(ctxMenu.entry)}>重命名</button>
+        onClick={() => onRename(ctxMenu.entry)}>Rename</button>
       <button style={base} onMouseEnter={hov} onMouseLeave={lea}
-        onClick={() => onShowInExplorer(ctxMenu.entry)}>在文件管理器中显示</button>
-      <button style={dim}>新建文件夹</button>
-      <button style={dim}>移动</button>
+        onClick={() => onShowInExplorer(ctxMenu.entry)}>Show in Explorer</button>
+      <button style={dim}>New Folder</button>
+      <button style={dim}>Move</button>
       <SEP P={P} />
       <button style={base} onMouseEnter={hov} onMouseLeave={lea}
-        onClick={() => onDelete(ctxMenu.entry)}>移到废纸篓</button>
+        onClick={() => onDelete(ctxMenu.entry)}>Move to Trash</button>
       <SEP P={P} />
-      <button style={dim}>浏览备份</button>
+      <button style={dim}>Browse Backups</button>
       <SEP P={P} />
-      <button style={dim}>排序 ▶</button>
-      <button style={dim}>添加到 Library</button>
+      <button style={dim}>Sort ▶</button>
+      <button style={dim}>Add to Library</button>
     </div>,
     document.body
   );

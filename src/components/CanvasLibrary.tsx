@@ -249,14 +249,14 @@ export function CanvasLibrary({ open, P, dark }: Props) {
             fontSize: 13, color: P.menuFg, fontFamily: SYS_FONT, display: 'block', whiteSpace: 'nowrap' }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}08`}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-          从 Library 移除
+          Remove from Library
         </button>
         <button disabled
           style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
             background: 'transparent', border: 'none', cursor: 'default',
             fontSize: 13, color: `${P.fg}30`, fontFamily: SYS_FONT, display: 'block', whiteSpace: 'nowrap',
             pointerEvents: 'none' }}>
-          浏览备份
+          Browse Backups
         </button>
       </div>,
       document.body
