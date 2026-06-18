@@ -2,10 +2,11 @@
  * CanvasDocList — 中栏文件列表（header/Sort By Date 已移至 CanvasChrome）
  * 只负责：子文件夹 + 文件列表渲染，导航通过 libraryStore.pushNav
  */
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
 import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
+import { createPortal } from 'react-dom';
 
 // ── 悬停预加载缓存（最多 40 条，LRU by insertion order）──────────────────────
 const _MAX_CACHE = 40;
@@ -53,6 +54,23 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
   const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
   const { doclistW } = useCanvasPanelWidths();
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [ctxEntry, setCtxEntry] = useState<{ entry: FileEntry; x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    if (!ctxEntry) return;
+    const fn = () => setCtxEntry(null);
+    document.addEventListener('mousedown', fn);
+    return () => document.removeEventListener('mousedown', fn);
+  }, [ctxEntry]);
+
+  const handleDelete = useCallback(async (entry: FileEntry) => {
+    setCtxEntry(null);
+    const { navStack: stack, selectedFolder } = libraryStore.get();
+    const parentSrc = stack.length > 0 ? stack[stack.length - 1] : selectedFolder;
+    await fsAdapter.deleteEntry(entry, parentSrc?.handle as FileSystemDirectoryHandle | undefined);
+    if (selectedFile?.path === entry.path) libraryStore.setSelectedFile(null);
+    await libraryStore.refreshCurrent();
+  }, [selectedFile]);
 
   const inSub        = navStack.length > 0;
   const displayFiles = inSub ? navFiles : files;
@@ -79,6 +97,7 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
   }, []);
 
   return (
+    <>
     <div style={{ width: shown ? doclistW : 0, overflow: 'hidden', flexShrink: 0,
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       borderRight: `0.5px solid ${P.border}`, display: 'flex', flexDirection: 'column',
@@ -148,6 +167,7 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
               return (
                 <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                   onClick={() => handleDirClick(entry)}
+                  onContextMenu={e => { e.preventDefault(); setCtxEntry({ entry, x: e.clientX, y: e.clientY }); }}
                   onMouseEnter={() => setHoveredPath(entry.path)}
                   onMouseLeave={() => setHoveredPath(null)}
                   style={{ display: 'flex', alignItems: 'center', gap: 8,
@@ -176,6 +196,7 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
             return (
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                 onClick={() => handleSelect(entry)}
+                onContextMenu={e => { e.preventDefault(); setCtxEntry({ entry, x: e.clientX, y: e.clientY }); }}
                 onMouseEnter={() => { setHoveredPath(entry.path); _prefetchFile(entry); }}
                 onMouseLeave={() => setHoveredPath(null)}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
@@ -212,5 +233,26 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
 
       </div>
     </div>
+
+    {ctxEntry && createPortal(
+      <div onMouseDown={e => e.stopPropagation()}
+        style={{ position: 'fixed', left: ctxEntry.x, top: ctxEntry.y, zIndex: 9999,
+          background: P.menuBg, borderRadius: 8, padding: '5px 0',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
+          minWidth: 180, border: `1px solid ${P.menuBorder}` }}>
+        <button
+          onClick={() => handleDelete(ctxEntry.entry)}
+          style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
+            background: 'transparent', border: 'none', cursor: 'default',
+            fontSize: 13, fontFamily: SYS_FONT, fontWeight: 400,
+            color: '#C42B1C', whiteSpace: 'nowrap' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(196,43,28,0.08)'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
+          {ctxEntry.entry.isDirectory ? '删除文件夹' : '删除文件'}
+        </button>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

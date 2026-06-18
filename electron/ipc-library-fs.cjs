@@ -68,4 +68,8 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
   ipcMain.handle('fs:writeFile', (_e, filePath, text) => {
     try { fs.writeFileSync(filePath, text, 'utf8'); return true; } catch { return false; }
   });
+
+  ipcMain.handle('fs:deleteEntry', (_e, entryPath) => {
+    try { fs.rmSync(entryPath, { recursive: true, force: true }); return true; } catch { return false; }
+  });
 };
