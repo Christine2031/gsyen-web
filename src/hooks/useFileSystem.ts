@@ -72,7 +72,7 @@ async function _webReadDir(src: FolderSource): Promise<FileEntry[]> {
       out.push({ name, path: name, isMarkdown: false, isDirectory: true, dirHandle: h });
       continue;
     }
-    if (!/\.(md|txt|excalidraw|canvas)$/i.test(name)) continue;
+    if (!/\.(md|txt|excalidraw|canvas|jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i.test(name)) continue;
     const f = await h.getFile();
     let preview = '';
     if (/\.(md|txt)$/i.test(name)) {
@@ -136,7 +136,7 @@ async function _elReadDir(src: FolderSource): Promise<FileEntry[]> {
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    const textFiles = entries.filter(e => !e.isDir && /\.(md|txt|excalidraw|canvas)$/i.test(e.name));
+    const textFiles = entries.filter(e => !e.isDir && /\.(md|txt|excalidraw|canvas|jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i.test(e.name));
     const files: FileEntry[] = textFiles.map(e => ({
       name: e.name,
       path: `${src.path}/${e.name}`,

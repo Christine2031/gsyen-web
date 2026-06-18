@@ -87,3 +87,11 @@ export const NodeIcon = () => (
     <line x1="10"  y1="4" x2="6.5" y2="9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="1.5 1.5"/>
   </svg>
 );
+
+export const ImageIcon = () => (
+  <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+    <rect x="1" y="1" width="11" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/>
+    <circle cx="4.5" cy="4.5" r="1" fill="currentColor"/>
+    <path d="M1 9L4 6L7 8.5L9 6.5L12 9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);

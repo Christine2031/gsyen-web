@@ -24,6 +24,8 @@ import type { FileEntry } from '../hooks/useFileSystem';
 import { fsAdapter } from '../hooks/useFileSystem';
 import { libraryStore, useLibraryStore } from '../stores/canvasLibraryStore';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
+import { ImageViewer } from './ImageViewer';
+import { OfficeViewer } from './OfficeViewer';
 
 interface Props { docId: string | undefined; onClose: () => void; }
 
@@ -36,7 +38,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const [dark,          setDark]          = useState(false);
   const [tw,            setTw]            = useState(false);
   const [focusMode,     setFocusMode]     = useState<FocusMode>('off');
-  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'>(stored?.type ?? 'doc');
+  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(stored?.type ?? 'doc');
   const [chromeVisible, setChromeVisible] = useState(true);
   const [lineLen,       setLineLen]       = useState<LineLen>(72);
   const [fontSize,      setFontSize]      = useState(17);
@@ -69,7 +71,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const sentences = content.trim() ? (content.match(/[.!?。！？]+/g) ?? []).length : 0;
   const readSec   = Math.round((words / 200) * 60);
   const readMin   = Math.max(1, Math.ceil(readSec / 60));
-
 
   /* ── chrome auto-hide ── */
   const showChrome = useCallback(() => {
@@ -115,10 +116,12 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     setTimeout(() => {
       setActiveFsFile(entry);
       setContent(text);
-      setTitle(entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, ''));
-      if (/\.excalidraw$/i.test(entry.name))   setDocType('canvas');
-      else if (/\.canvas$/i.test(entry.name))  setDocType('nodes');
-      else                                     setDocType('doc');
+      setTitle(entry.name.replace(/\.[^.]+$/, ''));
+      if (/\.excalidraw$/i.test(entry.name))                             setDocType('canvas');
+      else if (/\.canvas$/i.test(entry.name))                           setDocType('nodes');
+      else if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name)) setDocType('image');
+      else if (/\.(docx|xlsx|pptx)$/i.test(entry.name))                setDocType('office');
+      else                                                              setDocType('doc');
       if (docId && /\.(md|txt)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
       setEditorFade(1);
     }, 80);
@@ -159,11 +162,14 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     ...(tw ? [typewriterExt()] : []),
   ], [dark, focusMode, tw, fontSize, fontFamily]);
 
+  useEffect(() => {
+    if (docId && stored && (stored.type ?? 'doc') !== docType) canvasStore.update(docId, { type: docType });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /* ── sync + keyboard ── */
   useEffect(() => {
     const sync = () => { const d = docId ? canvasStore.getById(docId) : null; if (d) { setTitle(d.title); setContent(d.content); } };
-    window.addEventListener('canvas-updated', sync);
-    return () => window.removeEventListener('canvas-updated', sync);
+    window.addEventListener('canvas-updated', sync); return () => window.removeEventListener('canvas-updated', sync);
   }, [docId]);
 
   useEffect(() => {
@@ -190,11 +196,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
   useEffect(() => { if (titleEdit) titleInputRef.current?.select(); }, [titleEdit]);
 
-  /* ── auto-focus editor on mount ── */
-  useEffect(() => {
-    const t = setTimeout(() => editorRef.current?.view?.focus(), 80);
-    return () => clearTimeout(t);
-  }, []);
+  useEffect(() => { const t = setTimeout(() => editorRef.current?.view?.focus(), 80); return () => clearTimeout(t); }, []);
 
   /* ── helpers ── */
   const wrap = useCallback((b: string, a: string) => {
@@ -208,7 +210,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
   /* ── menus ── */
   const menus = useCanvasMenus({ words, chars, readMin, mode, dark, tw, focusMode, lineLen, font, docType, setMode, setDark, setTw, setFocusMode, setLineLen, setFontSize, setFont, setActiveMenu, wrap, importFile, exportMd, printDoc, createFile: handleCreateFile, onClose });
-
 
   const chromeStyle: React.CSSProperties = {
     position: 'absolute', top: 0, left: panelLeft, right: 0, zIndex: 20,
@@ -251,6 +252,12 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
               <CanvasNodeEditor ref={nodeEditorRef} docId={docId} dark={dark} />
             </div>
           )}
+          <div style={{ display: docType === 'image' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
+            {activeFsFile && <ImageViewer entry={activeFsFile} P={P} />}
+          </div>
+          <div style={{ display: docType === 'office' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
+            {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
+          </div>
           {/* Floating + Card button — top-right of canvas area */}
           {docType === 'nodes' && (
             <button onClick={() => nodeEditorRef.current?.addCard()}
