@@ -196,7 +196,28 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
   /* ── sync + keyboard ── */
   useEffect(() => {
-    const sync = () => { const d = docId ? canvasStore.getById(docId) : null; if (d) { setTitle(d.title); setContent(d.content); } };
+    const sync = () => {
+      const d = docId ? canvasStore.getById(docId) : null;
+      if (!d) return;
+      setTitle(d.title);
+      setContent(d.content);
+      // Supabase 可能拉回 type:'doc' 的旧数据，需同步推断正确的 docType
+      const inferredType = (() => {
+        if (d.type && d.type !== 'doc') return d.type;
+        const c = d.content?.trim() ?? '';
+        if (c.startsWith('{')) {
+          try {
+            const p = JSON.parse(c);
+            if ('elements' in p || p.type === 'excalidraw') return 'canvas' as const;
+            if ('nodes' in p && 'edges' in p)               return 'nodes'  as const;
+          } catch {}
+        }
+        return (d.type ?? 'doc') as 'doc';
+      })();
+      setDocType(inferredType);
+      // 顺手修复 Supabase 里的脏数据
+      if (inferredType !== d.type) canvasStore.update(d.id, { type: inferredType });
+    };
     window.addEventListener('canvas-updated', sync);
     return () => window.removeEventListener('canvas-updated', sync);
   }, [docId]);
