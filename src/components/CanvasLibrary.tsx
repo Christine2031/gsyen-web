@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useRef } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
-import { SYS_FONT, TITLE_H, isElectron } from './CanvasEditorTypes';
+import { SYS_FONT, TITLE_H } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
 import type { FolderSource } from '../hooks/useFileSystem';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
@@ -47,9 +47,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
   const { libW } = useCanvasPanelWidths();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupDir, setPopupDir] = useState<'up'|'down'>('up');
-  const [popupAnchor, setPopupAnchor] = useState(0);
-  const popupRef  = useRef<HTMLDivElement>(null);
+  const popupRef   = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -64,18 +62,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
     return () => document.removeEventListener('mousedown', fn);
   }, [popupOpen]);
 
-  const handleToggle = () => {
-    if (isElectron) {
-      const api = (window as any).electronAPI;
-      api.library.onMenuResult((action: string) => {
-        if (action === 'files')  handleAddFiles();
-        if (action === 'folder') handleAddFolder();
-      });
-      api.library.showMenu();
-    } else {
-      setPopupOpen(o => !o);
-    }
-  };
+  const handleToggle = () => setPopupOpen(o => !o);
 
   const handleAddFolder = () => { setPopupOpen(false); libraryStore.addFolder(); };
   const handleAddFiles  = async () => {
@@ -89,7 +76,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       background: P.chrome, borderRight: `0.5px solid ${P.border}`,
       display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div style={{ width: libW, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: libW, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
         {/* ─ Header ─ */}
         <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
@@ -151,8 +138,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
 
         {/* ─ Popup ─ */}
         <div ref={popupRef}
-          style={{ position: 'fixed', left: 0, width: libW, zIndex: 200,
-            ...(popupDir === 'down' ? { top: popupAnchor } : { bottom: popupAnchor }),
+          style={{ position: 'absolute', bottom: 36, left: 0, width: '100%', zIndex: 200,
             background: P.chrome, borderRadius: 8,
             boxShadow: `0 4px 24px rgba(0,0,0,${dark ? 0.45 : 0.14})`,
             maxHeight: popupOpen ? '200px' : '0px',
