@@ -63,7 +63,7 @@ export function useCanvasFileOps({ title, content, onTitleChange, onContent, set
         @media print{body{margin:0;padding:20px}}
       </style>
     </head><body>
-      <h1>${title || '无标题'}</h1>
+      <h1>${(title || '无标题').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</h1>
       <p>${md}</p>
     </body></html>`);
     w.document.close();

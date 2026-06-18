@@ -131,6 +131,7 @@ export function useChatStream(): UseChatStreamReturn {
       const localAnswer = await askPredictionExpert(text);
       if (localAnswer) {
         setIsLoading(false);
+        await typewrite(localAnswer, onToken);
         onDone(localAnswer);
         return;
       }

@@ -105,7 +105,6 @@ export function useCanvasMenus(p: Params): MenuSpec[] {
       { label: 'Larger Text',  shortcut: 'Ctrl++', action: () => { p.setFontSize(s => Math.min(24, s + 1)); p.setActiveMenu(null); } },
       { label: 'Smaller Text', shortcut: 'Ctrl+−', action: () => { p.setFontSize(s => Math.max(13, s - 1)); p.setActiveMenu(null); } },
       '---',
-      '---',
       { label: 'New Document',    action: () => p.createFile('doc')    },
       { label: 'New Whiteboard',  action: () => p.createFile('canvas') },
       { label: 'New Node Canvas', action: () => p.createFile('nodes')  },
