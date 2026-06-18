@@ -8,7 +8,7 @@ import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
 import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
-import { DocIcon, DrawIcon, NodeIcon } from '../gsyen-designer';
+import { DocIcon, DrawIcon, NodeIcon, ImageIcon } from '../gsyen-designer';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 import { CanvasDocListMenu } from './CanvasDocListMenu';
 
@@ -16,8 +16,9 @@ import { CanvasDocListMenu } from './CanvasDocListMenu';
 const _MAX_CACHE = 40;
 const _prefetchCache = new Map<string, string>();
 
+const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i;
 function _prefetchFile(file: FileEntry) {
-  if (!file.path || _prefetchCache.has(file.path)) return;
+  if (!file.path || _prefetchCache.has(file.path) || _MEDIA_RE.test(file.name)) return;
   fsAdapter.readFile(file).then(text => {
     if (_prefetchCache.size >= _MAX_CACHE) _prefetchCache.delete(_prefetchCache.keys().next().value!);
     _prefetchCache.set(file.path!, text);
@@ -43,9 +44,11 @@ function relativeDate(ts?: number): string {
   return new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
 }
 
+const _IMG_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 function fileIcon(name: string) {
   if (/\.excalidraw$/i.test(name)) return DrawIcon;
   if (/\.canvas$/i.test(name))     return NodeIcon;
+  if (_IMG_RE.test(name))          return ImageIcon;
   return DocIcon;
 }
 
@@ -80,8 +83,8 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     setRenamingPath(null);
     const base = newBase.trim();
     if (!base || !entry.path) return;
-    const ext = entry.isDirectory ? '' : (entry.name.match(/\.(md|txt|excalidraw|canvas)$/i)?.[0] ?? '');
-    const newName = (!entry.isDirectory && !base.endsWith(ext)) ? base + ext : base;
+    const ext = entry.isDirectory ? '' : (entry.name.match(/\.[^.]+$/)?.[0] ?? '');
+    const newName = (!entry.isDirectory && ext && !base.endsWith(ext)) ? base + ext : base;
     if (newName === entry.name) return;
     const result = await fsAdapter.renameFile(entry, newName);
     if (result.ok && result.newPath) {
@@ -126,6 +129,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
 
   const handleSelect = useCallback(async (file: FileEntry) => {
     libraryStore.setSelectedFile(file);
+    if (_MEDIA_RE.test(file.name)) { onFileSelect(file, ''); return; }
     const cached = file.path ? _prefetchCache.get(file.path) : undefined;
     const content = cached !== undefined ? cached : await fsAdapter.readFile(file);
     onFileSelect(file, content);
@@ -141,7 +145,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
 
   const renameInput = (entry: FileEntry) => (
     <input autoFocus
-      defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
+      defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.[^.]+$/, '')}
       style={{ flex: 1, fontSize: 13, fontFamily: SYS_FONT, background: 'transparent',
         border: 'none', borderBottom: `1px solid ${P.fg}40`, outline: 'none',
         color: P.fg, padding: 0, minWidth: 0 }}
@@ -262,7 +266,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
                       <span style={{ flex: 1, fontSize: 13, color: active ? P.fg : P.menuFg,
                         fontWeight: 500, fontFamily: SYS_FONT,
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
+                        {entry.name.replace(/\.[^.]+$/, '')}
                       </span>
                     )}
                     {!renaming && (

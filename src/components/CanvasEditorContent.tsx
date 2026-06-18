@@ -22,6 +22,8 @@ import { MermaidBlock } from './MermaidBlock';
 import { CanvasStatsPill } from './CanvasStatsPill';
 import { CanvasLibrary } from './CanvasLibrary';
 import { CanvasDocList, invalidatePrefetch } from './CanvasDocList';
+import { ImageViewer } from './ImageViewer';
+import { OfficeViewer } from './OfficeViewer';
 import type { FileEntry } from '../hooks/useFileSystem';
 import { fsAdapter } from '../hooks/useFileSystem';
 import { libraryStore, useLibraryStore } from '../stores/canvasLibraryStore';
@@ -38,7 +40,19 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const [dark,          setDark]          = useState(false);
   const [tw,            setTw]            = useState(false);
   const [focusMode,     setFocusMode]     = useState<FocusMode>('off');
-  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'>(stored?.type ?? 'doc');
+  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(() => {
+    if (stored?.type && stored.type !== 'doc') return stored.type;
+    // 修复旧数据：type 未存或错存为 'doc'，从 content 推断
+    const c = stored?.content?.trim() ?? '';
+    if (c.startsWith('{')) {
+      try {
+        const p = JSON.parse(c);
+        if ('elements' in p || p.type === 'excalidraw') return 'canvas';
+        if ('nodes' in p && 'edges' in p)               return 'nodes';
+      } catch {}
+    }
+    return stored?.type ?? 'doc';
+  });
   const [chromeVisible, setChromeVisible] = useState(true);
   const [lineLen,       setLineLen]       = useState<LineLen>(72);
   const [fontSize,      setFontSize]      = useState(17);
@@ -60,7 +74,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
   const { libW, doclistW } = useCanvasPanelWidths();
   const { selectedFolder } = useLibraryStore();
-  const panelLeft = docType === 'doc' && sidebarOpen ? libW + doclistW : 0;
+  const panelLeft = (docType === 'doc' || docType === 'image' || docType === 'office') && sidebarOpen ? libW + doclistW : 0;
 
   const P          = dark ? DARK : LIGHT;
   const fontFamily = font === 'mono'
@@ -118,11 +132,14 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     setTimeout(() => {
       setActiveFsFile(entry);
       setContent(text);
-      setTitle(entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, ''));
-      if (/\.excalidraw$/i.test(entry.name))   setDocType('canvas');
-      else if (/\.canvas$/i.test(entry.name))  setDocType('nodes');
-      else                                     setDocType('doc');
-      if (docId) canvasStore.update(docId, { content: text });
+      setTitle(entry.name.replace(/\.[^.]+$/, ''));
+      const newType = /\.excalidraw$/i.test(entry.name) ? 'canvas' as const
+        : /\.canvas$/i.test(entry.name)                   ? 'nodes'  as const
+        : /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name) ? 'image' as const
+        : /\.(docx|xlsx|pptx)$/i.test(entry.name)         ? 'office' as const
+        : 'doc' as const;
+      setDocType(newType);
+      if (docId) canvasStore.update(docId, { content: text, type: newType });
       setEditorFade(1);
     }, 80);
   }, [docId]);
@@ -266,14 +283,16 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
       {/* Content — 三个面板常驻 DOM，display 切换避免重复挂载卸载 */}
       <div style={{ position:'absolute', inset:0, overflow:'hidden' }}>
-        {/* Doc — three-pane: Library | DocList | Editor */}
-        <div style={{ display: docType === 'doc' ? 'flex' : 'none', width:'100%', height:'100%' }}>
+        {/* Doc / Image / Office — three-pane: Library | DocList | Content */}
+        <div style={{ display: (docType === 'doc' || docType === 'image' || docType === 'office') ? 'flex' : 'none', width:'100%', height:'100%' }}>
           <CanvasLibrary open={sidebarOpen} P={P} dark={dark} />
           <CanvasDocList open={sidebarOpen} onFileSelect={onFsFileSelect} P={P} dark={dark}
             onBack={handleDocListBack} onNew={() => handleCreateFile('doc')} />
           <div style={{ flex: 1, display: 'flex', minWidth: 0, paddingTop: CHROME_H + 1,
             opacity: editorFade, transition: 'opacity 0.13s ease' }}>
-            {mode === 'split' ? <>{EditorPane}{PreviewPane}</> : mode === 'preview' ? PreviewPane : EditorPane}
+            {docType === 'image' && activeFsFile && <ImageViewer entry={activeFsFile} P={P} />}
+            {docType === 'office' && activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
+            {docType === 'doc' && (mode === 'split' ? <>{EditorPane}{PreviewPane}</> : mode === 'preview' ? PreviewPane : EditorPane)}
           </div>
         </div>
         {/* Whiteboard */}

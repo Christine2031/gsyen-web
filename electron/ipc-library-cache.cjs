@@ -61,8 +61,8 @@ async function _scanFolder(folderPath, onUpdate) {
       onUpdate(folderPath, raw);
     }
 
-    // Phase 3: 补其余文件（excalidraw/canvas）的 mtime，用于排序
-    const otherFiles = raw.filter(e => !e.isDir && /\.(excalidraw|canvas)$/i.test(e.name));
+    // Phase 3: 补其余文件的 mtime，用于排序（excalidraw/canvas/图片/Office）
+    const otherFiles = raw.filter(e => !e.isDir && /\.(excalidraw|canvas|jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i.test(e.name));
     for (const e of otherFiles) {
       try { e.lastModified = fs.statSync(path.join(folderPath, e.name)).mtimeMs; } catch {}
     }

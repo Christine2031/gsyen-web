@@ -22,7 +22,7 @@ interface Props {
   setActiveMenu: (v: MenuId | ((p: MenuId) => MenuId)) => void;
   mode:          EditorMode;
   setMode:       (m: EditorMode | ((p: EditorMode) => EditorMode)) => void;
-  docType:       'doc' | 'canvas' | 'nodes';
+  docType:       'doc' | 'canvas' | 'nodes' | 'image' | 'office';
   onAddCard?:    () => void;
   onClose:       () => void;
   sidebarOpen:    boolean;
@@ -83,7 +83,7 @@ export function CanvasChrome({
               style={{ fontFamily: SYS_FONT, fontSize: 14, fontWeight: 500, color: P.menuFg,
                 userSelect: 'none', letterSpacing: '0.01em', cursor: 'text', maxWidth: 440,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {title || '无标题'}{docType === 'canvas' ? '.excalidraw' : docType === 'nodes' ? '.canvas' : '.md'}&nbsp;— GSYEN Writer
+              {title || '无标题'}{docType === 'canvas' ? '.excalidraw' : docType === 'nodes' ? '.canvas' : (docType === 'image' || docType === 'office') ? '' : '.md'}&nbsp;— GSYEN Writer
             </span>
           )}
         </div>
@@ -128,7 +128,7 @@ export function CanvasChrome({
       )}
 
       {/* ══ Non-doc action bar ════════════════════════════════════════════════ */}
-      {docType !== 'doc' && (
+      {(docType === 'canvas' || docType === 'nodes') && (
         <div onClick={stopProp}
           style={{ height: MENU_H, background: P.chrome,
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px',

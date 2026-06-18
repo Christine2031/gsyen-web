@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 
 const KEY = 'gsyen_canvas_docs';
 
-export type CanvasType = 'doc' | 'canvas' | 'nodes';
+export type CanvasType = 'doc' | 'canvas' | 'nodes' | 'image' | 'office';
 
 export interface CanvasDoc {
   id:        string;
