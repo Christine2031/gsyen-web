@@ -25,7 +25,7 @@ import { CanvasLibrary } from './CanvasLibrary';
 import { CanvasDocList, invalidatePrefetch } from './CanvasDocList';
 import type { FileEntry } from '../hooks/useFileSystem';
 import { fsAdapter } from '../hooks/useFileSystem';
-import { libraryStore, useLibraryStore } from '../stores/canvasLibraryStore';
+import { libraryStore } from '../stores/canvasLibraryStore';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 import { ImageViewer } from './ImageViewer';
 import { OfficeViewer } from './OfficeViewer';
@@ -80,7 +80,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const titleInputRef  = useRef<HTMLInputElement>(null);
 
   const { libW, doclistW } = useCanvasPanelWidths();
-  const { selectedFolder } = useLibraryStore();
   const panelLeft = sidebarOpen ? libW + doclistW : 0;
 
   const P          = dark ? DARK : LIGHT;
