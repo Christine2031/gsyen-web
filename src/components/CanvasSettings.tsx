@@ -48,8 +48,8 @@ function Seg<T extends string>({ options, value, onChange, P }: {
         <button key={o.value} onClick={() => onChange(o.value)}
           style={{ padding: '5px 12px', fontFamily: SYS_FONT, fontSize: 12,
             fontWeight: 500, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-            background: value === o.value ? P.fg : 'transparent',
-            color:      value === o.value ? P.bg : P.fg,
+            background: value === o.value ? P.accent : 'transparent',
+            color:      value === o.value ? '#fff' : P.fg,
             transition: 'background 0.12s, color 0.12s' }}>
           {o.label}
         </button>
