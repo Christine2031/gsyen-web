@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
-import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
+import { SYS_FONT, TITLE_H } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
 import type { FolderSource } from '../hooks/useFileSystem';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
@@ -118,7 +118,11 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
 
         {/* ─ Header ─ */}
         <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          justifyContent: 'flex-end', padding: '0 4px' }}>
+          padding: '0 4px 0 10px' }}>
+          <span style={{ flex: 1, fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
+            fontFamily: SYS_FONT, color: P.dim, textTransform: 'uppercase', userSelect: 'none' }}>
+            Library
+          </span>
           <button onClick={onSettings} title="Settings"
             style={{ padding: '6px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
               color: P.menuFg, display: 'flex', alignItems: 'center', borderRadius: 4, flexShrink: 0 }}
@@ -130,13 +134,6 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
               <path d="M10.5 3.6L10.1 1.2L14.9 1.2L13.5 3.6L18.5 6.5L20.4 4.9L22.3 8.2L20 9.1L20 14.9L22.3 15.8L20.4 19.1L18.5 17.5L13.5 20.4L13.9 22.8L10.1 22.8L10.5 20.4L5.5 17.5L3.6 19.1L1.7 15.8L4 14.9L4 9.1L1.7 8.2L3.6 4.9L5.5 6.5Z"/>
             </svg>
           </button>
-        </div>
-        <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          padding: '0 10px' }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
-            fontFamily: SYS_FONT, color: P.dim, textTransform: 'uppercase', userSelect: 'none' }}>
-            Library
-          </span>
         </div>
 
         {/* ─ Folder list ─ */}
