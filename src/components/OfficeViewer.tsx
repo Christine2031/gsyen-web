@@ -4,6 +4,7 @@ import type { Palette } from './CanvasEditorTypes';
 import { SYS_FONT } from './CanvasEditorTypes';
 import { ExcelEditor } from './ExcelEditor';
 import { DocxEditor } from './DocxEditor';
+import { PdfViewer } from './PdfViewer';
 
 interface Props { entry: FileEntry; P: Palette; dark: boolean; }
 
@@ -142,17 +143,20 @@ function XlsxView({ sheets, filePath, P, dark }: {
 
 /* ── OfficeViewer ── */
 export function OfficeViewer({ entry, P, dark }: Props) {
+  const ext = entry.path?.split('.').pop()?.toLowerCase();
   const [result,  setResult]  = useState<ParseResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!entry.path) return;
+    if (!entry.path || ext === 'pdf') return;
     setLoading(true); setResult(null);
     (window as any).electronAPI?.docviewer?.parseOffice(entry.path)
       .then((r: ParseResult) => setResult(r))
       .catch((e: Error) => setResult({ ok: false, error: e.message }))
       .finally(() => setLoading(false));
   }, [entry.path]);
+
+  if (ext === 'pdf') return <PdfViewer entry={entry} P={P} dark={dark} />;
 
   const center: React.CSSProperties = { display: 'flex', flexDirection: 'column',
     alignItems: 'center', justifyContent: 'center',

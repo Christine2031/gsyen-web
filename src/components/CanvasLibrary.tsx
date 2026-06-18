@@ -24,7 +24,7 @@ async function pickFiles(): Promise<FolderSource[]> {
   if (api?.showOpenDialog) {
     const r = await api.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Documents', extensions: ['md', 'txt', 'canvas', 'excalidraw'] }],
+      filters: [{ name: 'Documents', extensions: ['md', 'txt', 'canvas', 'excalidraw', 'docx', 'xlsx', 'pdf'] }],
     });
     if (r?.canceled || !r?.filePaths?.length) return [];
     const seen = new Set<string>();

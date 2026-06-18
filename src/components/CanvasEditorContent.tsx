@@ -128,7 +128,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     fsSelectTimer.current = setTimeout(() => {
       fsSelectTimer.current = null;
       setActiveFsFile(entry); setContent(text); setTitle(entry.name.replace(/\.[^.]+$/, ''));
-      const t = /\.excalidraw$/i.test(entry.name)?'canvas':/\.canvas$/i.test(entry.name)?'nodes':/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name)?'image':/\.(docx|xlsx|pptx)$/i.test(entry.name)?'office':'doc';
+      const t = /\.excalidraw$/i.test(entry.name)?'canvas':/\.canvas$/i.test(entry.name)?'nodes':/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name)?'image':/\.(docx|xlsx|pptx|pdf)$/i.test(entry.name)?'office':'doc';
       setDocType(t); if(t==='canvas') setCanvasEverActive(true); if(t==='nodes') setNodesEverActive(true);
       if (docId && /\.(md|txt)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
       setEditorFade(1);
