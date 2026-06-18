@@ -115,8 +115,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
 
   const inSub     = navStack.length > 0;
   const isLoading = inSub ? navLoading : loading;
-  // 进入子目录时 navFiles 还是 []，先用 parent files 占位，避免空列表闪烁
-  const displayFiles = (inSub && navFiles.length === 0) ? files : (inSub ? navFiles : files);
+  const displayFiles = inSub ? navFiles : files;
 
   const knownPathsRef = useRef(new Set<string>());
 
@@ -132,6 +131,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     const t = setTimeout(() => setListOpacity(1), 50);
     return () => clearTimeout(t);
   }, [activeFolderPath]);
+  useEffect(() => { if (displayFiles.length > 0) setListOpacity(1); }, [displayFiles]);
   const newPaths = new Set(displayFiles.map(f => f.path).filter(p => !knownPathsRef.current.has(p)));
   displayFiles.forEach(f => knownPathsRef.current.add(f.path));
 
