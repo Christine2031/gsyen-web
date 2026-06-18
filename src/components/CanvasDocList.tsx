@@ -134,11 +134,14 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   const newPaths = new Set(displayFiles.map(f => f.path).filter(p => !knownPathsRef.current.has(p)));
   displayFiles.forEach(f => knownPathsRef.current.add(f.path));
 
+  const selectSeqRef = useRef(0);
   const handleSelect = useCallback(async (file: FileEntry) => {
     libraryStore.setSelectedFile(file);
+    const seq = ++selectSeqRef.current;
     if (_MEDIA_RE.test(file.name)) { onFileSelect(file, ''); return; }
     const cached = file.path ? _prefetchCache.get(file.path) : undefined;
     const content = cached !== undefined ? cached : await fsAdapter.readFile(file);
+    if (seq !== selectSeqRef.current) return; // 已有更新的点击，丢弃此次结果
     onFileSelect(file, content);
   }, [onFileSelect]);
 

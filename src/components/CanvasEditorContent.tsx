@@ -67,6 +67,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const activeMenuRef  = useRef<MenuId>(null);
   const editorRef      = useRef<{ view: EditorView } | null>(null);
   const saveRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fsSelectTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nodeEditorRef  = useRef<CanvasNodeEditorRef>(null);
   const menuBarRef     = useRef<HTMLDivElement>(null);
   const creatingRef    = useRef(false);
@@ -127,8 +128,10 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   }, [title, save, activeFsFile]);
 
   const onFsFileSelect = useCallback((entry: FileEntry, text: string) => {
+    if (fsSelectTimer.current) clearTimeout(fsSelectTimer.current);
     setEditorFade(0);
-    setTimeout(() => {
+    fsSelectTimer.current = setTimeout(() => {
+      fsSelectTimer.current = null;
       setActiveFsFile(entry);
       setContent(text);
       setTitle(entry.name.replace(/\.[^.]+$/, ''));
