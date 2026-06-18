@@ -102,9 +102,10 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     fsAdapter.deleteFile(entry);
   }, []);
 
-  const inSub        = navStack.length > 0;
-  const displayFiles = inSub ? navFiles : files;
-  const isLoading    = inSub ? navLoading : loading;
+  const inSub     = navStack.length > 0;
+  const isLoading = inSub ? navLoading : loading;
+  // 进入子目录时 navFiles 还是 []，先用 parent files 占位，避免空列表闪烁
+  const displayFiles = (inSub && navFiles.length === 0) ? files : (inSub ? navFiles : files);
 
   const knownPathsRef = useRef(new Set<string>());
 
