@@ -30,7 +30,7 @@ import type { Palette } from './CanvasEditorTypes';
 import { DocIcon, DrawIcon, NodeIcon } from '../gsyen-designer';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 
-interface Props { open: boolean; onFileSelect: (e: FileEntry, c: string) => void; P: Palette; onBack: () => void; onNew: () => void; }
+interface Props { open: boolean; onFileSelect: (e: FileEntry, c: string) => void; P: Palette; dark: boolean; onBack: () => void; onNew: () => void; }
 
 function relativeDate(ts?: number): string {
   if (!ts) return '';
@@ -49,7 +49,7 @@ function fileIcon(name: string) {
 // widths for skeleton rows — vary to look natural
 const SKEL_WIDTHS = ['72%', '58%', '80%', '64%', '50%'];
 
-export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
+export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Props) {
   const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile } = useLibraryStore();
   const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
   const { doclistW } = useCanvasPanelWidths();
@@ -237,16 +237,18 @@ export function CanvasDocList({ open, onFileSelect, P, onBack, onNew }: Props) {
     {ctxEntry && createPortal(
       <div onMouseDown={e => e.stopPropagation()}
         style={{ position: 'fixed', left: ctxEntry.x, top: ctxEntry.y, zIndex: 9999,
-          background: P.menuBg, borderRadius: 8, padding: '5px 0',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
-          minWidth: 180, border: `1px solid ${P.menuBorder}` }}>
+          background: dark ? '#2C2C2C' : '#FFFFFF', borderRadius: 8, padding: '5px 0',
+          boxShadow: dark
+            ? '0 12px 40px rgba(0,0,0,0.6), 0 2px 8px rgba(0,0,0,0.4)'
+            : '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
+          minWidth: 180 }}>
         <button
           onClick={() => handleDelete(ctxEntry.entry)}
           style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
             background: 'transparent', border: 'none', cursor: 'default',
             fontSize: 13, fontFamily: SYS_FONT, fontWeight: 400,
-            color: '#C42B1C', whiteSpace: 'nowrap' }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(196,43,28,0.08)'}
+            color: dark ? '#CCCCCC' : '#1A1A1A', whiteSpace: 'nowrap', letterSpacing: 'normal' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.05)'}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
           {ctxEntry.entry.isDirectory ? '删除文件夹' : '删除文件'}
         </button>

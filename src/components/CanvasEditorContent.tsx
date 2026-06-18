@@ -229,7 +229,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
         {/* Doc — three-pane: Library | DocList | Editor */}
         <div style={{ display: docType === 'doc' ? 'flex' : 'none', width:'100%', height:'100%' }}>
           <CanvasLibrary open={sidebarOpen} P={P} dark={dark} />
-          <CanvasDocList open={sidebarOpen} onFileSelect={onFsFileSelect} P={P}
+          <CanvasDocList open={sidebarOpen} onFileSelect={onFsFileSelect} P={P} dark={dark}
             onBack={handleDocListBack} onNew={() => handleCreateFile('doc')} />
           <CanvasWriterPane content={content} onContent={onContent} extensions={extensions}
             P={P} mode={mode} fontFamily={fontFamily} fontSize={fontSize} dark={dark}
