@@ -213,7 +213,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                 onClick={() => handleDirClick(entry)}
                 onContextMenu={e => handleContextMenu(e, entry)}
-                onMouseEnter={() => setHoveredPath(entry.path)}
+                onMouseEnter={() => { setHoveredPath(entry.path); libraryStore.prefetchDir(entry); }}
                 onMouseLeave={() => setHoveredPath(null)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8,
                   padding: '0 10px 0 12px', height: 36, cursor: 'pointer',

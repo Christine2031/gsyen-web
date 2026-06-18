@@ -244,6 +244,13 @@ export const libraryStore = {
     } catch { _set({ navLoading: false }); }
   },
 
+  prefetchDir(entry: FileEntry) {
+    if (!entry.path || _dirCache.has(entry.path)) return;
+    if (_dirCache.size >= 40) _dirCache.delete(_dirCache.keys().next().value!);
+    const src: FolderSource = entry.dirHandle ? { id: entry.path, name: entry.name, handle: entry.dirHandle, env: 'web' } : { id: entry.path, name: entry.name, path: entry.path, env: 'electron' };
+    fsAdapter.readDir(src).then(raw => _dirCache.set(entry.path!, raw)).catch(() => {});
+  },
+
   async refreshCurrent() {
     if (_s.navStack.length > 0) {
       const src = _s.navStack[_s.navStack.length - 1];

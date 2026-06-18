@@ -29,6 +29,11 @@ import { OfficeViewer } from './OfficeViewer';
 
 interface Props { docId: string | undefined; onClose: () => void; }
 
+const _infer = (d: {type?:string;content?:string}|null|undefined): 'doc'|'canvas'|'nodes'|'image'|'office' => {
+  if (d?.type && d.type !== 'doc') return d.type as any;
+  try { const p=JSON.parse(d?.content?.trim()??''); if('elements'in p||p.type==='excalidraw') return 'canvas'; if('nodes'in p&&'edges'in p) return 'nodes'; } catch {} return 'doc';
+};
+
 export function CanvasEditorContent({ docId, onClose }: Props) {
   const stored = docId ? canvasStore.getById(docId) : null;
 
@@ -38,7 +43,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const [dark,          setDark]          = useState(false);
   const [tw,            setTw]            = useState(false);
   const [focusMode,     setFocusMode]     = useState<FocusMode>('off');
-  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(stored?.type ?? 'doc');
+  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(() => _infer(stored));
   const [chromeVisible, setChromeVisible] = useState(true);
   const [lineLen,       setLineLen]       = useState<LineLen>(72);
   const [fontSize,      setFontSize]      = useState(17);
@@ -161,18 +166,12 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     ...(tw ? [typewriterExt()] : []),
   ], [dark, focusMode, tw, fontSize, fontFamily]);
 
-  useEffect(() => {
-    if (docId && stored && (stored.type ?? 'doc') !== docType) canvasStore.update(docId, { type: docType });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (docId && docType !== (stored?.type ?? 'doc')) canvasStore.update(docId, { type: docType }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const sync = () => {
       const d = docId ? canvasStore.getById(docId) : null; if (!d) return;
-      setTitle(d.title); setContent(d.content);
-      if (d.type && d.type !== 'doc') { setDocType(d.type as any); return; }
-      let t: 'doc'|'canvas'|'nodes'|'image'|'office' = 'doc';
-      if (d.content?.trim().startsWith('{')) { try { const p = JSON.parse(d.content); if ('elements' in p || p.type === 'excalidraw') t = 'canvas'; else if ('nodes' in p && 'edges' in p) t = 'nodes'; } catch {} }
-      setDocType(t); if (t !== d.type) canvasStore.update(d.id, { type: t });
+      setTitle(d.title); setContent(d.content); const t = _infer(d); setDocType(t); if (t !== (d.type ?? 'doc')) canvasStore.update(d.id, { type: t });
     };
     window.addEventListener('canvas-updated', sync); return () => window.removeEventListener('canvas-updated', sync);
   }, [docId]);
