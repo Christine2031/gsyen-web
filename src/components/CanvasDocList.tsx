@@ -71,11 +71,10 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
 
   const handleDelete = useCallback(async (entry: FileEntry) => {
     setCtxMenu(null);
-    const ok = await fsAdapter.deleteFile(entry);
-    if (ok) {
-      libraryStore.optimisticRemoveFile(entry.path);
-      if (entry.path) invalidatePrefetch(entry.path);
-    }
+    // 先乐观移除 UI，不等 IPC 返回（避免 Dropbox 首次操作卡顿）
+    libraryStore.optimisticRemoveFile(entry.path);
+    if (entry.path) invalidatePrefetch(entry.path);
+    fsAdapter.deleteFile(entry);
   }, []);
 
   const inSub        = navStack.length > 0;
