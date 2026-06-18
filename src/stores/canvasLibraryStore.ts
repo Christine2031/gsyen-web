@@ -120,8 +120,7 @@ export const libraryStore = {
     _set({ selectedFolder: src, loading: true, files: [], selectedFile: null, navStack: [], navFiles: [] });
     try {
       const files = await fsAdapter.readDir(src);
-      // files 可能为空（缓存冷启动），等 cache-update 事件补充
-      _set({ files, loading: files.length > 0 ? false : true });
+      _set({ files, loading: false });
     } catch {
       _set({ loading: false });
     }
@@ -136,7 +135,7 @@ export const libraryStore = {
     _set({ navStack, navLoading: true });
     try {
       const navFiles = await fsAdapter.readDir(src);
-      _set({ navFiles, navLoading: navFiles.length === 0 });
+      _set({ navFiles, navLoading: false });
     } catch { _set({ navLoading: false }); }
   },
 
@@ -149,7 +148,7 @@ export const libraryStore = {
     } else {
       try {
         const navFiles = await fsAdapter.readDir(navStack[navStack.length - 1]);
-        _set({ navFiles, navLoading: navFiles.length === 0 });
+        _set({ navFiles, navLoading: false });
       } catch { _set({ navLoading: false }); }
     }
   },

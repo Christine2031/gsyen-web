@@ -139,10 +139,15 @@ async function _elReadDir(src: FolderSource): Promise<FileEntry[]> {
   const api = (window as any).electronAPI;
   if (!src.path) return [];
   try {
-    // 优先走缓存层；null = 冷启动未扫完，渲染层等 cache-update 事件
-    const entries: RawEntry[] | null = await api?.library?.readDir?.(src.path) ?? null;
-    if (!entries) return [];
-    return _entriesToFileEntries(src.path, entries);
+    // 新缓存层（需重启 Electron 生效）
+    if (api?.library?.readDir) {
+      const entries: RawEntry[] | null = await api.library.readDir(src.path);
+      if (entries) return _entriesToFileEntries(src.path, entries);
+      return []; // null = 冷启动扫描中，等 cache-update 事件
+    }
+    // Fallback：旧版 Electron，直接读目录（无预览）
+    const raw: RawEntry[] = await api?.readDir?.(src.path) ?? [];
+    return _entriesToFileEntries(src.path, raw);
   } catch { return []; }
 }
 
