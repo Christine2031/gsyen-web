@@ -201,11 +201,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
             return (
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                 onClick={() => handleSelect(entry)}
-<<<<<<< HEAD
-                onContextMenu={e => { e.preventDefault(); setCtxEntry({ entry, x: e.clientX, y: e.clientY }); }}
-=======
                 onContextMenu={(e) => handleContextMenu(e, entry)}
->>>>>>> 3fba748 (feat(library): 右键删除文件/文件夹（移到废纸篓）)
                 onMouseEnter={() => { setHoveredPath(entry.path); _prefetchFile(entry); }}
                 onMouseLeave={() => setHoveredPath(null)}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
