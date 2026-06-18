@@ -138,7 +138,7 @@ export function CanvasLibrary({ open, P, dark }: Props) {
 
         {/* ─ Popup ─ */}
         <div ref={popupRef}
-          style={{ position: 'absolute', bottom: 44, left: 8, right: 8, zIndex: 200,
+          style={{ position: 'absolute', bottom: 44, left: 8, minWidth: 220, zIndex: 200,
             background: dark ? '#2A2A2A' : '#FFFFFF',
             borderRadius: 6,
             boxShadow: `0 8px 32px rgba(0,0,0,${dark ? 0.5 : 0.18}), 0 2px 8px rgba(0,0,0,${dark ? 0.3 : 0.08})`,
