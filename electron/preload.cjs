@@ -53,18 +53,25 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setGatewayMode:  (mode) => ipcRenderer.invoke('v2ray:setGatewayMode', mode),
   },
   library: {
-    showMenu:     (pos)   => ipcRenderer.send('library:showMenu', pos),
-    onMenuResult: (fn)    => ipcRenderer.once('library:menuResult', (_e, action) => fn(action)),
-    scanAll:      (paths) => ipcRenderer.invoke('library:scanAll', paths),
-    readDir:      (p)     => ipcRenderer.invoke('library:readDir', p),
+    showMenu:      (pos)  => ipcRenderer.send('library:showMenu', pos),
+    onMenuResult:  (fn)   => ipcRenderer.once('library:menuResult', (_e, action) => fn(action)),
+    scanAll:       (paths) => ipcRenderer.invoke('library:scanAll', paths),
+    readDir:       (p)    => ipcRenderer.invoke('library:readDir', p),
     onCacheUpdate: (fn) => {
       const h = (_e, data) => fn(data);
       ipcRenderer.on('library:cache-update', h);
       return () => ipcRenderer.removeListener('library:cache-update', h);
     },
-    delete:         (filePath)         => ipcRenderer.invoke('library:delete',         filePath),
-    showInExplorer: (filePath)         => ipcRenderer.invoke('library:showInExplorer', filePath),
-    rename:         (oldPath, newName) => ipcRenderer.invoke('library:rename',         oldPath, newName),
+    watchFolder:   (path) => ipcRenderer.send('library:watchFolder', path),
+    unwatchFolder: ()     => ipcRenderer.send('library:unwatchFolder'),
+    onFolderChanged: (fn) => {
+      const h = (_e, p) => fn(p);
+      ipcRenderer.on('library:folderChanged', h);
+      return () => ipcRenderer.removeListener('library:folderChanged', h);
+    },
+    delete:          (filePath)         => ipcRenderer.invoke('library:delete',         filePath),
+    showInExplorer:  (filePath)         => ipcRenderer.invoke('library:showInExplorer', filePath),
+    rename:          (oldPath, newName) => ipcRenderer.invoke('library:rename',         oldPath, newName),
   },
   docviewer: {
     checkInstalled: ()         => ipcRenderer.invoke('docviewer:checkInstalled'),

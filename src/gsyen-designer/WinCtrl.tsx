@@ -19,7 +19,7 @@ const ICON = { minimize: MinIcon, maximize: MaxIcon, close: CloseIcon };
 
 export function WinCtrlButton({ action, dark = false, redClose = false, maximized = false, onClick, title }: WinCtrlButtonProps) {
   const isRedClose = action === 'close' && redClose;
-  const idle    = dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)';
+  const idle    = dark ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.40)';
   const hover   = isRedClose ? 'rgba(255,255,255,0.90)' : (dark ? 'rgba(255,255,255,0.85)' : 'rgba(0,0,0,0.75)');
   const hoverBg = isRedClose ? '#C42B1C' : (dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)');
   const Icon = action === 'maximize' && maximized ? RestoreIcon : ICON[action];

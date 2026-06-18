@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
+import type { SortSettings } from '../stores/canvasLibraryStore';
 import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
 import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
@@ -11,12 +12,13 @@ import type { Palette } from './CanvasEditorTypes';
 import { DocIcon, DrawIcon, NodeIcon, ImageIcon } from '../gsyen-designer';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 import { CanvasDocListMenu } from './CanvasDocListMenu';
+import { CanvasDocListPreview } from './CanvasDocListPreview';
 
 // ── 悬停预加载缓存（最多 40 条，LRU by insertion order）──────────────────────
 const _MAX_CACHE = 40;
 const _prefetchCache = new Map<string, string>();
-
 const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i;
+
 function _prefetchFile(file: FileEntry) {
   if (!file.path || _prefetchCache.has(file.path) || _MEDIA_RE.test(file.name)) return;
   fsAdapter.readFile(file).then(text => {
@@ -27,21 +29,12 @@ function _prefetchFile(file: FileEntry) {
 
 export function invalidatePrefetch(path: string) { _prefetchCache.delete(path); }
 
-interface Props {
-  open:         boolean;
-  onFileSelect: (e: FileEntry, c: string) => void;
-  P:            Palette;
-  dark:         boolean;
-  onBack:       () => void;
-  onNew:        () => void;
-}
-
 function relativeDate(ts?: number): string {
   if (!ts) return '';
   const diff = Date.now() - ts;
-  if (diff < 86_400_000)  return '今天';
-  if (diff < 172_800_000) return '昨天';
-  return new Date(ts).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+  if (diff < 86_400_000)  return 'Today';
+  if (diff < 172_800_000) return 'Yesterday';
+  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 const _IMG_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
@@ -54,13 +47,24 @@ function fileIcon(name: string) {
 
 const SKEL_WIDTHS = ['72%', '58%', '80%', '64%', '50%'];
 
+interface Props {
+  open:         boolean;
+  onFileSelect: (e: FileEntry, c: string) => void;
+  P:            Palette;
+  dark:         boolean;
+  onBack:       () => void;
+  onNew:        () => void;
+}
+
 export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Props) {
-  const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile } = useLibraryStore();
+  const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile, sortSettings } = useLibraryStore();
   const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
   const { doclistW } = useCanvasPanelWidths();
   const [hoveredPath,  setHoveredPath]  = useState<string | null>(null);
   const [ctxMenu,      setCtxMenu]      = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
+  const [preview,      setPreview]      = useState<{ x: number; y: number; text: string } | null>(null);
+  const pvTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!ctxMenu) return;
@@ -98,6 +102,10 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     fsAdapter.showInExplorer(entry);
   }, []);
 
+  const handleSortChange = useCallback((patch: Partial<SortSettings>) => {
+    libraryStore.setSortSettings(patch);
+  }, []);
+
   const handleDelete = useCallback((entry: FileEntry) => {
     setCtxMenu(null);
     libraryStore.optimisticRemoveFile(entry.path);
@@ -123,7 +131,6 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     setListOpacity(0.35);
   }, [activeFolderPath]);
   useEffect(() => { if (displayFiles.length > 0) setListOpacity(1); }, [displayFiles]);
-
   const newPaths = new Set(displayFiles.map(f => f.path).filter(p => !knownPathsRef.current.has(p)));
   displayFiles.forEach(f => knownPathsRef.current.add(f.path));
 
@@ -186,11 +193,15 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
         </div>
 
         {/* ─ Sort row ─ */}
-        <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}` }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>Sort By Date</span>
+        <div onClick={() => libraryStore.setSortSettings({ newestOnTop: !sortSettings.newestOnTop })}
+          style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
+            gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}`, cursor: 'pointer' }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>
+            {sortSettings.sortBy === 'name' ? 'Sort By Name' : 'Sort By Date'}
+          </span>
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg}
-            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: sortSettings.newestOnTop ? 'none' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
             <path d="M1 1L4 4L7 1"/>
           </svg>
         </div>
@@ -250,11 +261,18 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                 onClick={() => !renaming && handleSelect(entry)}
                 onContextMenu={e => handleContextMenu(e, entry)}
-                onMouseEnter={() => { setHoveredPath(entry.path); _prefetchFile(entry); }}
-                onMouseLeave={() => setHoveredPath(null)}
+                onMouseEnter={(e) => {
+                  setHoveredPath(entry.path); _prefetchFile(entry);
+                  if (/\.(md|txt)$/i.test(entry.name)) {
+                    pvTimer.current && clearTimeout(pvTimer.current);
+                    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    pvTimer.current = setTimeout(() => { const t = _prefetchCache.get(entry.path!); if (t) setPreview({ x: r.right + 8, y: r.top, text: t }); }, 180);
+                  }
+                }}
+                onMouseLeave={() => { pvTimer.current && clearTimeout(pvTimer.current); setPreview(null); setHoveredPath(null); }}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
                   padding: '8px 10px 8px 12px', cursor: 'pointer',
-                  borderLeft: active ? '2px solid #55AAFF' : '2px solid transparent',
+                  borderLeft: active ? '3px solid #55AAFF' : '3px solid transparent',
                   background: bg, transition: 'background 0.12s', minHeight: 44 }}>
                 <span style={{ color: active ? P.fg : P.menuFg, display: 'flex', flexShrink: 0, marginTop: 1 }}>
                   <Icon />
@@ -290,10 +308,14 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
       </div>
     </div>
 
+    <CanvasDocListPreview pos={preview} P={P} dark={dark} />
     <CanvasDocListMenu ctxMenu={ctxMenu} P={P} dark={dark}
+      sortSettings={sortSettings}
       onRename={handleRename}
       onShowInExplorer={handleShowInExplorer}
-      onDelete={handleDelete} />
+      onDelete={handleDelete}
+      onSortChange={handleSortChange}
+      onClose={() => setCtxMenu(null)} />
     </>
   );
 }

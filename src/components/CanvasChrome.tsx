@@ -35,7 +35,7 @@ interface Props {
 export function CanvasChrome({
   title, titleEdit, onTitleChange, setTitleEdit, titleInputRef,
   menus, activeMenu, setActiveMenu, mode, setMode, docType,
-  onAddCard, onClose,
+  onClose,
   sidebarOpen, onSidebarToggle,
   P, dark, onMouseEnter, menuBarRef,
 }: Props) {
@@ -131,19 +131,11 @@ export function CanvasChrome({
       {(docType === 'canvas' || docType === 'nodes') && (
         <div onClick={stopProp}
           style={{ height: MENU_H, background: P.chrome,
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12px',
+            display: 'flex', alignItems: 'center', padding: '0 12px',
             borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}` }}>
           <span style={{ fontFamily: SYS_FONT, fontSize: 11, color: P.dim }}>
-            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : 'Node Canvas · 拖拽连线，双击编辑'}
+            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : docType === 'image' ? 'Image Preview' : docType === 'office' ? 'Office Document · Requires LibreOffice' : 'Node Canvas · Drag to connect, double-click to edit'}
           </span>
-          {docType === 'nodes' && onAddCard && (
-            <button onClick={onAddCard}
-              style={{ background: P.accent, color: '#fff', border: 'none', borderRadius: 5,
-                padding: '3px 12px', fontSize: 12, cursor: 'pointer',
-                fontFamily: SYS_FONT, fontWeight: 500, letterSpacing: '0.01em' }}>
-              + 卡片
-            </button>
-          )}
         </div>
       )}
     </div>

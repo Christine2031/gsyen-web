@@ -7,11 +7,14 @@ const fs        = require('fs');
 const path      = require('path');
 const libCache  = require('./ipc-library-cache.cjs');
 
+
+let _watcher    = null;
+let _watchTimer = null;
+
 module.exports = function registerLibraryFsHandlers(ipcMain) {
 
   // ── 缓存层：启动时批量扫描，之后从缓存读 ──────────────────────────────────
 
-  // 渲染层启动后调一次，把已存 localStorage 的所有路径传进来
   ipcMain.handle('library:scanAll', (e, paths) => {
     const sender = e.sender;
     for (const p of (paths ?? [])) {
@@ -22,7 +25,6 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
     }
   });
 
-  // 读某个文件夹：有缓存立刻返回，无缓存触发扫描并返回 null（渲染层监听 cache-update）
   ipcMain.handle('library:readDir', (e, folderPath) => {
     const cached = libCache.getCache(folderPath);
     if (cached) return cached;
@@ -33,6 +35,26 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
     });
     return null;
   });
+
+  // ── fs.watch：监听当前选中文件夹，有变化推事件到渲染层 ─────────────────────
+  ipcMain.on('library:watchFolder', (event, folderPath) => {
+    if (_watcher) { _watcher.close(); _watcher = null; }
+    if (!folderPath) return;
+    try {
+      _watcher = fs.watch(folderPath, { recursive: false }, () => {
+        clearTimeout(_watchTimer);
+        _watchTimer = setTimeout(() => {
+          if (!event.sender.isDestroyed()) event.sender.send('library:folderChanged', folderPath);
+        }, 300);
+      });
+      _watcher.on('error', () => { _watcher = null; });
+    } catch {}
+  });
+
+  ipcMain.on('library:unwatchFolder', () => {
+    if (_watcher) { _watcher.close(); _watcher = null; }
+  });
+
   ipcMain.on('library:showMenu', (event, pos) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) return;
