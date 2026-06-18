@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.80.186",
+  "version": "2.80.187",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -99,12 +99,22 @@
     }
   },
   "dependencies": {
+    "@corbe30/fortune-excel": "^2.3.2",
+    "@fortune-sheet/core": "^1.0.4",
+    "@fortune-sheet/react": "^1.0.4",
     "@sentry/electron": "^7.13.0",
     "@sentry/react": "^10.57.0",
     "@supabase/ssr": "^0.12.0",
+    "@tiptap/pm": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
+    "@types/turndown": "^5.0.6",
     "@xyflow/react": "^12.11.0",
     "electron-updater": "^6.8.9",
-    "mermaid": "^11.15.0"
+    "mammoth": "^1.12.0",
+    "mermaid": "^11.15.0",
+    "turndown": "^7.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.5.0",

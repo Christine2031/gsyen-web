@@ -149,9 +149,13 @@ export function CanvasSettings({ prefs, onChange, onClose, P, dark }: Props) {
         {/* ── Library ── */}
         <SectionTitle label="Library" />
         <Row label="Default File Type">
-          <Seg P={P} value={prefs.defaultExt}
-            options={[{ value: '.md', label: '.md' }, { value: '.txt', label: '.txt' }]}
-            onChange={v => onChange({ defaultExt: v as '.md' | '.txt' })} />
+          <select value={prefs.defaultExt} onChange={e => onChange({ defaultExt: e.target.value as '.md' | '.txt' })}
+            style={{ background: P.chrome, color: P.fg, border: `0.5px solid ${P.border}`,
+              borderRadius: 4, padding: '4px 8px', fontSize: 12, fontFamily: SYS_FONT,
+              cursor: 'pointer', outline: 'none' }}>
+            <option value=".md">.md</option>
+            <option value=".txt">.txt</option>
+          </select>
         </Row>
         <Row label="Reopen Last File">
           <Toggle P={P} value={prefs.reopenLast} onChange={v => onChange({ reopenLast: v })} />
