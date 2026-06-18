@@ -142,7 +142,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
       defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
       style={{ flex: 1, fontSize: 13, fontFamily: SYS_FONT, background: 'transparent',
         border: 'none', borderBottom: `1px solid ${P.fg}40`, outline: 'none',
-        color: P.fg, padding: 0, minWidth: 0 }}
+        color: P.fg, padding: 0, minWidth: 0, caretColor: '#55AAFF' }}
       onBlur={e => handleConfirmRename(entry, e.currentTarget.value)}
       onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setRenamingPath(null); }}
       onClick={e => e.stopPropagation()} />

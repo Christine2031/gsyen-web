@@ -27,7 +27,7 @@ export function iaWriterTheme(dark: boolean, fontSize = 17, fontFamily?: string)
     '.cm-scroller':  { overflow: 'auto', lineHeight: '1.9' },
     '.cm-content':   { padding: '0', caretColor: P.caret },
     '.cm-line':      { padding: '0' },
-    '.cm-cursor':              { borderLeft: 'none', width: '2px', background: P.caret, borderRadius: '99px', height: '1.43em !important', marginLeft: '0px', marginTop: '-0.18em' },
+    '.cm-cursor':              { borderLeft: 'none', width: '2.5px', background: P.caret, borderRadius: '99px', height: '1.496em !important', marginLeft: '0px', marginTop: '-0.248em' },
     '.cm-cursor + .cm-cursor': { display: 'none' },
     '.cm-selectionBackground, ::selection': { background: P.sel + ' !important' },
     '.cm-focused .cm-selectionBackground':  { background: P.sel },

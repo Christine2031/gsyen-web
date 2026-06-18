@@ -98,7 +98,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   useEffect(() => { document.addEventListener('mouseleave', showChrome); return () => document.removeEventListener('mouseleave', showChrome); }, [showChrome]);
   useEffect(() => () => { if (hideTimerRef.current) clearTimeout(hideTimerRef.current); }, []);
 
-  /* ── save ── */
   const save = useCallback((t: string, c: string) => {
     if (!docId) return;
     if (saveRef.current) clearTimeout(saveRef.current);
@@ -166,9 +165,15 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     if (docId && stored && (stored.type ?? 'doc') !== docType) canvasStore.update(docId, { type: docType });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── sync + keyboard ── */
   useEffect(() => {
-    const sync = () => { const d = docId ? canvasStore.getById(docId) : null; if (d) { setTitle(d.title); setContent(d.content); } };
+    const sync = () => {
+      const d = docId ? canvasStore.getById(docId) : null; if (!d) return;
+      setTitle(d.title); setContent(d.content);
+      if (d.type && d.type !== 'doc') { setDocType(d.type as any); return; }
+      let t: 'doc'|'canvas'|'nodes'|'image'|'office' = 'doc';
+      if (d.content?.trim().startsWith('{')) { try { const p = JSON.parse(d.content); if ('elements' in p || p.type === 'excalidraw') t = 'canvas'; else if ('nodes' in p && 'edges' in p) t = 'nodes'; } catch {} }
+      setDocType(t); if (t !== d.type) canvasStore.update(d.id, { type: t });
+    };
     window.addEventListener('canvas-updated', sync); return () => window.removeEventListener('canvas-updated', sync);
   }, [docId]);
 
@@ -225,7 +230,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     <div className="fixed inset-0 z-50" style={{ background:P.bg, color:P.fg, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       onClick={() => setActiveMenu(null)} onMouseMove={handleMouseMove}>
 
-      {/* Content — sidebar 全模式可用，三个内容面板常驻 DOM display 切换 */}
       <div style={{ position:'absolute', inset:0, overflow:'hidden', display:'flex' }}>
         {/* Sidebar — all modes */}
         <CanvasLibrary open={sidebarOpen} P={P} dark={dark} />
@@ -234,21 +238,18 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
         {/* Main area */}
         <div style={{ flex:1, position:'relative', overflow:'hidden', height:'100%' }}>
-          {/* Doc write pane */}
           <div style={{ display: docType === 'doc' ? 'flex' : 'none', width:'100%', height:'100%' }}>
             <CanvasWriterPane content={content} onContent={onContent} extensions={extensions}
               P={P} mode={mode} fontFamily={fontFamily} fontSize={fontSize} dark={dark}
               lineLen={lineLen} editorFade={editorFade} editorRef={editorRef} />
           </div>
-          {/* Whiteboard */}
           {docId && (
-            <div style={{ display: docType === 'canvas' ? 'block' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H + 1 }}>
+            <div style={{ visibility: docType === 'canvas' ? 'visible' : 'hidden', pointerEvents: docType === 'canvas' ? 'auto' : 'none', position: 'absolute', inset: 0, paddingTop: CHROME_H + 1 }}>
               <CanvasDrawEditor docId={docId} dark={dark} />
             </div>
           )}
-          {/* Node Canvas */}
           {docId && (
-            <div style={{ display: docType === 'nodes' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H + 1 }}>
+            <div style={{ visibility: docType === 'nodes' ? 'visible' : 'hidden', pointerEvents: docType === 'nodes' ? 'auto' : 'none', position: 'absolute', inset: 0, paddingTop: CHROME_H + 1, display: 'flex' }}>
               <CanvasNodeEditor ref={nodeEditorRef} docId={docId} dark={dark} />
             </div>
           )}
@@ -258,7 +259,6 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           <div style={{ display: docType === 'office' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
             {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
           </div>
-          {/* Floating + Card button — top-right of canvas area */}
           {docType === 'nodes' && (
             <button onClick={() => nodeEditorRef.current?.addCard()}
               style={{ position:'absolute', top: CHROME_H + 10, right: 12, zIndex: 15,
