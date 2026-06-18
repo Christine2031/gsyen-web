@@ -59,6 +59,9 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const [sidebarOpen,   setSidebarOpen]   = useState(false);
   const [activeFsFile,  setActiveFsFile]  = useState<FileEntry | null>(null);
   const [editorFade,    setEditorFade]    = useState(1);
+  // 懒加载：Excalidraw / React Flow 只在首次激活时 mount，避免打开 .md 时同时初始化两个重型库
+  const [canvasEverActive, setCanvasEverActive] = useState(docType === 'canvas');
+  const [nodesEverActive,  setNodesEverActive]  = useState(docType === 'nodes');
 
   const [activeMenu, _setActiveMenu] = useState<MenuId>(null);
   const activeMenuRef  = useRef<MenuId>(null);
@@ -244,6 +247,11 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
 
   useEffect(() => { const t = setTimeout(() => editorRef.current?.view?.focus(), 80); return () => clearTimeout(t); }, []);
 
+  useEffect(() => {
+    if (docType === 'canvas') setCanvasEverActive(true);
+    if (docType === 'nodes')  setNodesEverActive(true);
+  }, [docType]);
+
   /* ── helpers ── */
   const wrap = useCallback((b: string, a: string) => {
     const view = editorRef.current?.view; if (!view) return;
@@ -299,8 +307,8 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
             opacity: editorFade, transition: 'opacity 0.13s ease' }}>
             {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
           </div>
-          {/* Whiteboard — visibility 而非 display:none，保持 Excalidraw 已初始化，消除首次切换卡顿 */}
-          {docId && (
+          {/* Whiteboard — 首次切换到 canvas 才 mount，之后 visibility:hidden 保活，消除重复初始化卡顿 */}
+          {docId && canvasEverActive && (
             <div style={{
               visibility: docType === 'canvas' ? 'visible' : 'hidden',
               pointerEvents: docType === 'canvas' ? 'auto' : 'none',
@@ -309,7 +317,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
             </div>
           )}
           {/* Node Canvas — 同上 */}
-          {docId && (
+          {docId && nodesEverActive && (
             <div style={{
               visibility: docType === 'nodes' ? 'visible' : 'hidden',
               pointerEvents: docType === 'nodes' ? 'auto' : 'none',
