@@ -136,13 +136,13 @@ async function _elReadDir(src: FolderSource): Promise<FileEntry[]> {
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const textFiles = entries.filter(e => !e.isDir && /\.(md|txt|excalidraw|canvas)$/i.test(e.name));
-    const files = await Promise.all(
-      textFiles.map(async e => {
-        const path = `${src.path}/${e.name}`;
-        const preview = /\.(md|txt)$/i.test(e.name) ? await _elReadPreview(path) : '';
-        return { name: e.name, path, isMarkdown: /\.md$/i.test(e.name), lastModified: e.lastModified, preview };
-      })
-    );
+    const files: FileEntry[] = textFiles.map(e => ({
+      name: e.name,
+      path: `${src.path}/${e.name}`,
+      isMarkdown: /\.md$/i.test(e.name),
+      lastModified: e.lastModified,
+      preview: '',
+    }));
     files.sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
 
     return [...dirs, ...files];
