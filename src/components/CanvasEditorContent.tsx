@@ -119,7 +119,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
       if (/\.excalidraw$/i.test(entry.name))   setDocType('canvas');
       else if (/\.canvas$/i.test(entry.name))  setDocType('nodes');
       else                                     setDocType('doc');
-      if (docId) canvasStore.update(docId, { content: text });
+      if (docId && /\.(md|txt)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
       setEditorFade(1);
     }, 80);
   }, [docId]);
