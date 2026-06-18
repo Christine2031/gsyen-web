@@ -247,7 +247,8 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50" style={{ background:P.bg, color:P.fg }}
+    <div className="fixed inset-0 z-50"
+      style={{ background:P.bg, color:P.fg, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       onClick={() => setActiveMenu(null)} onMouseMove={handleMouseMove}>
 
       {/* Content — 三个面板常驻 DOM，display 切换避免重复挂载卸载 */}
