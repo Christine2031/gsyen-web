@@ -8,7 +8,7 @@ import { CanvasDrawEditor } from './CanvasDrawEditor';
 import { CanvasNodeEditor, type CanvasNodeEditorRef } from './CanvasNodeEditor';
 import { CanvasChrome } from './CanvasChrome';
 import {
-  DARK, LIGHT, CHROME_H, STATUS_H, LINE_W, SYS_FONT,
+  DARK, LIGHT, CHROME_H, STATUS_H, LINE_W, SYS_FONT, TITLE_H, isElectron,
   EditorMode, FocusMode, MenuId, LineLen, FontChoice,
 } from './CanvasEditorTypes';
 import { useCanvasMenus } from '../hooks/useCanvasMenus';
@@ -289,6 +289,14 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           </div>
         )}
       </div>
+
+      {/* 持久拖拽条 — Chrome 自动隐藏后仍允许移动窗口
+          z-index 低于 Chrome(20)，Chrome 可见时被覆盖；Chrome 隐藏后此条成为唯一 drag 区域 */}
+      {isElectron && (
+        <div style={{ position: 'absolute', top: 0, left: panelLeft, right: 0,
+          height: TITLE_H, zIndex: 5,
+          WebkitAppRegion: 'drag', pointerEvents: 'none' } as React.CSSProperties} />
+      )}
 
       {/* Chrome overlay */}
       <div style={chromeStyle}>
