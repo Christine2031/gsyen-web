@@ -296,4 +296,8 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 
-app.on('before-quit', () => { forceQuit = true; stopV2ray(); });
+app.on('before-quit', () => {
+  forceQuit = true;
+  stopV2ray();
+  require('./ipc-library-cache.cjs').stopAll();
+});

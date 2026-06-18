@@ -53,8 +53,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setGatewayMode:  (mode) => ipcRenderer.invoke('v2ray:setGatewayMode', mode),
   },
   library: {
-    showMenu:     (pos) => ipcRenderer.send('library:showMenu', pos),
-    onMenuResult: (fn)  => ipcRenderer.once('library:menuResult', (_e, action) => fn(action)),
+    showMenu:     (pos)   => ipcRenderer.send('library:showMenu', pos),
+    onMenuResult: (fn)    => ipcRenderer.once('library:menuResult', (_e, action) => fn(action)),
+    scanAll:      (paths) => ipcRenderer.invoke('library:scanAll', paths),
+    readDir:      (p)     => ipcRenderer.invoke('library:readDir', p),
+    onCacheUpdate: (fn) => {
+      const h = (_e, data) => fn(data);
+      ipcRenderer.on('library:cache-update', h);
+      return () => ipcRenderer.removeListener('library:cache-update', h);
+    },
   },
   isElectron: true,
   platform: process.platform,

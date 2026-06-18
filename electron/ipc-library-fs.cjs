@@ -3,10 +3,36 @@
  * 注册 library:showMenu / fs:showOpenDialog / fs:readDir / fs:readFile / fs:writeFile
  */
 const { dialog, BrowserWindow, Menu } = require('electron');
-const fs   = require('fs');
-const path = require('path');
+const fs        = require('fs');
+const path      = require('path');
+const libCache  = require('./ipc-library-cache.cjs');
 
 module.exports = function registerLibraryFsHandlers(ipcMain) {
+
+  // ── 缓存层：启动时批量扫描，之后从缓存读 ──────────────────────────────────
+
+  // 渲染层启动后调一次，把已存 localStorage 的所有路径传进来
+  ipcMain.handle('library:scanAll', (e, paths) => {
+    const sender = e.sender;
+    for (const p of (paths ?? [])) {
+      libCache.startScan(p, (folderPath, entries) => {
+        if (!sender.isDestroyed())
+          sender.send('library:cache-update', { folderPath, entries });
+      });
+    }
+  });
+
+  // 读某个文件夹：有缓存立刻返回，无缓存触发扫描并返回 null（渲染层监听 cache-update）
+  ipcMain.handle('library:readDir', (e, folderPath) => {
+    const cached = libCache.getCache(folderPath);
+    if (cached) return cached;
+    const sender = e.sender;
+    libCache.startScan(folderPath, (fp, entries) => {
+      if (!sender.isDestroyed())
+        sender.send('library:cache-update', { folderPath: fp, entries });
+    });
+    return null;
+  });
   ipcMain.on('library:showMenu', (event, pos) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     if (!win) return;

@@ -117,37 +117,36 @@ async function _elPickFolderViaDialog(): Promise<FolderSource | null> {
   }
 }
 
+type RawEntry = { name: string; lastModified: number; isDir: boolean; preview?: string };
+
+function _entriesToFileEntries(basePath: string, entries: RawEntry[]): FileEntry[] {
+  const dirs: FileEntry[] = entries
+    .filter(e => e.isDir && !e.name.startsWith('.'))
+    .map(e => ({ name: e.name, path: `${basePath}/${e.name}`,
+      isMarkdown: false, isDirectory: true, lastModified: e.lastModified, preview: '' }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const files: FileEntry[] = entries
+    .filter(e => !e.isDir && /\.(md|txt|excalidraw|canvas)$/i.test(e.name))
+    .map(e => ({ name: e.name, path: `${basePath}/${e.name}`,
+      isMarkdown: /\.md$/i.test(e.name), lastModified: e.lastModified, preview: e.preview ?? '' }))
+    .sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
+
+  return [...dirs, ...files];
+}
+
 async function _elReadDir(src: FolderSource): Promise<FileEntry[]> {
   const api = (window as any).electronAPI;
   if (!src.path) return [];
   try {
-    const entries: { name: string; lastModified: number; isDir: boolean }[] =
-      await api?.readDir?.(src.path) ?? [];
-
-    const dirs: FileEntry[] = entries
-      .filter(e => e.isDir && !e.name.startsWith('.'))
-      .map(e => ({
-        name: e.name,
-        path: `${src.path}/${e.name}`,
-        isMarkdown: false,
-        isDirectory: true,
-        lastModified: e.lastModified,
-      }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-
-    const textFiles = entries.filter(e => !e.isDir && /\.(md|txt|excalidraw|canvas)$/i.test(e.name));
-    const files: FileEntry[] = textFiles.map(e => ({
-      name: e.name,
-      path: `${src.path}/${e.name}`,
-      isMarkdown: /\.md$/i.test(e.name),
-      lastModified: e.lastModified,
-      preview: '',
-    }));
-    files.sort((a, b) => (b.lastModified ?? 0) - (a.lastModified ?? 0));
-
-    return [...dirs, ...files];
+    // 优先走缓存层；null = 冷启动未扫完，渲染层等 cache-update 事件
+    const entries: RawEntry[] | null = await api?.library?.readDir?.(src.path) ?? null;
+    if (!entries) return [];
+    return _entriesToFileEntries(src.path, entries);
   } catch { return []; }
 }
+
+export { _entriesToFileEntries };
 
 async function _elReadFile(e: FileEntry): Promise<string> {
   if (!e.path) return '';
