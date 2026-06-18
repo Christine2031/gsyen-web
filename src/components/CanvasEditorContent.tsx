@@ -54,6 +54,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const saveRef        = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nodeEditorRef  = useRef<CanvasNodeEditorRef>(null);
   const menuBarRef     = useRef<HTMLDivElement>(null);
+  const creatingRef    = useRef(false);
   const hideTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleInputRef  = useRef<HTMLInputElement>(null);
 
@@ -127,23 +128,30 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   }, [docId]);
 
   const handleCreateFile = useCallback(async (type: 'doc' | 'canvas' | 'nodes') => {
-    const { selectedFolder, navStack } = libraryStore.get();
-    const folder = navStack.length > 0 ? navStack[navStack.length - 1] : selectedFolder;
-    if (!folder) return;
-    const ext = type === 'doc' ? '.md' : type === 'canvas' ? '.excalidraw' : '.canvas';
-    const name = `Untitled-${Date.now()}${ext}`;
-    const path = `${folder.path ?? folder.name}/${name}`;
-    const content = type === 'doc' ? ''
-      : type === 'canvas'
-        ? JSON.stringify({ type: 'excalidraw', version: 2, source: 'gsyen', elements: [], appState: { viewBackgroundColor: '#ffffff' }, files: {} })
-        : JSON.stringify({ nodes: [], edges: [] });
-    const entry: FileEntry = { name, path, isMarkdown: false };
-    await fsAdapter.writeFile(entry, content);
-    await libraryStore.refreshCurrent();
-    setDocType(type === 'canvas' ? 'canvas' : type === 'nodes' ? 'nodes' : 'doc');
-    setActiveFsFile(entry);
-    setContent(content);
-    setTitle('Untitled');
+    if (creatingRef.current) return;          // 防连点
+    creatingRef.current = true;
+    try {
+      const { selectedFolder, navStack } = libraryStore.get();
+      const folder = navStack.length > 0 ? navStack[navStack.length - 1] : selectedFolder;
+      if (!folder) return;
+      const ext = type === 'doc' ? '.md' : type === 'canvas' ? '.excalidraw' : '.canvas';
+      const name = `Untitled-${Date.now()}${ext}`;
+      const filePath = `${folder.path ?? folder.name}/${name}`;
+      const content = type === 'doc' ? ''
+        : type === 'canvas'
+          ? JSON.stringify({ type: 'excalidraw', version: 2, source: 'gsyen', elements: [], appState: { viewBackgroundColor: '#ffffff' }, files: {} })
+          : JSON.stringify({ nodes: [], edges: [] });
+      const entry: FileEntry = { name, path: filePath, isMarkdown: /\.md$/i.test(name), lastModified: Date.now() };
+      await fsAdapter.writeFile(entry, content);
+      // 乐观插入：立刻显示新文件，不等 readDir 重扫（fs.watch 600ms 后自动跟上）
+      libraryStore.optimisticAddFile(entry);
+      setDocType(type === 'canvas' ? 'canvas' : type === 'nodes' ? 'nodes' : 'doc');
+      setActiveFsFile(entry);
+      setContent(content);
+      setTitle('Untitled');
+    } finally {
+      creatingRef.current = false;
+    }
   }, []);
 
   const handleDocListBack = useCallback(async () => {
