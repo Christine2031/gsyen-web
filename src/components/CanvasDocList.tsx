@@ -180,9 +180,9 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
               color: P.menuFg, display: 'flex', alignItems: 'center' }}
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.fg}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = P.menuFg}>
-            <svg width="20" height="8" viewBox="0 0 20 8" fill="none" stroke="currentColor"
-              strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M13 3L1 4l12 1M1 4h19"/>
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="none" stroke="currentColor"
+              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 1L1 7l5 6"/>
             </svg>
           </button>
           <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
