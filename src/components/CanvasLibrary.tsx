@@ -208,8 +208,11 @@ export function CanvasLibrary({ open, P, dark }: Props) {
       <div ref={popupRef}
         style={{ position: 'fixed', left: popupX, top: popupY, width: 'max-content', zIndex: 9999,
           transform: popupOpen ? 'translateY(-100%) scale(1)' : 'translateY(calc(-100% + 6px)) scale(0.97)',
-          background: P.chrome, borderRadius: 6,
-          boxShadow: `0 8px 32px rgba(0,0,0,${dark ? 0.5 : 0.18}), 0 2px 8px rgba(0,0,0,${dark ? 0.3 : 0.08})`,
+          background: P.chrome, borderRadius: 8,
+          boxShadow: dark
+            ? '0 4px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.55)'
+            : '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
+          border: `0.5px solid ${P.border}`,
           opacity: popupOpen ? 1 : 0, pointerEvents: popupOpen ? 'auto' : 'none',
           transition: 'opacity 0.15s ease, transform 0.15s ease',
           overflow: 'hidden', padding: '4px 0' }}>
@@ -218,11 +221,11 @@ export function CanvasLibrary({ open, P, dark }: Props) {
           { label: 'Add folder to the Library', action: handleAddFolder },
         ].map(({ label, action }) => (
           <button key={label} onClick={action}
-            style={{ width: '100%', padding: '7px 14px', textAlign: 'left',
+            style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
               background: 'transparent', border: 'none', cursor: 'pointer', display: 'block',
               fontSize: 13, fontFamily: SYS_FONT, color: P.menuFg,
               whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}09`}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}08`}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
             {label}
           </button>
@@ -234,16 +237,26 @@ export function CanvasLibrary({ open, P, dark }: Props) {
     {ctxMenu && createPortal(
       <div onMouseDown={e => e.stopPropagation()}
         style={{ position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 9999,
-          background: P.chrome, borderRadius: 6, padding: '4px 0',
-          boxShadow: `0 4px 20px rgba(0,0,0,${dark ? 0.45 : 0.14})`,
-          minWidth: 160, fontFamily: SYS_FONT }}>
+          background: P.chrome, borderRadius: 8, padding: '4px 0',
+          boxShadow: dark
+            ? '0 4px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.55)'
+            : '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
+          border: `0.5px solid ${P.border}`,
+          minWidth: 180, fontFamily: SYS_FONT }}>
         <button onClick={() => handleRemove(ctxMenu.folder)}
-          style={{ width: '100%', padding: '7px 14px', textAlign: 'left',
+          style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
             background: 'transparent', border: 'none', cursor: 'pointer',
-            fontSize: 13, color: P.menuFg, fontFamily: SYS_FONT }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}09`}
+            fontSize: 13, color: P.menuFg, fontFamily: SYS_FONT, display: 'block', whiteSpace: 'nowrap' }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}08`}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
           从 Library 移除
+        </button>
+        <button disabled
+          style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
+            background: 'transparent', border: 'none', cursor: 'default',
+            fontSize: 13, color: `${P.fg}30`, fontFamily: SYS_FONT, display: 'block', whiteSpace: 'nowrap',
+            pointerEvents: 'none' }}>
+          浏览备份
         </button>
       </div>,
       document.body

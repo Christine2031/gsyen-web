@@ -171,13 +171,25 @@ async function _elDeleteFile(e: FileEntry): Promise<boolean> {
   return r?.ok ?? false;
 }
 
+function _elShowInExplorer(e: FileEntry): void {
+  if (e.path) (window as any).electronAPI?.library?.showInExplorer?.(e.path);
+}
+
+async function _elRenameFile(e: FileEntry, newName: string): Promise<{ ok: boolean; newPath?: string }> {
+  if (!e.path) return { ok: false };
+  const r = await (window as any).electronAPI?.library?.rename?.(e.path, newName);
+  return r ?? { ok: false };
+}
+
 // ── 统一接口 ──────────────────────────────────────────────────────────────────
 
 export const fsAdapter = {
-  env:         _isElectron ? 'electron' : 'web' as 'electron' | 'web',
-  pickFolder:  _isElectron ? _elPickFolderViaDialog : _webPickFolder,
-  readDir:     _isElectron ? _elReadDir             : _webReadDir,
-  readFile:    _isElectron ? _elReadFile            : _webReadFile,
-  writeFile:   _isElectron ? _elWriteFile           : _webWriteFile,
-  deleteFile:  _isElectron ? _elDeleteFile : async () => false,
+  env:            _isElectron ? 'electron' : 'web' as 'electron' | 'web',
+  pickFolder:     _isElectron ? _elPickFolderViaDialog : _webPickFolder,
+  readDir:        _isElectron ? _elReadDir             : _webReadDir,
+  readFile:       _isElectron ? _elReadFile            : _webReadFile,
+  writeFile:      _isElectron ? _elWriteFile           : _webWriteFile,
+  deleteFile:     _isElectron ? _elDeleteFile          : async () => false,
+  showInExplorer: _isElectron ? _elShowInExplorer      : () => {},
+  renameFile:     _isElectron ? _elRenameFile          : async () => ({ ok: false as const }),
 };

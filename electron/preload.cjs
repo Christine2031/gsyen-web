@@ -62,7 +62,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.on('library:folderChanged', h);
       return () => ipcRenderer.removeListener('library:folderChanged', h);
     },
-    delete: (filePath) => ipcRenderer.invoke('library:delete', filePath),
+    delete:          (filePath)           => ipcRenderer.invoke('library:delete',          filePath),
+    showInExplorer:  (filePath)           => ipcRenderer.invoke('library:showInExplorer',  filePath),
+    rename:          (oldPath, newName)   => ipcRenderer.invoke('library:rename',          oldPath, newName),
   },
   isElectron: true,
   platform: process.platform,

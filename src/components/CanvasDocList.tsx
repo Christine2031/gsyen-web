@@ -3,10 +3,14 @@
  * 只负责：子文件夹 + 文件列表渲染，导航通过 libraryStore.pushNav
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
 import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
+import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
+import type { Palette } from './CanvasEditorTypes';
+import { DocIcon, DrawIcon, NodeIcon } from '../gsyen-designer';
+import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
+import { CanvasDocListMenu } from './CanvasDocListMenu';
 
 // ── 悬停预加载缓存（最多 40 条，LRU by insertion order）──────────────────────
 const _MAX_CACHE = 40;
@@ -15,22 +19,12 @@ const _prefetchCache = new Map<string, string>();
 function _prefetchFile(file: FileEntry) {
   if (!file.path || _prefetchCache.has(file.path)) return;
   fsAdapter.readFile(file).then(text => {
-    if (_prefetchCache.size >= _MAX_CACHE) {
-      _prefetchCache.delete(_prefetchCache.keys().next().value!);
-    }
+    if (_prefetchCache.size >= _MAX_CACHE) _prefetchCache.delete(_prefetchCache.keys().next().value!);
     _prefetchCache.set(file.path!, text);
   }).catch(() => {});
 }
 
-export function invalidatePrefetch(path: string) {
-  _prefetchCache.delete(path);
-}
-import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
-import type { Palette } from './CanvasEditorTypes';
-import { DocIcon, DrawIcon, NodeIcon } from '../gsyen-designer';
-import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
-
-interface Props { open: boolean; onFileSelect: (e: FileEntry, c: string) => void; P: Palette; dark: boolean; onBack: () => void; onNew: () => void; }
+export function invalidatePrefetch(path: string) { _prefetchCache.delete(path); }
 
 function relativeDate(ts?: number): string {
   if (!ts) return '';
@@ -46,15 +40,24 @@ function fileIcon(name: string) {
   return DocIcon;
 }
 
-// widths for skeleton rows — vary to look natural
 const SKEL_WIDTHS = ['72%', '58%', '80%', '64%', '50%'];
+
+interface Props {
+  open: boolean;
+  onFileSelect: (e: FileEntry, c: string) => void;
+  P: Palette;
+  dark: boolean;
+  onBack: () => void;
+  onNew: () => void;
+}
 
 export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Props) {
   const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile } = useLibraryStore();
   const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
   const { doclistW } = useCanvasPanelWidths();
-  const [hoveredPath, setHoveredPath] = useState<string | null>(null);
-  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
+  const [hoveredPath,  setHoveredPath]  = useState<string | null>(null);
+  const [ctxMenu,      setCtxMenu]      = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
+  const [renamingPath, setRenamingPath] = useState<string | null>(null);
 
   useEffect(() => {
     if (!ctxMenu) return;
@@ -64,14 +67,36 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   }, [ctxMenu]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent, entry: FileEntry) => {
-    e.preventDefault();
-    e.stopPropagation();
+    e.preventDefault(); e.stopPropagation();
     setCtxMenu({ x: e.clientX, y: e.clientY, entry });
   }, []);
 
-  const handleDelete = useCallback(async (entry: FileEntry) => {
+  const handleRename = useCallback((entry: FileEntry) => {
     setCtxMenu(null);
-    // 先乐观移除 UI，不等 IPC 返回（避免 Dropbox 首次操作卡顿）
+    setRenamingPath(entry.path);
+  }, []);
+
+  const handleConfirmRename = useCallback(async (entry: FileEntry, newBase: string) => {
+    setRenamingPath(null);
+    const base = newBase.trim();
+    if (!base || !entry.path) return;
+    const ext = entry.isDirectory ? '' : (entry.name.match(/\.(md|txt|excalidraw|canvas)$/i)?.[0] ?? '');
+    const newName = (!entry.isDirectory && !base.endsWith(ext)) ? base + ext : base;
+    if (newName === entry.name) return;
+    const result = await fsAdapter.renameFile(entry, newName);
+    if (result.ok && result.newPath) {
+      invalidatePrefetch(entry.path);
+      libraryStore.optimisticRenameFile(entry.path, result.newPath, newName);
+    }
+  }, []);
+
+  const handleShowInExplorer = useCallback((entry: FileEntry) => {
+    setCtxMenu(null);
+    fsAdapter.showInExplorer(entry);
+  }, []);
+
+  const handleDelete = useCallback((entry: FileEntry) => {
+    setCtxMenu(null);
     libraryStore.optimisticRemoveFile(entry.path);
     if (entry.path) invalidatePrefetch(entry.path);
     fsAdapter.deleteFile(entry);
@@ -80,9 +105,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   const inSub        = navStack.length > 0;
   const displayFiles = inSub ? navFiles : files;
   const isLoading    = inSub ? navLoading : loading;
-  const shown        = open;
 
-  // 只对「新出现」的 path 播入场动画，已存在的 path 不重建 DOM
   const knownPathsRef = useRef(new Set<string>());
   const newPaths = new Set(displayFiles.map(f => f.path).filter(p => !knownPathsRef.current.has(p)));
   displayFiles.forEach(f => knownPathsRef.current.add(f.path));
@@ -95,23 +118,34 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   }, [onFileSelect]);
 
   const handleDirClick = useCallback(async (entry: FileEntry) => {
+    if (renamingPath === entry.path) return;
     const src = entry.dirHandle
       ? { id: entry.path, name: entry.name, handle: entry.dirHandle, env: 'web' as const }
       : { id: entry.path, name: entry.name, path: entry.path, env: 'electron' as const };
     await libraryStore.pushNav(src);
-  }, []);
+  }, [renamingPath]);
+
+  const renameInput = (entry: FileEntry) => (
+    <input autoFocus
+      defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
+      style={{ flex: 1, fontSize: 13, fontFamily: SYS_FONT, background: 'transparent',
+        border: 'none', borderBottom: `1px solid ${P.fg}40`, outline: 'none',
+        color: P.fg, padding: 0, minWidth: 0 }}
+      onBlur={e => handleConfirmRename(entry, e.currentTarget.value)}
+      onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); if (e.key === 'Escape') setRenamingPath(null); }}
+      onClick={e => e.stopPropagation()} />
+  );
 
   return (
     <>
-    <div style={{ width: shown ? doclistW : 0, overflow: 'hidden', flexShrink: 0,
+    <div style={{ width: open ? doclistW : 0, overflow: 'hidden', flexShrink: 0,
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       borderRight: `0.5px solid ${P.border}`, display: 'flex', flexDirection: 'column',
       background: P.chrome }}>
       <div style={{ width: doclistW, height: '100%', display: 'flex', flexDirection: 'column' }}>
 
-        {/* ─ Header: ← name + ─ */}
-        <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          padding: '0 6px 0 4px' }}>
+        {/* ─ Header ─ */}
+        <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center', padding: '0 6px 0 4px' }}>
           <button onClick={onBack}
             style={{ padding: '6px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
               color: P.menuFg, display: 'flex', alignItems: 'center' }}>
@@ -127,8 +161,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
           <button onClick={onNew}
             style={{ padding: '4px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
               color: P.menuFg, display: 'flex', alignItems: 'center' }}>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor"
-              strokeWidth="1.5" strokeLinecap="round">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
               <path d="M6 1v10M1 6h10"/>
             </svg>
           </button>
@@ -137,26 +170,21 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
         {/* ─ Sort row ─ */}
         <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
           gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}` }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
-            userSelect: 'none' }}>Sort By Date</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>Sort By Date</span>
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg}
             strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M1 1L4 4L7 1"/>
           </svg>
         </div>
 
-        {/* ─ File + Dir list ─ */}
+        {/* ─ List ─ */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {isLoading && displayFiles.length === 0 && (
             <div style={{ padding: '6px 0' }}>
               {SKEL_WIDTHS.map((w, i) => (
                 <div key={i} style={{ padding: '9px 12px', borderBottom: `0.5px solid ${P.border}` }}>
-                  <div className="gs-skeleton"
-                    style={{ height: 11, width: w, background: P.fg,
-                      animationDelay: `${i * 120}ms`, marginBottom: 5 }} />
-                  <div className="gs-skeleton"
-                    style={{ height: 9, width: '45%', background: P.fg,
-                      animationDelay: `${i * 120 + 60}ms` }} />
+                  <div className="gs-skeleton" style={{ height: 11, width: w, background: P.fg, animationDelay: `${i*120}ms`, marginBottom: 5 }} />
+                  <div className="gs-skeleton" style={{ height: 9, width: '45%', background: P.fg, animationDelay: `${i*120+60}ms` }} />
                 </div>
               ))}
             </div>
@@ -165,43 +193,45 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
           {displayFiles.map((entry) => {
             const active  = !entry.isDirectory && selectedFile?.path === entry.path;
             const hovered = hoveredPath === entry.path;
-            const bg = active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent';
-            const isNew = newPaths.has(entry.path);
+            const bg      = active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent';
+            const isNew   = newPaths.has(entry.path);
+            const renaming = renamingPath === entry.path;
 
-            if (entry.isDirectory) {
-              return (
-                <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
-                  onClick={() => handleDirClick(entry)}
-                  onContextMenu={(e) => handleContextMenu(e, entry)}
-                  onMouseEnter={() => setHoveredPath(entry.path)}
-                  onMouseLeave={() => setHoveredPath(null)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '0 10px 0 12px', height: 36, cursor: 'pointer',
-                    borderBottom: `0.5px solid ${P.border}`,
-                    borderLeft: '2px solid transparent',
-                    background: bg, transition: 'background 0.12s' }}>
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
-                    stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                    style={{ color: P.menuFg, flexShrink: 0 }}>
-                    <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
-                  </svg>
+            if (entry.isDirectory) return (
+              <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
+                onClick={() => handleDirClick(entry)}
+                onContextMenu={e => handleContextMenu(e, entry)}
+                onMouseEnter={() => setHoveredPath(entry.path)}
+                onMouseLeave={() => setHoveredPath(null)}
+                style={{ display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '0 10px 0 12px', height: 36, cursor: 'pointer',
+                  borderBottom: `0.5px solid ${P.border}`, borderLeft: '2px solid transparent',
+                  background: bg, transition: 'background 0.12s' }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
+                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+                  style={{ color: P.menuFg, flexShrink: 0 }}>
+                  <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
+                </svg>
+                {renaming ? renameInput(entry) : (
                   <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {entry.name}
                   </span>
+                )}
+                {!renaming && (
                   <svg width="5" height="8" viewBox="0 0 5 8" fill="none" stroke={P.menuFg}
                     strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
                     <path d="M1 1L4 4L1 7"/>
                   </svg>
-                </div>
-              );
-            }
+                )}
+              </div>
+            );
 
             const Icon = fileIcon(entry.name);
             return (
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
-                onClick={() => handleSelect(entry)}
-                onContextMenu={(e) => handleContextMenu(e, entry)}
+                onClick={() => !renaming && handleSelect(entry)}
+                onContextMenu={e => handleContextMenu(e, entry)}
                 onMouseEnter={() => { setHoveredPath(entry.path); _prefetchFile(entry); }}
                 onMouseLeave={() => setHoveredPath(null)}
                 style={{ display: 'flex', alignItems: 'flex-start', gap: 8,
@@ -214,16 +244,20 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-                    <span style={{ flex: 1, fontSize: 13, color: active ? P.fg : P.menuFg,
-                      fontWeight: 500, fontFamily: SYS_FONT,
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
-                    </span>
-                    <span style={{ fontSize: 10, color: P.dim, fontFamily: SYS_FONT, flexShrink: 0 }}>
-                      {relativeDate(entry.lastModified)}
-                    </span>
+                    {renaming ? renameInput(entry) : (
+                      <span style={{ flex: 1, fontSize: 13, color: active ? P.fg : P.menuFg,
+                        fontWeight: 500, fontFamily: SYS_FONT,
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
+                      </span>
+                    )}
+                    {!renaming && (
+                      <span style={{ fontSize: 10, color: P.dim, fontFamily: SYS_FONT, flexShrink: 0 }}>
+                        {relativeDate(entry.lastModified)}
+                      </span>
+                    )}
                   </div>
-                  {entry.preview && (
+                  {!renaming && entry.preview && (
                     <div style={{ fontSize: 11, color: P.dim, fontFamily: SYS_FONT,
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       marginTop: 2, lineHeight: 1.4 }}>
@@ -239,23 +273,10 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
       </div>
     </div>
 
-    {ctxMenu && createPortal(
-      <div onMouseDown={e => e.stopPropagation()}
-        style={{ position: 'fixed', left: ctxMenu.x, top: ctxMenu.y, zIndex: 9999,
-          background: P.chrome, borderRadius: 6, padding: '4px 0',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.18)',
-          minWidth: 160, fontFamily: SYS_FONT }}>
-        <button onClick={() => handleDelete(ctxMenu.entry)}
-          style={{ width: '100%', padding: '7px 14px', textAlign: 'left',
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            fontSize: 13, color: P.menuFg, fontFamily: SYS_FONT }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}09`}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
-          移到废纸篓
-        </button>
-      </div>,
-      document.body
-    )}
+    <CanvasDocListMenu ctxMenu={ctxMenu} P={P} dark={dark}
+      onRename={handleRename}
+      onShowInExplorer={handleShowInExplorer}
+      onDelete={handleDelete} />
     </>
   );
 }

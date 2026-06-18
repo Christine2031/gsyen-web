@@ -80,4 +80,20 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
       return { ok: false, error: e?.message ?? String(e) };
     }
   });
+
+  // 在文件管理器中显示
+  ipcMain.handle('library:showInExplorer', (_e, filePath) => {
+    try { shell.showItemInFolder(filePath); return true; } catch { return false; }
+  });
+
+  // 重命名（文件 + 目录均支持）
+  ipcMain.handle('library:rename', (_e, oldPath, newName) => {
+    try {
+      const newPath = path.join(path.dirname(oldPath), newName);
+      fs.renameSync(oldPath, newPath);
+      return { ok: true, newPath };
+    } catch (e) {
+      return { ok: false, error: e?.message ?? String(e) };
+    }
+  });
 };
