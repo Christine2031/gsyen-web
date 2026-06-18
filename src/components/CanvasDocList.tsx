@@ -4,6 +4,7 @@
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
+import type { SortSettings } from '../stores/canvasLibraryStore';
 import { fsAdapter } from '../hooks/useFileSystem';
 import type { FileEntry } from '../hooks/useFileSystem';
 import { SYS_FONT, TITLE_H, MENU_H } from './CanvasEditorTypes';
@@ -52,7 +53,7 @@ interface Props {
 }
 
 export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Props) {
-  const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile } = useLibraryStore();
+  const { selectedFolder, files, navStack, navFiles, navLoading, loading, selectedFile, sortSettings } = useLibraryStore();
   const currentName = navStack.length > 0 ? navStack[navStack.length - 1].name : (selectedFolder?.name ?? '');
   const { doclistW } = useCanvasPanelWidths();
   const [hoveredPath,  setHoveredPath]  = useState<string | null>(null);
@@ -93,6 +94,10 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   const handleShowInExplorer = useCallback((entry: FileEntry) => {
     setCtxMenu(null);
     fsAdapter.showInExplorer(entry);
+  }, []);
+
+  const handleSortChange = useCallback((patch: Partial<SortSettings>) => {
+    libraryStore.setSortSettings(patch);
   }, []);
 
   const handleDelete = useCallback((entry: FileEntry) => {
@@ -168,11 +173,15 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
         </div>
 
         {/* ─ Sort row ─ */}
-        <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}` }}>
-          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>Sort By Date</span>
+        <div onClick={() => libraryStore.setSortSettings({ newestOnTop: !sortSettings.newestOnTop })}
+          style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
+            gap: 4, padding: '0 12px', borderBottom: `0.5px solid ${P.border}`, cursor: 'pointer' }}>
+          <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>
+            {sortSettings.sortBy === 'name' ? 'Sort By Name' : 'Sort By Date'}
+          </span>
           <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg}
-            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: sortSettings.newestOnTop ? 'none' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
             <path d="M1 1L4 4L7 1"/>
           </svg>
         </div>
@@ -274,9 +283,12 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     </div>
 
     <CanvasDocListMenu ctxMenu={ctxMenu} P={P} dark={dark}
+      sortSettings={sortSettings}
       onRename={handleRename}
       onShowInExplorer={handleShowInExplorer}
-      onDelete={handleDelete} />
+      onDelete={handleDelete}
+      onSortChange={handleSortChange}
+      onClose={() => setCtxMenu(null)} />
     </>
   );
 }
