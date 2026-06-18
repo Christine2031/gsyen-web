@@ -142,7 +142,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
       const newType = /\.excalidraw$/i.test(entry.name) ? 'canvas' as const
         : /\.canvas$/i.test(entry.name)                   ? 'nodes'  as const
         : /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name) ? 'image' as const
-        : /\.(docx|xlsx|pptx)$/i.test(entry.name)         ? 'office' as const
+        : /\.(docx|xlsx)$/i.test(entry.name)               ? 'office' as const
         : 'doc' as const;
       setDocType(newType);
       if (newType === 'canvas') setCanvasEverActive(true);

@@ -90,6 +90,10 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
     try { return fs.readFileSync(filePath, 'utf8'); } catch { return ''; }
   });
 
+  ipcMain.handle('fs:readFileBuffer', (_e, filePath) => {
+    try { return fs.readFileSync(filePath); } catch { return null; }
+  });
+
   ipcMain.handle('fs:writeFile', (_e, filePath, text) => {
     try { fs.writeFileSync(filePath, text, 'utf8'); return true; } catch { return false; }
   });

@@ -175,9 +175,6 @@ ipcMain.handle('app:getVersion', () => app.getVersion());
 // ── Library 文件系统 IPC ──────────────────────────────────────────────────────
 require('./ipc-library-fs.cjs')(ipcMain);
 
-// ── 文档查看器（LibreOffice headless）IPC ──────────────────────────────────────
-require('./ipc-docviewer.cjs')(ipcMain);
-
 // ── 窗口控制 IPC ──────────────────────────────────────────────────────────────
 
 ipcMain.handle('window:minimize', (e) => BrowserWindow.fromWebContents(e.sender)?.minimize());

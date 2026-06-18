@@ -135,7 +135,7 @@ export function CanvasChrome({
             display: 'flex', alignItems: 'center', padding: '0 12px',
             borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}` }}>
           <span style={{ fontFamily: SYS_FONT, fontSize: 11, color: P.dim }}>
-            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : docType === 'image' ? 'Image Preview' : docType === 'office' ? 'Office Document · Requires LibreOffice' : 'Node Canvas · Drag to connect, double-click to edit'}
+            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : docType === 'image' ? 'Image Preview' : docType === 'office' ? 'Office Document · Word / Excel Preview' : 'Node Canvas · Drag to connect, double-click to edit'}
           </span>
         </div>
       )}

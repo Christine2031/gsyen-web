@@ -73,14 +73,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     showInExplorer:  (filePath)         => ipcRenderer.invoke('library:showInExplorer', filePath),
     rename:          (oldPath, newName) => ipcRenderer.invoke('library:rename',         oldPath, newName),
   },
-  docviewer: {
-    checkInstalled: ()         => ipcRenderer.invoke('docviewer:checkInstalled'),
-    convert:        (filePath) => ipcRenderer.invoke('docviewer:convert', filePath),
-  },
   isElectron: true,
   platform: process.platform,
   showOpenDialog: (opts)           => ipcRenderer.invoke('fs:showOpenDialog', opts),
   readDir:        (dirPath)        => ipcRenderer.invoke('fs:readDir',        dirPath),
   readFile:       (filePath)       => ipcRenderer.invoke('fs:readFile',       filePath),
+  readFileBuffer: (filePath)       => ipcRenderer.invoke('fs:readFileBuffer', filePath),
   writeFile:      (filePath, text) => ipcRenderer.invoke('fs:writeFile',      filePath, text),
 });

@@ -1,25 +1,54 @@
 import { useState, useEffect } from 'react';
+import * as mammoth from 'mammoth';
+import * as XLSX from 'xlsx';
 import type { FileEntry } from '../hooks/useFileSystem';
 import type { Palette } from './CanvasEditorTypes';
 import { SYS_FONT } from './CanvasEditorTypes';
 
 interface Props { entry: FileEntry; P: Palette; }
 
+async function readArrayBuffer(entry: FileEntry): Promise<ArrayBuffer> {
+  if (entry.path && (window as any).electronAPI?.readFileBuffer) {
+    const buf: Uint8Array | null = await (window as any).electronAPI.readFileBuffer(entry.path);
+    if (!buf) throw new Error('读取文件失败');
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+  }
+  if (entry.handle) {
+    const file = await (entry.handle as FileSystemFileHandle).getFile();
+    return file.arrayBuffer();
+  }
+  throw new Error('无法读取文件');
+}
+
 export function OfficeViewer({ entry, P }: Props) {
-  const [htmlPath, setHtmlPath] = useState<string | null>(null);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState<string | null>(null);
+  const [html,    setHtml]    = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!entry.path) return;
-    setLoading(true); setHtmlPath(null); setError(null);
-    (window as any).electronAPI?.docviewer?.convert?.(entry.path)
-      .then((r: { ok: boolean; htmlPath?: string; error?: string }) => {
-        if (r.ok && r.htmlPath) setHtmlPath(r.htmlPath);
-        else setError(r.error ?? '转换失败');
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
+    setLoading(true); setHtml(null); setError(null);
+    (async () => {
+      try {
+        const buf = await readArrayBuffer(entry);
+        if (/\.docx$/i.test(entry.name)) {
+          const result = await mammoth.convertToHtml({ arrayBuffer: buf });
+          setHtml(result.value);
+        } else if (/\.xlsx$/i.test(entry.name)) {
+          const wb = XLSX.read(buf, { type: 'array' });
+          const tables = wb.SheetNames.map(name => {
+            const sheet = wb.Sheets[name];
+            return `<h3>${name}</h3>${XLSX.utils.sheet_to_html(sheet)}`;
+          });
+          setHtml(tables.join('<hr/>'));
+        } else {
+          setError('暂不支持 .pptx 预览');
+        }
+      } catch (e) {
+        setError((e as Error).message ?? '解析失败');
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, [entry.path]);
 
   const center: React.CSSProperties = {
@@ -27,20 +56,21 @@ export function OfficeViewer({ entry, P }: Props) {
     height: '100%', gap: 10, color: P.dim, fontFamily: SYS_FONT, fontSize: 14,
   };
 
-  if (loading) return <div style={center}>正在转换文档，请稍候…</div>;
+  if (loading) return <div style={center}>正在解析文档，请稍候…</div>;
 
   if (error) return (
     <div style={center}>
       <div>无法预览此文件</div>
-      {error.includes('未安装') && (
-        <div style={{ fontSize: 12, textAlign: 'center', maxWidth: 300, lineHeight: 1.7, color: P.dim }}>
-          请安装 <strong style={{ color: P.fg }}>LibreOffice</strong> 以预览 Word / Excel 文件
-        </div>
-      )}
       <div style={{ fontSize: 11, color: P.dim, maxWidth: 340, textAlign: 'center' }}>{error}</div>
     </div>
   );
 
-  const src = `file:///${(htmlPath ?? '').replace(/\\/g, '/')}`;
-  return <iframe src={src} style={{ width: '100%', height: '100%', border: 'none', background: '#fff' }} />;
+  return (
+    <div style={{ width: '100%', height: '100%', overflow: 'auto', background: '#fff',
+      padding: '32px 40px', boxSizing: 'border-box' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', color: '#1a1a1a',
+        fontFamily: '"iA Writer Quattro","Georgia",serif', fontSize: 15, lineHeight: 1.7 }}
+        dangerouslySetInnerHTML={{ __html: html ?? '' }} />
+    </div>
+  );
 }
