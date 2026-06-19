@@ -143,22 +143,36 @@ function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect
 /* ── Exported component ── */
 interface SavedGraph { nodes: Node[]; edges: Edge[] }
 
-/* ── Obsidian .canvas ↔ ReactFlow 互转 ── */
-const SIDE: Record<string, string> = { top: 't', right: 'r', bottom: 'b', left: 'l' };
+/* ── Obsidian .canvas ↔ ReactFlow 双向互转（完整兼容）── */
+const SIDE: Record<string, string>   = { top: 't', right: 'r', bottom: 'b', left: 'l' };
 const SIDE_R: Record<string, string> = { t: 'top', r: 'right', b: 'bottom', l: 'left' };
+
+function obsidianNodeText(n: any): string {
+  if (n.type === 'file')  return `📎 ${n.file ?? ''}`;
+  if (n.type === 'link')  return `🔗 ${n.url ?? ''}`;
+  if (n.type === 'group') return `▣ ${n.label ?? 'Group'}`;
+  return n.text ?? '';
+}
 
 function fromObsidian(raw: any): SavedGraph {
   const nodes: Node[] = (raw.nodes ?? []).map((n: any) => ({
     id: n.id, type: 'card',
     position: { x: n.x ?? 0, y: n.y ?? 0 },
     style: n.width ? { width: n.width } : undefined,
-    data: { text: n.text ?? '', color: n.color ?? '', width: n.width ?? 250, height: n.height ?? 100 },
+    data: {
+      text: obsidianNodeText(n),
+      color: n.color ?? '',
+      width: n.width ?? 250, height: n.height ?? 100,
+      _obs: n,                     // 原始节点存档，保证非 text 类型安全回写
+    },
   }));
   const edges: Edge[] = (raw.edges ?? []).map((e: any) => ({
     id: e.id, source: e.fromNode, target: e.toNode,
     sourceHandle: `src-${SIDE[e.fromSide] ?? 'r'}`,
     targetHandle: `tgt-${SIDE[e.toSide] ?? 'l'}`,
-    ...EDGE_DEFAULTS,
+    label: e.label,
+    style: { ...EDGE_DEFAULTS.style, ...(e.color ? { stroke: e.color } : {}) },
+    data: { _obs: e },             // 原始边存档（保留 label / color / toEnd 等）
   }));
   return { nodes, edges };
 }
@@ -166,19 +180,29 @@ function fromObsidian(raw: any): SavedGraph {
 function toObsidian(nodes: Node[], edges: Edge[]) {
   return {
     nodes: nodes.map(n => {
-      const d = n.data as CardData;
-      const obj: any = { id: n.id, type: 'text',
-        x: Math.round(n.position.x), y: Math.round(n.position.y),
-        width: d.width ?? 250, height: d.height ?? 100,
-        text: d.text ?? '' };
+      const d = n.data as CardData & { _obs?: any };
+      const x = Math.round(n.position.x);
+      const y = Math.round(n.position.y);
+      if (d._obs && d._obs.type !== 'text') {
+        // 非 text 节点（file / link / group）：只更新位置，其余原样保留
+        return { ...d._obs, x, y };
+      }
+      const obj: any = { id: n.id, type: 'text', x, y,
+        width: d.width ?? 250, height: d.height ?? 100, text: d.text ?? '' };
       if (d.color) obj.color = d.color;
       return obj;
     }),
-    edges: edges.map(e => ({
-      id: e.id,
-      fromNode: e.source, fromSide: SIDE_R[e.sourceHandle?.replace('src-', '') ?? 'r'] ?? 'right',
-      toNode: e.target,   toSide:   SIDE_R[e.targetHandle?.replace('tgt-', '') ?? 'l'] ?? 'left',
-    })),
+    edges: edges.map(e => {
+      const obs = (e.data as any)?._obs ?? {};
+      return {
+        ...obs,                     // 保留 Obsidian 原有字段（label / color / toEnd 等）
+        id: e.id,
+        fromNode: e.source,
+        fromSide: SIDE_R[e.sourceHandle?.replace('src-', '') ?? 'r'] ?? 'right',
+        toNode: e.target,
+        toSide: SIDE_R[e.targetHandle?.replace('tgt-', '') ?? 'l'] ?? 'left',
+      };
+    }),
   };
 }
 
@@ -187,9 +211,8 @@ function loadGraph(docId: string): SavedGraph {
     const doc = canvasStore.getById(docId);
     if (!doc?.content) return { nodes: [], edges: [] };
     const raw = JSON.parse(doc.content);
-    /* Obsidian 格式：节点有 x/y 直接属性；我们旧格式有 position */
-    const isObsidian = raw.nodes?.[0] && 'x' in raw.nodes[0];
-    return isObsidian ? fromObsidian(raw) : raw;
+    const isObsidian = Array.isArray(raw.nodes) && raw.nodes.length > 0 && 'x' in raw.nodes[0];
+    return isObsidian ? fromObsidian(raw) : fromObsidian(raw); // 统一走 Obsidian 路径
   } catch { return { nodes: [], edges: [] }; }
 }
 
