@@ -75,9 +75,9 @@ function CanvasHint({ dark }: { dark: boolean }) {
   };
 
   return (
-    <Panel position="bottom-center" style={{ marginBottom: 14, pointerEvents: 'none', textAlign: 'center' }}>
+    <Panel position="bottom-center" style={{ pointerEvents: 'none', textAlign: 'center', paddingBottom: 16 }}>
       {hasMoved && (
-        <div style={{ ...txt, marginBottom: 4 }}>
+        <div style={{ ...txt, marginBottom: 5 }}>
           按 <kbd style={kbdStyle}>H</kbd> 回到中心
         </div>
       )}
@@ -112,6 +112,13 @@ function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect
 
   return (
     <div style={{ width: '100%', height: '100%', background: bgColor, ...vars } as React.CSSProperties}>
+      {/* 覆盖 ReactFlow 默认 grab 光标：空白处用箭头，拖拽时用 grabbing */}
+      <style>{`
+        .react-flow__pane { cursor: default !important; }
+        .react-flow__pane.dragging { cursor: grabbing !important; }
+        .react-flow__node { cursor: default; }
+        .react-flow__node:hover .react-flow__handle { opacity: 0.6; }
+      `}</style>
       <ReactFlow
         nodes={nodes} edges={edges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
