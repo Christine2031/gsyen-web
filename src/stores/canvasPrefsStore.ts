@@ -24,7 +24,7 @@ export interface CanvasPrefs {
 const DEFAULT: CanvasPrefs = {
   dark: false, font: 'mono', fontSize: 17, lineLen: 72,
   focusMode: 'off', tw: false,
-  defaultExt: '.md', reopenLast: true,
+  defaultExt: '.docx', reopenLast: true,
 };
 
 function _load(): CanvasPrefs {

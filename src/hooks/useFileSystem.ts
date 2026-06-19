@@ -144,9 +144,8 @@ async function _elReadDir(src: FolderSource): Promise<FileEntry[]> {
     if (api?.library?.readDir) {
       const entries: RawEntry[] | null = await api.library.readDir(src.path);
       if (entries) return _entriesToFileEntries(src.path, entries);
-      return []; // null = 冷启动扫描中，等 cache-update 事件
+      // null = 缓存冷启动，用 fs:readDir 先拿到目录结构（无预览），preview 稍后 cache-update 补
     }
-    // Fallback：旧版 Electron，直接读目录（无预览）
     const raw: RawEntry[] = await api?.readDir?.(src.path) ?? [];
     return _entriesToFileEntries(src.path, raw);
   } catch { return []; }

@@ -152,11 +152,11 @@ export function CanvasSettings({ prefs, onChange, onClose, P, dark }: Props) {
             style={{ background: P.chrome, color: P.fg, border: `0.5px solid ${P.border}`,
               borderRadius: 4, padding: '4px 8px', fontSize: 12, fontFamily: SYS_FONT,
               cursor: 'pointer', outline: 'none' }}>
-            <option value=".md">.md</option>
-            <option value=".txt">.txt</option>
-            <option value=".xlsx">.xlsx</option>
             <option value=".docx">.docx</option>
+            <option value=".xlsx">.xlsx</option>
+            <option value=".txt">.txt</option>
             <option value=".pdf">.pdf</option>
+            <option value=".md">.md</option>
             <option value=".excalidraw">.excalidraw</option>
             <option value=".canvas">.canvas</option>
           </select>

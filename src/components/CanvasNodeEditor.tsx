@@ -99,7 +99,8 @@ interface InnerProps {
 function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect, addCard, dark }: InnerProps) {
   const { screenToFlowPosition } = useReactFlow();
 
-  const onPaneDoubleClick = useCallback((e: React.MouseEvent) => {
+  const onDblClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest('.react-flow__node, .react-flow__edge, .react-flow__controls, .react-flow__panel')) return;
     const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
     addCard({ x: pos.x - 100, y: pos.y - 40 });
   }, [screenToFlowPosition, addCard]);
@@ -111,7 +112,7 @@ function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect
     : { '--cn-bg': '#FFFFFF', '--cn-fg': '#1A1A1A', '--cn-border': 'rgba(0,0,0,0.08)', '--cn-dim': '#AAA' };
 
   return (
-    <div style={{ width: '100%', height: '100%', background: bgColor, ...vars } as React.CSSProperties}>
+    <div onDoubleClick={onDblClick} style={{ width: '100%', height: '100%', background: bgColor, ...vars } as React.CSSProperties}>
       {/* 覆盖 ReactFlow 默认 grab 光标：空白处用箭头，拖拽时用 grabbing */}
       <style>{`
         .react-flow__pane { cursor: default !important; }
@@ -123,14 +124,12 @@ function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect
         nodes={nodes} edges={edges}
         onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onPaneDoubleClick={onPaneDoubleClick}
         nodeTypes={NODE_TYPES}
         defaultEdgeOptions={EDGE_DEFAULTS}
         colorMode={dark ? 'dark' : 'light'}
         defaultViewport={{ x: 0, y: 0, zoom: 1 }}
         proOptions={{ hideAttribution: true }}
         panOnDrag={[1, 2]}
-        selectionOnDrag
         panOnScroll
       >
         <Background variant={BackgroundVariant.Dots} color={dotColor} gap={24} size={1.5} />
