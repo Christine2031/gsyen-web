@@ -17,7 +17,7 @@ import { CanvasDocListPreview } from './CanvasDocListPreview';
 // ── 悬停预加载缓存（最多 40 条，LRU by insertion order）──────────────────────
 const _MAX_CACHE = 40;
 const _prefetchCache = new Map<string, string>();
-const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i;
+const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx|pdf)$/i;
 const _IMG_RE   = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 
 function _prefetchFile(file: FileEntry) {

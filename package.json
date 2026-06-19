@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.80.188",
+  "version": "2.80.189",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "build": {
     "appId": "com.gsyen.app",
-    "productName": "GSYEN",
+    "productName": "Gsyen Writer",
     "copyright": "Copyright © 2026 GSYEN",
     "directories": {
       "output": "../gsyen-dist"

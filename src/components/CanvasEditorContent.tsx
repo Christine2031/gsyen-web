@@ -29,6 +29,7 @@ import { OfficeViewer } from './OfficeViewer';
 import { canvasPrefsStore } from '../stores/canvasPrefsStore';
 import type { CanvasPrefs } from '../stores/canvasPrefsStore';
 import { CanvasSettings } from './CanvasSettings';
+import { useCanvasCreateFile } from '../hooks/useCanvasCreateFile';
 
 interface Props { docId: string | undefined; onClose: () => void; }
 
@@ -135,20 +136,10 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     }, 80);
   }, [docId]);
 
-  const handleCreateFile = useCallback(async (type: 'doc' | 'canvas' | 'nodes') => {
-    const { selectedFolder, navStack } = libraryStore.get();
-    const folder = navStack.length > 0 ? navStack[navStack.length - 1] : selectedFolder; if (!folder) return;
-    const ext = type === 'doc' ? '.md' : type === 'canvas' ? '.excalidraw' : '.canvas';
-    const name = `Untitled-${Date.now()}${ext}`; const path = `${folder.path ?? folder.name}/${name}`;
-    const content = type === 'doc' ? '' : type === 'canvas'
-      ? JSON.stringify({ type: 'excalidraw', version: 2, source: 'gsyen', elements: [], appState: { viewBackgroundColor: '#ffffff' }, files: {} })
-      : JSON.stringify({ nodes: [], edges: [] });
-    const entry: FileEntry = { name, path, isMarkdown: false };
-    await fsAdapter.writeFile(entry, content); await libraryStore.refreshCurrent();
-    setDocType(type === 'canvas' ? 'canvas' : type === 'nodes' ? 'nodes' : 'doc');
-    if (type === 'canvas') setCanvasEverActive(true); if (type === 'nodes') setNodesEverActive(true);
-    setActiveFsFile(entry); setContent(content); setTitle('Untitled');
-  }, []);
+  const handleCreateFile = useCanvasCreateFile({
+    setDocType, setCanvasEverActive, setNodesEverActive,
+    setActiveFsFile, setContent, setTitle, onFsFileSelect,
+  });
 
   const handleDocListBack = useCallback(async () => {
     const { navStack } = libraryStore.get();
@@ -255,7 +246,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
             {activeFsFile && <ImageViewer entry={activeFsFile} P={P} />}
           </div>
           <div style={{ display: docType === 'office' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
-            {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} />}
+            {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} dark={dark} />}
           </div>
           {docType === 'nodes' && (
             <button onClick={() => nodeEditorRef.current?.addCard()}
