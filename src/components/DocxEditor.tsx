@@ -1,65 +1,89 @@
+/**
+ * DocxEditor — TipTap 富文本编辑器
+ * 读：mammoth HTML → TipTap
+ * 写：TipTap HTML → turndown → .md → fs:writeFile（同目录）
+ */
+import { useState, useCallback, useEffect } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import TurndownService from 'turndown';
 import type { Palette } from './CanvasEditorTypes';
 import { SYS_FONT } from './CanvasEditorTypes';
-import { htmlToMarkdown } from './officeViewerHelpers';
 
-interface Props {
-  initialHtml: string;
-  P: Palette;
-  dark: boolean;
-  onBack: () => void;
-  onSaveMd: (markdown: string) => void | Promise<void>;
-}
+interface Props { html: string; filePath: string; P: Palette; dark: boolean; onExit: () => void; }
 
-export function DocxEditor({ initialHtml, P, dark, onBack, onSaveMd }: Props) {
+const td = new TurndownService({ headingStyle: 'atx', bulletListMarker: '-', codeBlockStyle: 'fenced' });
+
+const editorCss = (fg: string, bg: string, accent: string) => `
+  .gw-tiptap { height: 100%; overflow-y: auto; }
+  .gw-tiptap .tiptap { min-height: 100%; outline: none; cursor: text;
+    font-family: Georgia, 'Times New Roman', serif; font-size: 15px;
+    line-height: 1.8; color: ${fg}; max-width: 680px; margin: 0 auto; padding: 48px 32px 80px; }
+  .gw-tiptap .tiptap h1,.gw-tiptap .tiptap h2,.gw-tiptap .tiptap h3 {
+    font-family: ${SYS_FONT}; font-weight: 600; line-height: 1.3; margin: 1.6em 0 0.4em; }
+  .gw-tiptap .tiptap h1{font-size:1.6em} .gw-tiptap .tiptap h2{font-size:1.25em} .gw-tiptap .tiptap h3{font-size:1.05em}
+  .gw-tiptap .tiptap p { margin: 0 0 0.9em; }
+  .gw-tiptap .tiptap ul,.gw-tiptap .tiptap ol { padding-left: 1.6em; margin: 0 0 0.9em; }
+  .gw-tiptap .tiptap li { margin-bottom: 0.3em; }
+  .gw-tiptap .tiptap strong { font-weight: 700; }
+  .gw-tiptap .tiptap em { font-style: italic; }
+  .gw-tiptap .tiptap blockquote { border-left: 3px solid ${accent}; margin: 1em 0;
+    padding: 0.2em 1em; opacity: 0.75; font-style: italic; }
+  .gw-tiptap .tiptap code { font-family: 'SF Mono',Consolas,monospace; font-size: 13px;
+    background: ${fg}15; border-radius: 3px; padding: 1px 4px; }
+  .gw-tiptap .tiptap pre { background: ${fg}12; border-radius: 6px; padding: 12px 16px;
+    overflow-x: auto; }
+  .gw-tiptap .tiptap pre code { background: none; padding: 0; }
+  .gw-tiptap .tiptap hr { border: none; border-top: 1px solid ${fg}20; margin: 2em 0; }
+  .gw-tiptap .tiptap ::selection { background: ${accent}30; }
+`;
+
+export function DocxEditor({ html, filePath, P, dark, onExit }: Props) {
+  const [saved, setSaved] = useState(false);
+
   const editor = useEditor({
     extensions: [StarterKit],
-    content: initialHtml,
+    content: html || '<p></p>',
+    autofocus: true,
+    editorProps: { attributes: { spellcheck: 'false' } },
   });
 
-  const paper = dark ? '#242424' : '#ffffff';
-  const text  = dark ? '#d8d8d8' : '#1a1a1a';
-  const line  = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.10)';
+  useEffect(() => () => { editor?.destroy(); }, [editor]);
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     if (!editor) return;
-    await onSaveMd(htmlToMarkdown(editor.getHTML()));
-  }
+    const markdown = td.turndown(editor.getHTML());
+    const mdPath   = filePath.replace(/\.docx?$/i, '.md');
+    await (window as any).electronAPI?.writeFile?.(mdPath, markdown);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }, [editor, filePath]);
+
+  const btn: React.CSSProperties = { padding: '4px 14px', fontFamily: SYS_FONT,
+    fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
+    border: 'none', borderRadius: 0, cursor: 'pointer' };
 
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: paper }}>
-      <style>{`
-        .gs-docx-edit .ProseMirror { outline: none; color:${text}; }
-        .gs-docx-edit h1 { font-size:26px; font-weight:700; margin:0 0 16px; letter-spacing:-0.01em; }
-        .gs-docx-edit h2 { font-size:20px; font-weight:700; margin:30px 0 12px; }
-        .gs-docx-edit h3 { font-size:16px; font-weight:600; margin:22px 0 8px; }
-        .gs-docx-edit p  { margin:0 0 14px; }
-        .gs-docx-edit blockquote { border-left:3px solid ${P.accent}; margin:16px 0; padding:2px 0 2px 16px; font-style:italic; }
-        .gs-docx-edit img { max-width:100%; border-radius:4px; margin:12px 0; display:block; }
-        .gs-docx-edit ul, .gs-docx-edit ol { margin:0 0 14px; padding-left:22px; }
-        .gs-docx-edit strong { font-weight:700; }
-        .gs-docx-edit a { color:${P.accent}; }
-      `}</style>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: P.bg }}>
+      <style>{editorCss(P.fg, P.bg, P.accent)}</style>
 
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 16px', borderBottom: `1px solid ${line}`, flexShrink: 0 }}>
-        <button onClick={onBack}
-          style={{ padding: '5px 12px', fontSize: 12, fontFamily: SYS_FONT, border: 'none', borderRadius: 5,
-            cursor: 'pointer', background: 'transparent', color: P.dim }}>
+      {/* ── Toolbar ── */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px',
+        height: 36, flexShrink: 0, borderBottom: `0.5px solid ${P.border}`, background: P.chrome }}>
+        <button onClick={onExit}
+          style={{ ...btn, background: 'transparent', color: P.menuFg, border: `0.5px solid ${P.border}` }}>
           ← View
         </button>
+        <div style={{ flex: 1 }} />
         <button onClick={handleSave}
-          style={{ padding: '5px 14px', fontSize: 12, fontFamily: SYS_FONT, fontWeight: 600, border: 'none',
-            borderRadius: 5, cursor: 'pointer', background: P.accent, color: '#fff' }}>
-          Save .md
+          style={{ ...btn, background: P.fg, color: P.bg, opacity: saved ? 0.6 : 1, transition: 'opacity 0.15s' }}>
+          {saved ? 'Saved ✓' : 'Save .md'}
         </button>
       </div>
 
-      <div className="gs-docx-edit" style={{ flex: 1, overflow: 'auto' }}>
-        <EditorContent editor={editor}
-          style={{ maxWidth: 760, margin: '0 auto', padding: '48px 56px',
-            fontFamily: '"iA Writer Quattro","Georgia","Times New Roman",serif', fontSize: 15.5, lineHeight: 1.75 }} />
+      {/* ── TipTap ── */}
+      <div className="gw-tiptap" style={{ flex: 1 }}>
+        <EditorContent editor={editor} />
       </div>
     </div>
   );

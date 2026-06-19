@@ -84,7 +84,7 @@ export function CanvasChrome({
               style={{ fontFamily: SYS_FONT, fontSize: 14, fontWeight: 500, color: P.menuFg,
                 userSelect: 'none', letterSpacing: '0.01em', cursor: 'text', maxWidth: 440,
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {title || '无标题'}{docType === 'canvas' ? '.excalidraw' : docType === 'nodes' ? '.canvas' : (docType === 'image' || docType === 'office') ? '' : '.md'}&nbsp;— GSYEN Writer
+              {title || '无标题'}{docType === 'canvas' ? '.excalidraw' : docType === 'nodes' ? '.canvas' : docType === 'doc' ? '.md' : ''}&nbsp;— Gsyen Writer
             </span>
           )}
         </div>
@@ -135,7 +135,7 @@ export function CanvasChrome({
             display: 'flex', alignItems: 'center', padding: '0 12px',
             borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.14)'}` }}>
           <span style={{ fontFamily: SYS_FONT, fontSize: 11, color: P.dim }}>
-            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : docType === 'image' ? 'Image Preview' : docType === 'office' ? 'Office Document · Word / Excel Preview' : 'Node Canvas · Drag to connect, double-click to edit'}
+            {docType === 'canvas' ? 'Whiteboard · Excalidraw' : docType === 'image' ? 'Image Preview' : docType === 'office' ? 'Office Viewer · Word / Excel / PDF' : 'Node Canvas · Drag to connect, double-click to edit'}
           </span>
         </div>
       )}

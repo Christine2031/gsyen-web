@@ -22,6 +22,8 @@ export function useCanvasFileOps({ title, content, onTitleChange, onContent, set
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.md,.txt';
     inp.onchange = (ev) => {
       const f = (ev.target as HTMLInputElement).files?.[0]; if (!f) return;
+      const ext = f.name.split('.').pop()?.toLowerCase();
+      if (ext !== 'md' && ext !== 'txt') return;
       const r = new FileReader();
       r.onload = (e) => {
         const txt = e.target?.result as string;

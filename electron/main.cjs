@@ -174,6 +174,7 @@ ipcMain.handle('app:getVersion', () => app.getVersion());
 
 // ── Library 文件系统 IPC ──────────────────────────────────────────────────────
 require('./ipc-library-fs.cjs')(ipcMain);
+require('./ipc-docviewer.cjs')(ipcMain);
 
 // ── 窗口控制 IPC ──────────────────────────────────────────────────────────────
 

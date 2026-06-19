@@ -15,11 +15,8 @@ import { useCanvasMenus } from '../hooks/useCanvasMenus';
 import { useCanvasFileOps } from '../hooks/useCanvasFileOps';
 import type { EditorView } from '@codemirror/view';
 import { canvasStore } from '../stores/canvasStore';
-import { canvasPrefsStore } from '../stores/canvasPrefsStore';
-import type { CanvasPrefs } from '../stores/canvasPrefsStore';
 import { iaWriterTheme, focusModeExt, sentenceFocusExt, typewriterExt, baseExtensions } from '../hooks/useCanvasTheme';
 import { CanvasWriterPane } from './CanvasWriterPane';
-import { CanvasSettings } from './CanvasSettings';
 import { CanvasStatsPill } from './CanvasStatsPill';
 import { CanvasLibrary } from './CanvasLibrary';
 import { CanvasDocList, invalidatePrefetch } from './CanvasDocList';
@@ -29,42 +26,37 @@ import { libraryStore } from '../stores/canvasLibraryStore';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
 import { ImageViewer } from './ImageViewer';
 import { OfficeViewer } from './OfficeViewer';
+import { canvasPrefsStore } from '../stores/canvasPrefsStore';
+import type { CanvasPrefs } from '../stores/canvasPrefsStore';
+import { CanvasSettings } from './CanvasSettings';
+import { useCanvasCreateFile } from '../hooks/useCanvasCreateFile';
 
 interface Props { docId: string | undefined; onClose: () => void; }
+
+const _infer = (d: {type?:string;content?:string}|null|undefined): 'doc'|'canvas'|'nodes'|'image'|'office' => {
+  if (d?.type && d.type !== 'doc') return d.type as any;
+  try { const p=JSON.parse(d?.content?.trim()??''); if('elements'in p||p.type==='excalidraw') return 'canvas'; if('nodes'in p&&'edges'in p) return 'nodes'; } catch {} return 'doc';
+};
 
 export function CanvasEditorContent({ docId, onClose }: Props) {
   const stored = docId ? canvasStore.getById(docId) : null;
 
   const [title,         setTitle]         = useState(stored?.title   ?? '');
   const [content,       setContent]       = useState(stored?.content ?? '');
-  const _p = canvasPrefsStore.get();
   const [mode,          setMode]          = useState<EditorMode>('write');
-  const [dark,          setDark]          = useState(_p.dark);
-  const [tw,            setTw]            = useState(_p.tw);
-  const [focusMode,     setFocusMode]     = useState<FocusMode>(_p.focusMode);
-  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(() => {
-    if (stored?.type && stored.type !== 'doc') return stored.type;
-    // 修复旧数据：type 未存或错存为 'doc'，从 content 推断
-    const c = stored?.content?.trim() ?? '';
-    if (c.startsWith('{')) {
-      try {
-        const p = JSON.parse(c);
-        if ('elements' in p || p.type === 'excalidraw') return 'canvas';
-        if ('nodes' in p && 'edges' in p)               return 'nodes';
-      } catch {}
-    }
-    return stored?.type ?? 'doc';
-  });
-  const [chromeVisible,  setChromeVisible]  = useState(true);
-  const [lineLen,        setLineLen]        = useState<LineLen>(_p.lineLen);
-  const [fontSize,       setFontSize]       = useState(_p.fontSize);
-  const [font,           setFont]           = useState<FontChoice>(_p.font);
-  const [titleEdit,      setTitleEdit]      = useState(false);
-  const [sidebarOpen,    setSidebarOpen]    = useState(false);
-  const [settingsOpen,   setSettingsOpen]   = useState(false);
+  const [dark,          setDark]          = useState(canvasPrefsStore.get().dark);
+  const [tw,            setTw]            = useState(canvasPrefsStore.get().tw);
+  const [focusMode,     setFocusMode]     = useState<FocusMode>(canvasPrefsStore.get().focusMode);
+  const [docType,       setDocType]       = useState<'doc'|'canvas'|'nodes'|'image'|'office'>(() => _infer(stored));
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const [lineLen,       setLineLen]       = useState<LineLen>(canvasPrefsStore.get().lineLen);
+  const [fontSize,      setFontSize]      = useState(canvasPrefsStore.get().fontSize);
+  const [font,          setFont]          = useState<FontChoice>(canvasPrefsStore.get().font);
+  const [titleEdit,     setTitleEdit]     = useState(false);
+  const [sidebarOpen,   setSidebarOpen]   = useState(false);
+  const [settingsOpen,  setSettingsOpen]  = useState(false);
   const [activeFsFile,  setActiveFsFile]  = useState<FileEntry | null>(null);
-  const [editorFade,    setEditorFade]    = useState(1);
-  // 懒加载：Excalidraw / React Flow 只在首次激活时 mount，避免打开 .md 时同时初始化两个重型库
+  const [editorFade,       setEditorFade]       = useState(1);
   const [canvasEverActive, setCanvasEverActive] = useState(docType === 'canvas');
   const [nodesEverActive,  setNodesEverActive]  = useState(docType === 'nodes');
 
@@ -75,11 +67,11 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   const fsSelectTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nodeEditorRef  = useRef<CanvasNodeEditorRef>(null);
   const menuBarRef     = useRef<HTMLDivElement>(null);
-  const creatingRef    = useRef(false);
   const hideTimerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const titleInputRef  = useRef<HTMLInputElement>(null);
 
   const { libW, doclistW } = useCanvasPanelWidths();
+  const SIDEBAR_EASE = '0.22s cubic-bezier(0.4,0,0.2,1)';
   const panelLeft = sidebarOpen ? libW + doclistW : 0;
 
   const P          = dark ? DARK : LIGHT;
@@ -136,53 +128,26 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     setEditorFade(0);
     fsSelectTimer.current = setTimeout(() => {
       fsSelectTimer.current = null;
-      setActiveFsFile(entry);
-      setContent(text);
-      setTitle(entry.name.replace(/\.[^.]+$/, ''));
-      const newType = /\.excalidraw$/i.test(entry.name) ? 'canvas' as const
-        : /\.canvas$/i.test(entry.name)                   ? 'nodes'  as const
-        : /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name) ? 'image' as const
-        : /\.(docx|xlsx)$/i.test(entry.name)               ? 'office' as const
-        : 'doc' as const;
-      setDocType(newType);
-      if (newType === 'canvas') setCanvasEverActive(true);
-      if (newType === 'nodes')  setNodesEverActive(true);
-      if (docId) canvasStore.update(docId, { content: text, type: newType });
+      setActiveFsFile(entry); setContent(text); setTitle(entry.name.replace(/\.[^.]+$/, ''));
+      const t = /\.excalidraw$/i.test(entry.name)?'canvas':/\.canvas$/i.test(entry.name)?'nodes':/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name)?'image':/\.(docx|xlsx|pptx|pdf)$/i.test(entry.name)?'office':'doc';
+      setDocType(t); if(t==='canvas') setCanvasEverActive(true); if(t==='nodes') setNodesEverActive(true);
+      if (docId && /\.(md|txt)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
       setEditorFade(1);
     }, 80);
   }, [docId]);
 
-  const handleCreateFile = useCallback(async (type: 'doc' | 'canvas' | 'nodes') => {
-    if (creatingRef.current) return;          // 防连点
-    creatingRef.current = true;
-    try {
-      const { selectedFolder, navStack } = libraryStore.get();
-      const folder = navStack.length > 0 ? navStack[navStack.length - 1] : selectedFolder;
-      if (!folder) return;
-      const ext = type === 'doc' ? '.md' : type === 'canvas' ? '.excalidraw' : '.canvas';
-      const name = `Untitled-${Date.now()}${ext}`;
-      const filePath = `${folder.path ?? folder.name}/${name}`;
-      const content = type === 'doc' ? ''
-        : type === 'canvas'
-          ? JSON.stringify({ type: 'excalidraw', version: 2, source: 'gsyen', elements: [], appState: { viewBackgroundColor: '#ffffff' }, files: {} })
-          : JSON.stringify({ nodes: [], edges: [] });
-      const entry: FileEntry = { name, path: filePath, isMarkdown: /\.md$/i.test(name), lastModified: Date.now() };
-      await fsAdapter.writeFile(entry, content);
-      // 乐观插入：立刻显示新文件，不等 readDir 重扫（fs.watch 600ms 后自动跟上）
-      libraryStore.optimisticAddFile(entry);
-      setDocType(type === 'canvas' ? 'canvas' : type === 'nodes' ? 'nodes' : 'doc');
-      setActiveFsFile(entry);
-      setContent(content);
-      setTitle('Untitled');
-    } finally {
-      creatingRef.current = false;
-    }
-  }, []);
+  const handleCreateFile = useCanvasCreateFile({
+    setDocType, setCanvasEverActive, setNodesEverActive,
+    setActiveFsFile, setContent, setTitle, onFsFileSelect,
+  });
 
   const handleDocListBack = useCallback(async () => {
     const { navStack } = libraryStore.get();
-    if (navStack.length > 0) await libraryStore.popNav();
-    else libraryStore.clearFolder();
+    if (navStack.length > 0) await libraryStore.popNav(); else libraryStore.clearFolder();
+  }, []);
+
+  const handlePrefsChange = useCallback((p: Partial<CanvasPrefs>) => {
+    canvasPrefsStore.set(p); if(p.dark!==undefined)setDark(p.dark); if(p.font!==undefined)setFont(p.font as FontChoice); if(p.fontSize!==undefined)setFontSize(p.fontSize); if(p.lineLen!==undefined)setLineLen(p.lineLen as LineLen); if(p.focusMode!==undefined)setFocusMode(p.focusMode as FocusMode); if(p.tw!==undefined)setTw(p.tw);
   }, []);
 
   /* ── extensions ── */
@@ -194,40 +159,14 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
     ...(tw ? [typewriterExt()] : []),
   ], [dark, focusMode, tw, fontSize, fontFamily]);
 
-  /* ── 修复存量脏数据：type 未存或错存为 'doc' 时写回正确值 ── */
-  useEffect(() => {
-    if (!docId || !stored) return;
-    const storedType = stored.type ?? 'doc';
-    if (storedType !== docType) canvasStore.update(docId, { type: docType });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 仅 mount 时执行一次
+  useEffect(() => { if (docId && docType !== (stored?.type ?? 'doc')) canvasStore.update(docId, { type: docType }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── sync + keyboard ── */
   useEffect(() => {
     const sync = () => {
-      const d = docId ? canvasStore.getById(docId) : null;
-      if (!d) return;
-      setTitle(d.title);
-      setContent(d.content);
-      // Supabase 可能拉回 type:'doc' 的旧数据，需同步推断正确的 docType
-      const inferredType = (() => {
-        if (d.type && d.type !== 'doc') return d.type;
-        const c = d.content?.trim() ?? '';
-        if (c.startsWith('{')) {
-          try {
-            const p = JSON.parse(c);
-            if ('elements' in p || p.type === 'excalidraw') return 'canvas' as const;
-            if ('nodes' in p && 'edges' in p)               return 'nodes'  as const;
-          } catch {}
-        }
-        return (d.type ?? 'doc') as 'doc';
-      })();
-      setDocType(inferredType);
-      // 顺手修复 Supabase 里的脏数据
-      if (inferredType !== d.type) canvasStore.update(d.id, { type: inferredType });
+      const d = docId ? canvasStore.getById(docId) : null; if (!d) return;
+      setTitle(d.title); setContent(d.content); const t = _infer(d); setDocType(t); if (t !== (d.type ?? 'doc')) canvasStore.update(d.id, { type: t });
     };
-    window.addEventListener('canvas-updated', sync);
-    return () => window.removeEventListener('canvas-updated', sync);
+    window.addEventListener('canvas-updated', sync); return () => window.removeEventListener('canvas-updated', sync);
   }, [docId]);
 
   useEffect(() => {
@@ -235,14 +174,12 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
       if (e.key === 'Escape') { if (titleEdit) { setTitleEdit(false); return; } if (activeMenuRef.current) { setActiveMenu(null); return; } onClose(); return; }
       const mod = e.metaKey || e.ctrlKey; if (!mod) return;
       if (!e.shiftKey && e.key.toLowerCase() === 'p') { e.preventDefault(); setMode(m => m === 'preview' ? 'write' : 'preview'); }
-      if ( e.shiftKey && e.key.toLowerCase() === 'p') { e.preventDefault(); setMode(m => m === 'split'   ? 'write' : 'split');   }
-      if ( e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); setTw(v => !v); }
-      if ( e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); setFocusMode(m => m === 'off' ? 'paragraph' : m === 'paragraph' ? 'sentence' : 'off'); }
-      if (e.key === '=' || e.key === '+') { e.preventDefault(); setFontSize(s => Math.min(24, s + 1)); }
-      if (e.key === '-')                  { e.preventDefault(); setFontSize(s => Math.max(13, s - 1)); }
+      if (e.shiftKey && e.key.toLowerCase() === 'p') { e.preventDefault(); setMode(m => m === 'split' ? 'write' : 'split'); }
+      if (e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); setTw(v => !v); }
+      if (e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); setFocusMode(m => m === 'off' ? 'paragraph' : m === 'paragraph' ? 'sentence' : 'off'); }
+      if (e.key === '=' || e.key === '+') { e.preventDefault(); setFontSize(s => Math.min(24, s + 1)); } if (e.key === '-') { e.preventDefault(); setFontSize(s => Math.max(13, s - 1)); }
     };
-    window.addEventListener('keydown', fn);
-    return () => window.removeEventListener('keydown', fn);
+    window.addEventListener('keydown', fn); return () => window.removeEventListener('keydown', fn);
   }, [onClose, setActiveMenu, titleEdit]);
 
   useEffect(() => {
@@ -255,22 +192,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   useEffect(() => { if (titleEdit) titleInputRef.current?.select(); }, [titleEdit]);
 
   useEffect(() => { const t = setTimeout(() => editorRef.current?.view?.focus(), 80); return () => clearTimeout(t); }, []);
-
-  useEffect(() => {
-    if (docType === 'canvas') setCanvasEverActive(true);
-    if (docType === 'nodes')  setNodesEverActive(true);
-  }, [docType]);
-
-  /* ── settings ── */
-  const handlePrefsChange = useCallback((patch: Partial<CanvasPrefs>) => {
-    canvasPrefsStore.set(patch);
-    if (patch.dark       !== undefined) setDark(patch.dark);
-    if (patch.font       !== undefined) setFont(patch.font as FontChoice);
-    if (patch.fontSize   !== undefined) setFontSize(patch.fontSize);
-    if (patch.lineLen    !== undefined) setLineLen(patch.lineLen as LineLen);
-    if (patch.focusMode  !== undefined) setFocusMode(patch.focusMode as FocusMode);
-    if (patch.tw         !== undefined) setTw(patch.tw);
-  }, []);
+  useEffect(() => { if (docType === 'canvas') setCanvasEverActive(true); if (docType === 'nodes') setNodesEverActive(true); }, [docType]);
 
   /* ── helpers ── */
   const wrap = useCallback((b: string, a: string) => {
@@ -285,71 +207,47 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
   /* ── menus ── */
   const menus = useCanvasMenus({ words, chars, readMin, mode, dark, tw, focusMode, lineLen, font, docType, setMode, setDark, setTw, setFocusMode, setLineLen, setFontSize, setFont, setActiveMenu, wrap, importFile, exportMd, printDoc, createFile: handleCreateFile, onClose });
 
-  const SIDEBAR_EASE = '0.22s cubic-bezier(0.4,0,0.2,1)';
   const chromeStyle: React.CSSProperties = {
     position: 'absolute', top: 0, left: panelLeft, right: 0, zIndex: 20,
     transform: chromeVisible ? 'translateY(0)' : `translateY(-${CHROME_H + 4}px)`,
     opacity:   chromeVisible ? 1 : 0,
-    transition: [
-      `left ${SIDEBAR_EASE}`,
-      chromeVisible
-        ? 'transform 0.24s cubic-bezier(0.16,1,0.3,1),opacity 0.18s ease'
-        : 'transform 0.3s cubic-bezier(0.55,0,1,0.45),opacity 0.22s ease',
-    ].join(','),
+    transition: `left ${SIDEBAR_EASE},${chromeVisible ? 'transform 0.24s cubic-bezier(0.16,1,0.3,1),opacity 0.18s ease' : 'transform 0.3s cubic-bezier(0.55,0,1,0.45),opacity 0.22s ease'}`,
     pointerEvents: chromeVisible ? 'auto' : 'none',
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50"
-      style={{ background:P.bg, color:P.fg, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+    <div className="fixed inset-0 z-50" style={{ background:P.bg, color:P.fg, WebkitAppRegion: 'no-drag' } as React.CSSProperties}
       onClick={() => setActiveMenu(null)} onMouseMove={handleMouseMove}>
 
-      {/* Content — Library/DocList 常驻外层，所有模式都可用侧栏 */}
       <div style={{ position:'absolute', inset:0, overflow:'hidden', display:'flex' }}>
+        {/* Sidebar — all modes */}
         <CanvasLibrary open={sidebarOpen} P={P} dark={dark} onSettings={() => setSettingsOpen(true)} />
         <CanvasDocList open={sidebarOpen} onFileSelect={onFsFileSelect} P={P} dark={dark}
           onBack={handleDocListBack} onNew={() => handleCreateFile('doc')} />
 
-        {/* 右侧内容区 — 所有模式共享，display 切换避免重复挂载 */}
-        <div style={{ flex: 1, position: 'relative', minWidth: 0, height: '100%' }}>
-          {/* Doc */}
-          <div style={{ display: docType === 'doc' ? 'flex' : 'none',
-            position: 'absolute', inset: 0 }}>
+        {/* Main area */}
+        <div style={{ flex:1, position:'relative', overflow:'hidden', height:'100%' }}>
+          <div style={{ display: docType === 'doc' ? 'flex' : 'none', width:'100%', height:'100%' }}>
             <CanvasWriterPane content={content} onContent={onContent} extensions={extensions}
               P={P} mode={mode} fontFamily={fontFamily} fontSize={fontSize} dark={dark}
               lineLen={lineLen} editorFade={editorFade} editorRef={editorRef} />
           </div>
-          {/* Image */}
-          <div style={{ display: docType === 'image' ? 'flex' : 'none',
-            position: 'absolute', inset: 0, paddingTop: CHROME_H + 1,
-            opacity: editorFade, transition: 'opacity 0.13s ease' }}>
-            {activeFsFile && <ImageViewer entry={activeFsFile} P={P} />}
-          </div>
-          {/* Office */}
-          <div style={{ display: docType === 'office' ? 'flex' : 'none',
-            position: 'absolute', inset: 0, paddingTop: CHROME_H + 1,
-            opacity: editorFade, transition: 'opacity 0.13s ease' }}>
-            {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} dark={dark} />}
-          </div>
-          {/* Whiteboard — 首次切换到 canvas 才 mount，之后 visibility:hidden 保活，消除重复初始化卡顿 */}
           {docId && canvasEverActive && (
-            <div style={{
-              visibility: docType === 'canvas' ? 'visible' : 'hidden',
-              pointerEvents: docType === 'canvas' ? 'auto' : 'none',
-              position: 'absolute', inset: 0, paddingTop: CHROME_H + 1 }}>
+            <div style={{ visibility: docType === 'canvas' ? 'visible' : 'hidden', pointerEvents: docType === 'canvas' ? 'auto' : 'none', position: 'absolute', inset: 0, paddingTop: CHROME_H + 1 }}>
               <CanvasDrawEditor docId={docId} dark={dark} />
             </div>
           )}
-          {/* Node Canvas — 同上 */}
           {docId && nodesEverActive && (
-            <div style={{
-              visibility: docType === 'nodes' ? 'visible' : 'hidden',
-              pointerEvents: docType === 'nodes' ? 'auto' : 'none',
-              position: 'absolute', inset: 0, paddingTop: CHROME_H + 1,
-              display: 'flex' }}>
+            <div style={{ visibility: docType === 'nodes' ? 'visible' : 'hidden', pointerEvents: docType === 'nodes' ? 'auto' : 'none', position: 'absolute', inset: 0, paddingTop: CHROME_H + 1, display: 'flex' }}>
               <CanvasNodeEditor ref={nodeEditorRef} docId={docId} dark={dark} />
             </div>
           )}
+          <div style={{ display: docType === 'image' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
+            {activeFsFile && <ImageViewer entry={activeFsFile} P={P} />}
+          </div>
+          <div style={{ display: docType === 'office' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>
+            {activeFsFile && <OfficeViewer entry={activeFsFile} P={P} dark={dark} />}
+          </div>
           {docType === 'nodes' && (
             <button onClick={() => nodeEditorRef.current?.addCard()}
               style={{ position:'absolute', top: CHROME_H + 10, right: 12, zIndex: 15,
@@ -366,7 +264,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           z-index 低于 Chrome(20)，Chrome 可见时被覆盖；Chrome 隐藏后此条成为唯一 drag 区域 */}
       {isElectron && (
         <div style={{ position: 'absolute', top: 0, left: panelLeft, right: 0,
-          height: TITLE_H, zIndex: 5, transition: `left ${SIDEBAR_EASE}`,
+          height: TITLE_H, zIndex: 5,
           WebkitAppRegion: 'drag', pointerEvents: 'none' } as React.CSSProperties} />
       )}
 
@@ -381,16 +279,11 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           P={P} dark={dark} onMouseEnter={showChrome} menuBarRef={menuBarRef} />
       </div>
 
-      {/* Settings panel */}
-      {settingsOpen && (
-        <CanvasSettings prefs={canvasPrefsStore.get()} onChange={handlePrefsChange}
-          onClose={() => setSettingsOpen(false)} P={P} dark={dark} />
-      )}
-
       {/* Hot zone */}
       <div style={{ position:'absolute', top:0, left:0, right:0, height:8, zIndex:30, pointerEvents: chromeVisible ? 'none' : 'auto' }} onMouseEnter={showChrome} />
 
       {docType === 'doc' && <CanvasStatsPill words={words} chars={chars} sentences={sentences} readSec={readSec} P={P} dark={dark} />}
+      {settingsOpen && <CanvasSettings prefs={canvasPrefsStore.get()} onChange={handlePrefsChange} onClose={() => setSettingsOpen(false)} P={P} dark={dark} />}
     </div>,
     document.body
   );

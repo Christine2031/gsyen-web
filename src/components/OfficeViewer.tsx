@@ -1,143 +1,180 @@
-import { useState, useEffect } from 'react';
-import * as mammoth from 'mammoth';
-import * as XLSX from 'xlsx';
-import { fsAdapter, type FileEntry } from '../hooks/useFileSystem';
+import { useState, useEffect, useCallback } from 'react';
+import type { FileEntry } from '../hooks/useFileSystem';
 import type { Palette } from './CanvasEditorTypes';
 import { SYS_FONT } from './CanvasEditorTypes';
-import { buildSheetTable, DOCX_STYLE_MAP, officeCss, htmlToMarkdown } from './officeViewerHelpers';
+import { ExcelEditor } from './ExcelEditor';
 import { DocxEditor } from './DocxEditor';
+import { PdfViewer } from './PdfViewer';
 
 interface Props { entry: FileEntry; P: Palette; dark: boolean; }
-interface SheetData { name: string; html: string; }
 
-function mdSiblingEntry(entry: FileEntry): FileEntry {
-  const name = entry.name.replace(/\.docx$/i, '.md');
-  const path = entry.path.replace(/\.docx$/i, '.md');
-  return { name, path, isMarkdown: true, lastModified: Date.now() };
-}
+type DocxResult  = { ok: true; ext: '.docx'; html: string; markdown: string };
+type XlsxResult  = { ok: true; ext: '.xlsx' | '.xls'; sheets: { name: string; html: string }[] };
+type ErrResult   = { ok: false; error: string };
+type ParseResult = DocxResult | XlsxResult | ErrResult;
 
-async function readArrayBuffer(entry: FileEntry): Promise<ArrayBuffer> {
-  if (entry.path && (window as any).electronAPI?.readFileBuffer) {
-    const buf: Uint8Array | null = await (window as any).electronAPI.readFileBuffer(entry.path);
-    if (!buf) throw new Error('读取文件失败');
-    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-  }
-  if (entry.handle) {
-    const file = await (entry.handle as FileSystemFileHandle).getFile();
-    return file.arrayBuffer();
-  }
-  throw new Error('无法读取文件');
-}
+/* ── DocxView ── */
+function DocxView({ html, markdown, filePath, P, dark }: {
+  html: string; markdown: string; filePath: string; P: Palette; dark: boolean;
+}) {
+  const [exported,  setExported]  = useState(false);
+  const [editMode,  setEditMode]  = useState(false);
 
-export function OfficeViewer({ entry, P, dark }: Props) {
-  const [docHtml, setDocHtml] = useState<string | null>(null);
-  const [sheets,  setSheets]  = useState<SheetData[] | null>(null);
-  const [active,  setActive]  = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState<string | null>(null);
-  const [editing, setEditing] = useState(false);
+  if (editMode) return <DocxEditor html={html} filePath={filePath} P={P} dark={dark} onExit={() => setEditMode(false)} />;
 
-  useEffect(() => {
-    setLoading(true); setDocHtml(null); setSheets(null); setError(null); setActive(0); setEditing(false);
-    (async () => {
-      try {
-        const buf = await readArrayBuffer(entry);
-        if (/\.docx$/i.test(entry.name)) {
-          const result = await mammoth.convertToHtml({ arrayBuffer: buf }, {
-            styleMap: DOCX_STYLE_MAP,
-            convertImage: mammoth.images.imgElement(async (img: any) => {
-              const data = await img.read('base64');
-              return { src: `data:${img.contentType};base64,${data}` };
-            }),
-          } as any);
-          setDocHtml(result.value);
-        } else if (/\.xlsx$/i.test(entry.name)) {
-          const wb = XLSX.read(buf, { type: 'array' });
-          setSheets(wb.SheetNames.map(name => ({
-            name,
-            html: buildSheetTable(XLSX.utils.sheet_to_json(wb.Sheets[name], { header: 1, raw: false, defval: '' }) as unknown[][]),
-          })));
-        } else {
-          setError('暂不支持 .pptx 预览');
-        }
-      } catch (e) {
-        setError((e as Error).message ?? '解析失败');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [entry.path]);
+  const handleExport = useCallback(async () => {
+    const mdPath = filePath.replace(/\.docx?$/i, '.md');
+    const ok = await (window as any).electronAPI?.writeFile(mdPath, markdown);
+    if (ok) { setExported(true); setTimeout(() => setExported(false), 2500); }
+  }, [filePath, markdown]);
 
-  const center: React.CSSProperties = {
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-    height: '100%', gap: 10, color: P.dim, fontFamily: SYS_FONT, fontSize: 14,
-  };
+  const fg   = dark ? '#CCCCCC' : '#1A1A1A';
+  const bg   = dark ? '#1A1A1A' : '#F8F8F8';
+  const muted = dark ? '#888' : '#999';
 
-  if (loading) return <div style={center}>正在解析文档，请稍候…</div>;
-  if (error) return (
-    <div style={center}>
-      <div>无法预览此文件</div>
-      <div style={{ fontSize: 11, color: P.dim, maxWidth: 340, textAlign: 'center' }}>{error}</div>
-    </div>
-  );
+  const docCss = `
+    .gw-doc { font-family: Georgia, 'Times New Roman', serif; font-size: 15px;
+      line-height: 1.8; color: ${fg}; max-width: 680px; margin: 0 auto; padding: 48px 32px 80px; }
+    .gw-doc h1,.gw-doc h2,.gw-doc h3,.gw-doc h4 { font-family: ${SYS_FONT}; font-weight: 600;
+      margin: 1.6em 0 0.4em; line-height: 1.3; }
+    .gw-doc h1 { font-size: 1.6em; } .gw-doc h2 { font-size: 1.25em; }
+    .gw-doc h3 { font-size: 1.05em; } .gw-doc p { margin: 0 0 0.9em; }
+    .gw-doc table { border-collapse: collapse; width: 100%; margin: 1em 0; font-size: 13px; }
+    .gw-doc th { background: ${dark ? '#2A2A2A' : '#EFEFEF'}; font-family: ${SYS_FONT}; font-size: 11px;
+      font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+    .gw-doc th,.gw-doc td { border: 1px solid ${dark ? '#333' : '#DDD'}; padding: 6px 10px; text-align: left; }
+    .gw-doc tr:nth-child(even) { background: ${dark ? '#202020' : '#FAFAFA'}; }
+    .gw-doc img { max-width: 100%; height: auto; border-radius: 4px; }
+    .gw-doc a { color: ${dark ? '#4A90D9' : '#1A6ECC'}; }
+    .gw-doc ul,.gw-doc ol { padding-left: 1.6em; margin: 0 0 0.9em; }
+    .gw-doc li { margin-bottom: 0.3em; }
+    .gw-doc blockquote { border-left: 3px solid ${muted}; margin: 1em 0; padding: 0.2em 1em;
+      color: ${muted}; font-style: italic; }
+    .gw-doc pre,.gw-doc code { font-family: 'SF Mono',Consolas,monospace; font-size: 13px;
+      background: ${dark ? '#252525' : '#F0F0F0'}; border-radius: 4px; }
+    .gw-doc pre { padding: 12px 16px; overflow-x: auto; }
+    .gw-doc code { padding: 1px 4px; }
+  `;
 
-  const paper = dark ? '#242424' : '#ffffff';
-
-  if (editing && docHtml !== null) {
-    return (
-      <DocxEditor
-        initialHtml={docHtml}
-        P={P}
-        dark={dark}
-        onBack={() => setEditing(false)}
-        onSaveMd={(markdown) => fsAdapter.writeFile(mdSiblingEntry(entry), markdown)}
-      />
-    );
-  }
-
-  if (sheets) {
-    return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: paper }}>
-        <style>{officeCss(P, dark)}</style>
-        <div className="gs-office-sheet" style={{ flex: 1, overflow: 'auto', padding: 16 }}
-          dangerouslySetInnerHTML={{ __html: sheets[active]?.html ?? '' }} />
-        {sheets.length > 1 && (
-          <div style={{ display: 'flex', gap: 4, padding: '6px 12px', borderTop: `1px solid ${P.border}`,
-            background: dark ? '#1c1c1c' : '#f0f0f0', overflowX: 'auto', flexShrink: 0 }}>
-            {sheets.map((s, i) => (
-              <button key={s.name} onClick={() => setActive(i)}
-                style={{ padding: '5px 14px', fontSize: 12, fontFamily: SYS_FONT, whiteSpace: 'nowrap',
-                  border: 'none', borderRadius: 5, cursor: 'pointer',
-                  background: i === active ? P.accent : 'transparent',
-                  color: i === active ? '#fff' : P.fg, fontWeight: i === active ? 600 : 400 }}>
-                {s.name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  }
+  const floatBtn: React.CSSProperties = { padding: '7px 16px', fontFamily: SYS_FONT,
+    fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+    border: 'none', borderRadius: 0, cursor: 'pointer', transition: 'opacity 0.15s' };
 
   return (
-    <div style={{ width: '100%', height: '100%', overflow: 'auto', background: paper, position: 'relative' }}>
-      <style>{officeCss(P, dark)}</style>
-      <div style={{ position: 'sticky', top: 0, display: 'flex', justifyContent: 'flex-end', gap: 8,
-        padding: '10px 16px', background: paper, zIndex: 1 }}>
-        <button onClick={() => fsAdapter.writeFile(mdSiblingEntry(entry), htmlToMarkdown(docHtml ?? ''))}
-          style={{ padding: '5px 14px', fontSize: 12, fontFamily: SYS_FONT, border: `1px solid ${P.border}`,
-            borderRadius: 5, cursor: 'pointer', background: 'transparent', color: P.fg }}>
-          Export .md
-        </button>
-        <button onClick={() => setEditing(true)}
-          style={{ padding: '5px 14px', fontSize: 12, fontFamily: SYS_FONT, fontWeight: 600, border: 'none',
-            borderRadius: 5, cursor: 'pointer', background: P.accent, color: '#fff' }}>
-          Edit
-        </button>
+    <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'auto', background: bg }}>
+      <style>{docCss}</style>
+      <div className="gw-doc" dangerouslySetInnerHTML={{ __html: html }} />
+      <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 10, display: 'flex', gap: 8 }}>
+        {(window as any).electronAPI && (
+          <button onClick={() => setEditMode(true)}
+            style={{ ...floatBtn, background: 'transparent',
+              color: dark ? '#CCCCCC' : '#1A1A1A',
+              border: `0.5px solid ${dark ? '#555' : '#CCC'}` }}>
+            Edit
+          </button>
+        )}
+        {markdown && (
+          <button onClick={handleExport}
+            style={{ ...floatBtn, background: dark ? '#CCCCCC' : '#1A1A1A',
+              color: dark ? '#1A1A1A' : '#F8F8F8', opacity: exported ? 0.5 : 1 }}>
+            {exported ? 'Exported ✓' : 'Export .md'}
+          </button>
+        )}
       </div>
-      <div className="gs-office-doc" style={{ maxWidth: 760, margin: '0 auto', padding: '0 56px 48px',
-        fontFamily: '"iA Writer Quattro","Georgia","Times New Roman",serif', fontSize: 15.5, lineHeight: 1.75 }}
-        dangerouslySetInnerHTML={{ __html: docHtml ?? '' }} />
     </div>
   );
+}
+
+/* ── XlsxView ── */
+function XlsxView({ sheets, filePath, P, dark }: {
+  sheets: { name: string; html: string }[]; filePath: string; P: Palette; dark: boolean;
+}) {
+  const [active,   setActive]   = useState(0);
+  const [editMode, setEditMode] = useState(false);
+
+  if (editMode) return <ExcelEditor filePath={filePath} P={P} dark={dark} onExit={() => setEditMode(false)} />;
+
+  const tblCss = `
+    .gw-xl table { border-collapse: collapse; font-family: ${SYS_FONT}; font-size: 12px;
+      width: max-content; min-width: 100%; }
+    .gw-xl th { position: sticky; top: 0; background: ${dark ? '#252525' : '#EFEFEF'};
+      font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em;
+      color: ${dark ? '#888' : '#666'}; z-index: 1; }
+    .gw-xl th,.gw-xl td { border: 1px solid ${dark ? '#2E2E2E' : '#E0E0E0'};
+      padding: 5px 10px; text-align: left; white-space: nowrap; color: ${dark ? '#CCC' : '#1A1A1A'}; }
+    .gw-xl tr:nth-child(even) td { background: ${dark ? '#1E1E1E' : '#FAFAFA'}; }
+    .gw-xl tr:hover td { background: ${dark ? '#2A2A2A' : '#F4F4F4'}; }
+  `;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: P.bg }}>
+      <div style={{ display: 'flex', borderBottom: `0.5px solid ${P.border}`,
+        background: P.chrome, flexShrink: 0, overflowX: 'auto' }}>
+        {sheets.map((s, i) => (
+          <button key={s.name} onClick={() => setActive(i)}
+            style={{ padding: '8px 16px', fontFamily: SYS_FONT, fontSize: 11,
+              fontWeight: active === i ? 700 : 500,
+              color: active === i ? P.fg : P.menuFg,
+              background: active === i ? `${P.fg}10` : 'transparent',
+              border: 'none', borderBottom: active === i ? `2px solid ${P.fg}` : '2px solid transparent',
+              cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.1s' }}>
+            {s.name}
+          </button>
+        ))}
+        <div style={{ flex: 1 }} />
+        {(window as any).electronAPI && (
+          <button onClick={() => setEditMode(true)}
+            style={{ padding: '0 14px', fontFamily: SYS_FONT, fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.06em', textTransform: 'uppercase', flexShrink: 0,
+              background: 'transparent', color: P.menuFg, border: 'none', cursor: 'pointer' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.fg}
+            onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = P.menuFg}>
+            Edit
+          </button>
+        )}
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '0' }}>
+        <style>{tblCss}</style>
+        <div className="gw-xl" dangerouslySetInnerHTML={{ __html: sheets[active]?.html ?? '' }} />
+      </div>
+    </div>
+  );
+}
+
+/* ── OfficeViewer ── */
+export function OfficeViewer({ entry, P, dark }: Props) {
+  const ext = entry.path?.split('.').pop()?.toLowerCase();
+  const [result,  setResult]  = useState<ParseResult | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!entry.path || ext === 'pdf') return;
+    setLoading(true); setResult(null);
+    (window as any).electronAPI?.docviewer?.parseOffice(entry.path)
+      .then((r: ParseResult) => setResult(r))
+      .catch((e: Error) => setResult({ ok: false, error: e.message }))
+      .finally(() => setLoading(false));
+  }, [entry.path]);
+
+  if (ext === 'pdf') return <PdfViewer entry={entry} P={P} dark={dark} />;
+
+  const center: React.CSSProperties = { display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    height: '100%', gap: 8, color: P.dim, fontFamily: SYS_FONT, fontSize: 14 };
+
+  if (loading) return <div style={center}>正在解析文档…</div>;
+  if (!result || !result.ok) return (
+    <div style={center}>
+      <div>无法预览此文件</div>
+      <div style={{ fontSize: 12, color: P.dim, maxWidth: 340, textAlign: 'center' }}>
+        {!result ? '未知错误' : result.error}
+      </div>
+    </div>
+  );
+
+  if (result.ext === '.docx')
+    return <DocxView html={result.html} markdown={result.markdown}
+             filePath={entry.path} P={P} dark={dark} />;
+
+  return <XlsxView sheets={result.sheets} filePath={entry.path} P={P} dark={dark} />;
 }

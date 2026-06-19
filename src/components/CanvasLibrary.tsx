@@ -5,7 +5,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useLibraryStore, libraryStore } from '../stores/canvasLibraryStore';
-import { SYS_FONT, TITLE_H, MENU_H, isElectron } from './CanvasEditorTypes';
+import { SYS_FONT, TITLE_H } from './CanvasEditorTypes';
 import type { Palette } from './CanvasEditorTypes';
 import type { FolderSource } from '../hooks/useFileSystem';
 import { useCanvasPanelWidths } from '../hooks/useCanvasPanelWidths';
@@ -24,7 +24,7 @@ async function pickFiles(): Promise<FolderSource[]> {
   if (api?.showOpenDialog) {
     const r = await api.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
-      filters: [{ name: 'Documents', extensions: ['md', 'txt', 'canvas', 'excalidraw'] }],
+      filters: [{ name: 'Documents', extensions: ['md', 'txt', 'canvas', 'excalidraw', 'docx', 'xlsx', 'pdf'] }],
     });
     if (r?.canceled || !r?.filePaths?.length) return [];
     const seen = new Set<string>();
@@ -47,7 +47,6 @@ const LIB_SKEL_WIDTHS = ['68%', '52%', '76%'];
 
 export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
   const { folders, selectedFolder, loading } = useLibraryStore();
-
   const { libW } = useCanvasPanelWidths();
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   // 只对「新出现」的 id 播入场动画，已存在的 id 不重建 DOM
@@ -76,8 +75,9 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
   }, []);
 
   const [popupOpen, setPopupOpen] = useState(false);
-  const [popupBottom, setPopupBottom] = useState(0);
-  const popupRef  = useRef<HTMLDivElement>(null);
+  const [popupY, setPopupY] = useState(0);
+  const [popupX, setPopupX] = useState(0);
+  const popupRef   = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -95,7 +95,8 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
   const handleToggle = () => {
     if (!popupOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      setPopupBottom(window.innerHeight - rect.top);
+      setPopupX(rect.left + 8);
+      setPopupY(rect.top);
     }
     setPopupOpen(o => !o);
   };
@@ -113,11 +114,15 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
       transition: 'width 0.22s cubic-bezier(0.4,0,0.2,1)',
       background: P.chrome, borderRight: `0.5px solid ${P.border}`,
       display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      <div style={{ width: libW, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ width: libW, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
         {/* ─ Header ─ */}
         <div style={{ height: TITLE_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          justifyContent: 'flex-end', padding: '0 4px' }}>
+          padding: '0 4px 0 10px' }}>
+          <span style={{ flex: 1, fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
+            fontFamily: SYS_FONT, color: P.menuFg, textTransform: 'uppercase', userSelect: 'none' }}>
+            Library
+          </span>
           <button onClick={onSettings} title="Settings"
             style={{ padding: '6px 6px', background: 'transparent', border: 'none', cursor: 'pointer',
               color: P.menuFg, display: 'flex', alignItems: 'center', borderRadius: 4, flexShrink: 0 }}
@@ -129,13 +134,6 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
               <path d="M10.5 3.6L10.1 1.2L14.9 1.2L13.5 3.6L18.5 6.5L20.4 4.9L22.3 8.2L20 9.1L20 14.9L22.3 15.8L20.4 19.1L18.5 17.5L13.5 20.4L13.9 22.8L10.1 22.8L10.5 20.4L5.5 17.5L3.6 19.1L1.7 15.8L4 14.9L4 9.1L1.7 8.2L3.6 4.9L5.5 6.5Z"/>
             </svg>
           </button>
-        </div>
-        <div style={{ height: MENU_H, flexShrink: 0, display: 'flex', alignItems: 'center',
-          padding: '0 10px' }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.09em',
-            fontFamily: SYS_FONT, color: P.dim, textTransform: 'uppercase', userSelect: 'none' }}>
-            Library
-          </span>
         </div>
 
         {/* ─ Folder list ─ */}
@@ -191,8 +189,6 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
           })}
         </div>
 
-
-
         {/* ─ Bottom trigger ─ */}
         <button ref={triggerRef} onClick={handleToggle}
           style={{ height: 36, display: 'flex', alignItems: 'center', gap: 5,
@@ -212,27 +208,26 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
     {/* ─ Popup — portal 挂 body，彻底跳出 overflow:hidden 父容器 ─ */}
     {createPortal(
       <div ref={popupRef}
-        style={{ position: 'fixed', left: 0, width: 'auto', minWidth: libW, zIndex: 9999,
-          bottom: popupBottom,
+        style={{ position: 'fixed', left: popupX, top: popupY, width: 'max-content', zIndex: 9999,
+          transform: popupOpen ? 'translateY(-100%) scale(1)' : 'translateY(calc(-100% + 6px)) scale(0.97)',
           background: P.chrome, borderRadius: 8,
           boxShadow: dark
             ? '0 4px 6px rgba(0,0,0,0.35), 0 12px 32px rgba(0,0,0,0.55)'
             : '0 4px 6px rgba(0,0,0,0.07), 0 12px 32px rgba(0,0,0,0.12)',
           border: `0.5px solid ${P.border}`,
-          opacity: popupOpen ? 1 : 0,
-          transform: popupOpen ? 'translateY(0)' : 'translateY(6px)',
-          pointerEvents: popupOpen ? 'auto' : 'none',
-          transition: 'opacity 0.18s ease, transform 0.18s cubic-bezier(0.2,0,0,1)',
+          opacity: popupOpen ? 1 : 0, pointerEvents: popupOpen ? 'auto' : 'none',
+          transition: 'opacity 0.15s ease, transform 0.15s ease',
           overflow: 'hidden', padding: '4px 0' }}>
         {[
           { label: 'Add files to the Library',  action: handleAddFiles  },
           { label: 'Add folder to the Library', action: handleAddFolder },
         ].map(({ label, action }) => (
           <button key={label} onClick={action}
-            style={{ width: '100%', padding: '10px 14px', textAlign: 'left',
+            style={{ width: '100%', padding: '10px 20px', textAlign: 'left',
               background: 'transparent', border: 'none', cursor: 'pointer', display: 'block',
-              fontSize: 13, fontFamily: SYS_FONT, color: P.fg, whiteSpace: 'nowrap' }}
-            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}09`}
+              fontSize: 13, fontFamily: SYS_FONT, color: P.menuFg,
+              whiteSpace: 'nowrap' }}
+            onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = `${P.fg}08`}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'transparent'}>
             {label}
           </button>
@@ -240,7 +235,6 @@ export function CanvasLibrary({ open, P, dark, onSettings }: Props) {
       </div>,
       document.body
     )}
-
 
     {ctxMenu && createPortal(
       <div onMouseDown={e => e.stopPropagation()}

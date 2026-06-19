@@ -90,12 +90,16 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
     try { return fs.readFileSync(filePath, 'utf8'); } catch { return ''; }
   });
 
-  ipcMain.handle('fs:readFileBuffer', (_e, filePath) => {
-    try { return fs.readFileSync(filePath); } catch { return null; }
-  });
-
   ipcMain.handle('fs:writeFile', (_e, filePath, text) => {
     try { fs.writeFileSync(filePath, text, 'utf8'); return true; } catch { return false; }
+  });
+
+  ipcMain.handle('fs:readFileBuffer', (_e, filePath) => {
+    try { return fs.readFileSync(filePath).toString('base64'); } catch { return ''; }
+  });
+
+  ipcMain.handle('fs:writeFileBuffer', (_e, filePath, base64) => {
+    try { fs.writeFileSync(filePath, Buffer.from(base64, 'base64')); return true; } catch { return false; }
   });
 
   // 移到废纸篓（文件 + 目录均支持）

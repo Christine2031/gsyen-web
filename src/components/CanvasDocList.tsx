@@ -1,5 +1,5 @@
 /**
- * CanvasDocList — 中栏文件列表
+ * CanvasDocList — 中栏文件列表（header/Sort By Date 已移至 CanvasChrome）
  * 只负责：子文件夹 + 文件列表渲染，导航通过 libraryStore.pushNav
  */
 import { useState, useCallback, useRef, useEffect } from 'react';
@@ -17,14 +17,13 @@ import { CanvasDocListPreview } from './CanvasDocListPreview';
 // ── 悬停预加载缓存（最多 40 条，LRU by insertion order）──────────────────────
 const _MAX_CACHE = 40;
 const _prefetchCache = new Map<string, string>();
-const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx)$/i;
+const _MEDIA_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg|docx|xlsx|pptx|pdf)$/i;
+const _IMG_RE   = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 
 function _prefetchFile(file: FileEntry) {
   if (!file.path || _prefetchCache.has(file.path) || _MEDIA_RE.test(file.name)) return;
-  fsAdapter.readFile(file).then(text => {
-    if (_prefetchCache.size >= _MAX_CACHE) _prefetchCache.delete(_prefetchCache.keys().next().value!);
-    _prefetchCache.set(file.path!, text);
-  }).catch(() => {});
+  if (_prefetchCache.size >= _MAX_CACHE) _prefetchCache.delete(_prefetchCache.keys().next().value!);
+  fsAdapter.readFile(file).then(text => _prefetchCache.set(file.path!, text)).catch(() => {});
 }
 
 export function invalidatePrefetch(path: string) { _prefetchCache.delete(path); }
@@ -32,28 +31,24 @@ export function invalidatePrefetch(path: string) { _prefetchCache.delete(path); 
 function relativeDate(ts?: number): string {
   if (!ts) return '';
   const diff = Date.now() - ts;
-  if (diff < 86_400_000)  return 'Today';
-  if (diff < 172_800_000) return 'Yesterday';
-  return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return diff < 86_400_000 ? 'Today' : diff < 172_800_000 ? 'Yesterday' : new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-const _IMG_RE = /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i;
 function fileIcon(name: string) {
   if (/\.excalidraw$/i.test(name)) return DrawIcon;
-  if (/\.canvas$/i.test(name))     return NodeIcon;
-  if (_IMG_RE.test(name))          return ImageIcon;
-  return DocIcon;
+  if (/\.canvas$/i.test(name)) return NodeIcon;
+  return _IMG_RE.test(name) ? ImageIcon : DocIcon;
 }
 
 const SKEL_WIDTHS = ['72%', '58%', '80%', '64%', '50%'];
 
 interface Props {
-  open:         boolean;
+  open: boolean;
   onFileSelect: (e: FileEntry, c: string) => void;
-  P:            Palette;
-  dark:         boolean;
-  onBack:       () => void;
-  onNew:        () => void;
+  P: Palette;
+  dark: boolean;
+  onBack: () => void;
+  onNew: () => void;
 }
 
 export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Props) {
@@ -64,7 +59,9 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
   const [ctxMenu,      setCtxMenu]      = useState<{ x: number; y: number; entry: FileEntry } | null>(null);
   const [renamingPath, setRenamingPath] = useState<string | null>(null);
   const [preview,      setPreview]      = useState<{ x: number; y: number; text: string } | null>(null);
-  const pvTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pvTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const selectSeqRef = useRef(0);
+  const [listOpacity, setListOpacity] = useState(1);
 
   useEffect(() => {
     if (!ctxMenu) return;
@@ -88,7 +85,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     const base = newBase.trim();
     if (!base || !entry.path) return;
     const ext = entry.isDirectory ? '' : (entry.name.match(/\.[^.]+$/)?.[0] ?? '');
-    const newName = (!entry.isDirectory && ext && !base.endsWith(ext)) ? base + ext : base;
+    const newName = (!entry.isDirectory && !base.endsWith(ext)) ? base + ext : base;
     if (newName === entry.name) return;
     const result = await fsAdapter.renameFile(entry, newName);
     if (result.ok && result.newPath) {
@@ -113,36 +110,27 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
     fsAdapter.deleteFile(entry);
   }, []);
 
-  const inSub     = navStack.length > 0;
-  const isLoading = inSub ? navLoading : loading;
-  const displayFiles = inSub ? navFiles : files;
+  const inSub = navStack.length > 0;
+  const displayFiles = inSub ? navFiles : files; const isLoading = inSub ? navLoading : loading;
+  const activeFolderPath = inSub ? navStack[navStack.length-1]?.id ?? '' : selectedFolder?.id ?? '';
 
   const knownPathsRef = useRef(new Set<string>());
-
-  // 文件夹切换 cross-fade：切换时 dim，新内容到达后恢复
-  const [listOpacity, setListOpacity] = useState(1);
-  const activeFolderPath = inSub ? (navStack[navStack.length - 1]?.path ?? '') : (selectedFolder?.path ?? '');
-  const prevFolderPathRef = useRef(activeFolderPath);
-  useEffect(() => {
-    if (activeFolderPath === prevFolderPathRef.current) return;
-    prevFolderPathRef.current = activeFolderPath;
-    knownPathsRef.current = new Set();
-    setListOpacity(0);
-    const t = setTimeout(() => setListOpacity(1), 50);
-    return () => clearTimeout(t);
-  }, [activeFolderPath]);
-  useEffect(() => { if (displayFiles.length > 0) setListOpacity(1); }, [displayFiles]);
   const newPaths = new Set(displayFiles.map(f => f.path).filter(p => !knownPathsRef.current.has(p)));
   displayFiles.forEach(f => knownPathsRef.current.add(f.path));
 
-  const selectSeqRef = useRef(0);
+  useEffect(() => {
+    knownPathsRef.current = new Set(); setListOpacity(0);
+    const t = setTimeout(() => setListOpacity(1), 50); return () => clearTimeout(t);
+  }, [activeFolderPath]);
+  useEffect(() => { if (displayFiles.length > 0) setListOpacity(1); }, [displayFiles]);
+
   const handleSelect = useCallback(async (file: FileEntry) => {
     libraryStore.setSelectedFile(file);
     const seq = ++selectSeqRef.current;
     if (_MEDIA_RE.test(file.name)) { onFileSelect(file, ''); return; }
     const cached = file.path ? _prefetchCache.get(file.path) : undefined;
     const content = cached !== undefined ? cached : await fsAdapter.readFile(file);
-    if (seq !== selectSeqRef.current) return; // 已有更新的点击，丢弃此次结果
+    if (seq !== selectSeqRef.current) return;
     onFileSelect(file, content);
   }, [onFileSelect]);
 
@@ -156,7 +144,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
 
   const renameInput = (entry: FileEntry) => (
     <input autoFocus
-      defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.[^.]+$/, '')}
+      defaultValue={entry.isDirectory ? entry.name : entry.name.replace(/\.(md|txt|excalidraw|canvas)$/i, '')}
       style={{ flex: 1, fontSize: 13, fontFamily: SYS_FONT, background: 'transparent',
         border: 'none', borderBottom: `1px solid ${P.fg}40`, outline: 'none',
         color: P.fg, padding: 0, minWidth: 0, caretColor: '#55AAFF' }}
@@ -205,9 +193,7 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
           <span style={{ fontSize: 13, fontWeight: 500, color: P.menuFg, fontFamily: SYS_FONT, userSelect: 'none' }}>
             {sortSettings.sortBy === 'name' ? 'Sort By Name' : 'Sort By Date'}
           </span>
-          <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg}
-            strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-            style={{ transform: sortSettings.newestOnTop ? 'none' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
+          <svg width="8" height="5" viewBox="0 0 8 5" fill="none" stroke={P.menuFg} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: sortSettings.newestOnTop ? 'none' : 'rotate(180deg)', transition: 'transform 0.2s' }}>
             <path d="M1 1L4 4L7 1"/>
           </svg>
         </div>
@@ -215,37 +201,31 @@ export function CanvasDocList({ open, onFileSelect, P, dark, onBack, onNew }: Pr
         {/* ─ List ─ */}
         <div style={{ flex: 1, overflowY: 'auto', opacity: listOpacity,
           transition: listOpacity === 0 ? 'none' : 'opacity 0.5s ease' }}>
-          {isLoading && displayFiles.length === 0 && (
-            <div style={{ padding: '6px 0' }}>
-              {SKEL_WIDTHS.map((w, i) => (
-                <div key={i} style={{ padding: '9px 12px' }}>
-                  <div className="gs-skeleton" style={{ height: 11, width: w, background: P.fg, animationDelay: `${i*120}ms`, marginBottom: 5 }} />
-                  <div className="gs-skeleton" style={{ height: 9, width: '45%', background: P.fg, animationDelay: `${i*120+60}ms` }} />
-                </div>
-              ))}
+          {isLoading && displayFiles.length === 0 && SKEL_WIDTHS.map((w, i) => (
+            <div key={i} style={{ padding: '9px 12px' }}>
+              <div className="gs-skeleton" style={{ height: 11, width: w, background: P.fg, animationDelay: `${i*120}ms`, marginBottom: 5 }} />
+              <div className="gs-skeleton" style={{ height: 9, width: '45%', background: P.fg, animationDelay: `${i*120+60}ms` }} />
             </div>
-          )}
+          ))}
 
           {displayFiles.map((entry) => {
-            const active   = !entry.isDirectory && selectedFile?.path === entry.path;
-            const hovered  = hoveredPath === entry.path;
-            const bg       = active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent';
-            const isNew    = newPaths.has(entry.path);
+            const active  = !entry.isDirectory && selectedFile?.path === entry.path;
+            const hovered = hoveredPath === entry.path;
+            const bg      = active ? `${P.fg}0A` : hovered ? `${P.fg}06` : 'transparent';
+            const isNew   = newPaths.has(entry.path);
             const renaming = renamingPath === entry.path;
 
             if (entry.isDirectory) return (
               <div key={entry.path} className={isNew ? 'gs-list-item' : undefined}
                 onClick={() => handleDirClick(entry)}
                 onContextMenu={e => handleContextMenu(e, entry)}
-                onMouseEnter={() => setHoveredPath(entry.path)}
+                onMouseEnter={() => { setHoveredPath(entry.path); libraryStore.prefetchDir(entry); }}
                 onMouseLeave={() => setHoveredPath(null)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8,
                   padding: '0 10px 0 12px', height: 36, cursor: 'pointer',
-                  borderBottom: '0.5px solid transparent', borderLeft: '2px solid transparent',
+                  borderLeft: '2px solid transparent',
                   background: bg, transition: 'background 0.12s' }}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none"
-                  stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
-                  style={{ color: P.menuFg, flexShrink: 0 }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ color: P.menuFg, flexShrink: 0 }}>
                   <path d="M1 3.5C1 2.67 1.67 2 2.5 2H5l1 1.5H10.5C11.33 3.5 12 4.17 12 5v5c0 .83-.67 1.5-1.5 1.5h-8C1.67 11.5 1 10.83 1 10V3.5z"/>
                 </svg>
                 {renaming ? renameInput(entry) : (
