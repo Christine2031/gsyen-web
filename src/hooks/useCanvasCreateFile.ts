@@ -45,6 +45,19 @@ export function useCanvasCreateFile({
         onFsFileSelect({ name, path, isMarkdown: false }, '');
         return;
       }
+      if (def === '.excalidraw' || def === '.canvas') {
+        const isCanvas = def === '.excalidraw';
+        const name = `Untitled-${ts}${def}`; const path = `${fp}/${name}`;
+        const content = isCanvas
+          ? JSON.stringify({ type: 'excalidraw', version: 2, source: 'gsyen', elements: [], appState: { viewBackgroundColor: '#ffffff' }, files: {} })
+          : JSON.stringify({ nodes: [], edges: [] });
+        const entry: FileEntry = { name, path, isMarkdown: false };
+        await fsAdapter.writeFile(entry, content); await libraryStore.refreshCurrent();
+        setDocType(isCanvas ? 'canvas' : 'nodes');
+        if (isCanvas) setCanvasEverActive(true); else setNodesEverActive(true);
+        setActiveFsFile(entry); setContent(content); setTitle('Untitled');
+        return;
+      }
       const name = `Untitled-${ts}${def}`; const path = `${fp}/${name}`;
       const entry: FileEntry = { name, path, isMarkdown: false };
       await fsAdapter.writeFile(entry, ''); await libraryStore.refreshCurrent();

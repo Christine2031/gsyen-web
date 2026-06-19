@@ -76,7 +76,8 @@ function makeZip(entries: ZipEntry[]): Uint8Array {
 // ── Public API ────────────────────────────────────────────────────────────────
 export function createBlankXlsx(): Uint8Array {
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([[]]), 'Sheet1');
+  const rows = Array.from({ length: 20 }, () => Array(8).fill(''));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Sheet1');
   return new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' }));
 }
 

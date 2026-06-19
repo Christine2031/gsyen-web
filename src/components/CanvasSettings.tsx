@@ -158,6 +158,8 @@ export function CanvasSettings({ prefs, onChange, onClose, P, dark }: Props) {
             <option value=".xlsx">.xlsx</option>
             <option value=".docx">.docx</option>
             <option value=".pdf">.pdf</option>
+            <option value=".excalidraw">.excalidraw</option>
+            <option value=".canvas">.canvas</option>
           </select>
         </Row>
         <Row label="Reopen Last File">

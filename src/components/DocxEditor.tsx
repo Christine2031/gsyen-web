@@ -43,7 +43,8 @@ export function DocxEditor({ html, filePath, P, dark, onExit }: Props) {
 
   const editor = useEditor({
     extensions: [StarterKit],
-    content: html,
+    content: html || '<p></p>',
+    autofocus: true,
     editorProps: { attributes: { spellcheck: 'false' } },
   });
 
