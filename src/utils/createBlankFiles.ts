@@ -94,3 +94,20 @@ export function createBlankDocx(): Uint8Array {
     { name: 'word/_rels/document.xml.rels',  data: e.encode(WRL) },
   ]);
 }
+
+export function createBlankPdf(): Uint8Array {
+  const enc = new TextEncoder();
+  const hdr  = enc.encode('%PDF-1.4\n');
+  const o1   = enc.encode('1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n');
+  const o2   = enc.encode('2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n');
+  const o3   = enc.encode('3 0 obj<</Type/Page/MediaBox[0 0 595 842]/Parent 2 0 R/Resources<<>>>>endobj\n');
+  const pad  = (n: number) => String(n).padStart(10, '0');
+  const [a, b, c, d] = [hdr.length, hdr.length + o1.length, hdr.length + o1.length + o2.length, hdr.length + o1.length + o2.length + o3.length];
+  const xref = enc.encode(
+    `xref\n0 4\n0000000000 65535 f \n${pad(a)} 00000 n \n${pad(b)} 00000 n \n${pad(c)} 00000 n \n` +
+    `trailer<</Size 4/Root 1 0 R>>\nstartxref\n${d}\n%%EOF\n`
+  );
+  const out = new Uint8Array(d + xref.length); let p = 0;
+  for (const ch of [hdr, o1, o2, o3, xref]) { out.set(ch, p); p += ch.length; }
+  return out;
+}

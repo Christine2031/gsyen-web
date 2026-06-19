@@ -4,7 +4,7 @@ import type { FileEntry } from './useFileSystem';
 import { fsAdapter } from './useFileSystem';
 import { libraryStore } from '../stores/canvasLibraryStore';
 import { canvasPrefsStore } from '../stores/canvasPrefsStore';
-import { createBlankXlsx, createBlankDocx } from '../utils/createBlankFiles';
+import { createBlankXlsx, createBlankDocx, createBlankPdf } from '../utils/createBlankFiles';
 
 type DocType = 'doc' | 'canvas' | 'nodes' | 'image' | 'office';
 
@@ -36,10 +36,11 @@ export function useCanvasCreateFile({
 
     if (type === 'doc') {
       const def = canvasPrefsStore.get().defaultExt;
-      if (def === '.xlsx' || def === '.docx') {
+      if (def === '.xlsx' || def === '.docx' || def === '.pdf') {
         const ext = def.slice(1);
         const name = `Untitled-${ts}.${ext}`; const path = `${fp}/${name}`;
-        await writeBinary(path, def === '.xlsx' ? createBlankXlsx() : createBlankDocx());
+        const buf = def === '.xlsx' ? createBlankXlsx() : def === '.docx' ? createBlankDocx() : createBlankPdf();
+        await writeBinary(path, buf);
         await libraryStore.refreshCurrent();
         onFsFileSelect({ name, path, isMarkdown: false }, '');
         return;

@@ -16,7 +16,7 @@ export interface CanvasPrefs {
   focusMode:  'off' | 'sentence' | 'paragraph';
   tw:         boolean;
   // Library
-  defaultExt:    '.md' | '.txt' | '.xlsx' | '.docx';
+  defaultExt:    '.md' | '.txt' | '.xlsx' | '.docx' | '.pdf';
   reopenLast:    boolean;
   lastFilePath?: string;
 }

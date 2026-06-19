@@ -157,6 +157,7 @@ export function CanvasSettings({ prefs, onChange, onClose, P, dark }: Props) {
             <option value=".txt">.txt</option>
             <option value=".xlsx">.xlsx</option>
             <option value=".docx">.docx</option>
+            <option value=".pdf">.pdf</option>
           </select>
         </Row>
         <Row label="Reopen Last File">
