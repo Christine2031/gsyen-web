@@ -5,6 +5,8 @@ export interface CardData extends Record<string, unknown> {
   text:            string;
   color?:          string;
   defaultEditing?: boolean;
+  width?:          number;
+  height?:         number;
 }
 
 /* Obsidian left-bar colours */

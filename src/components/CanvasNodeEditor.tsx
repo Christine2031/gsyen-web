@@ -143,12 +143,54 @@ function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect
 /* ── Exported component ── */
 interface SavedGraph { nodes: Node[]; edges: Edge[] }
 
+/* ── Obsidian .canvas ↔ ReactFlow 互转 ── */
+const SIDE: Record<string, string> = { top: 't', right: 'r', bottom: 'b', left: 'l' };
+const SIDE_R: Record<string, string> = { t: 'top', r: 'right', b: 'bottom', l: 'left' };
+
+function fromObsidian(raw: any): SavedGraph {
+  const nodes: Node[] = (raw.nodes ?? []).map((n: any) => ({
+    id: n.id, type: 'card',
+    position: { x: n.x ?? 0, y: n.y ?? 0 },
+    style: n.width ? { width: n.width } : undefined,
+    data: { text: n.text ?? '', color: n.color ?? '', width: n.width ?? 250, height: n.height ?? 100 },
+  }));
+  const edges: Edge[] = (raw.edges ?? []).map((e: any) => ({
+    id: e.id, source: e.fromNode, target: e.toNode,
+    sourceHandle: `src-${SIDE[e.fromSide] ?? 'r'}`,
+    targetHandle: `tgt-${SIDE[e.toSide] ?? 'l'}`,
+    ...EDGE_DEFAULTS,
+  }));
+  return { nodes, edges };
+}
+
+function toObsidian(nodes: Node[], edges: Edge[]) {
+  return {
+    nodes: nodes.map(n => {
+      const d = n.data as CardData;
+      const obj: any = { id: n.id, type: 'text',
+        x: Math.round(n.position.x), y: Math.round(n.position.y),
+        width: d.width ?? 250, height: d.height ?? 100,
+        text: d.text ?? '' };
+      if (d.color) obj.color = d.color;
+      return obj;
+    }),
+    edges: edges.map(e => ({
+      id: e.id,
+      fromNode: e.source, fromSide: SIDE_R[e.sourceHandle?.replace('src-', '') ?? 'r'] ?? 'right',
+      toNode: e.target,   toSide:   SIDE_R[e.targetHandle?.replace('tgt-', '') ?? 'l'] ?? 'left',
+    })),
+  };
+}
+
 function loadGraph(docId: string): SavedGraph {
   try {
     const doc = canvasStore.getById(docId);
-    if (doc?.content) return JSON.parse(doc.content);
-  } catch { /* empty */ }
-  return { nodes: [], edges: [] };
+    if (!doc?.content) return { nodes: [], edges: [] };
+    const raw = JSON.parse(doc.content);
+    /* Obsidian 格式：节点有 x/y 直接属性；我们旧格式有 position */
+    const isObsidian = raw.nodes?.[0] && 'x' in raw.nodes[0];
+    return isObsidian ? fromObsidian(raw) : raw;
+  } catch { return { nodes: [], edges: [] }; }
 }
 
 export interface CanvasNodeEditorRef { addCard: () => void }
@@ -163,7 +205,7 @@ export const CanvasNodeEditor = forwardRef<CanvasNodeEditorRef, { docId: string;
     const scheduleSave = useCallback((ns: Node[], es: Edge[]) => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
-        canvasStore.update(docId, { content: JSON.stringify({ nodes: ns, edges: es }) });
+        canvasStore.update(docId, { content: JSON.stringify(toObsidian(ns, es)) });
       }, 600);
     }, [docId]);
 
@@ -176,7 +218,7 @@ export const CanvasNodeEditor = forwardRef<CanvasNodeEditorRef, { docId: string;
         const next = [...ns, {
           id, type: 'card',
           position: pos ?? { x: 80 + Math.random() * 200, y: 80 + Math.random() * 120 },
-          data: { text: '', color: '', defaultEditing: true } satisfies CardData,
+          data: { text: '', color: '', defaultEditing: true, width: 250, height: 100 } satisfies CardData,
         }];
         scheduleSave(next, edges);
         return next;
