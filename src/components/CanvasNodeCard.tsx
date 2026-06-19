@@ -1,13 +1,11 @@
 import { memo, useState, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps, useReactFlow } from '@xyflow/react';
+import type { CardData } from './CanvasCardData';
+import { CanvasEntityCard } from './CanvasEntityCard';
+import { CanvasConnectorCard } from './CanvasConnectorCard';
 
-export interface CardData extends Record<string, unknown> {
-  text:            string;
-  color?:          string;
-  defaultEditing?: boolean;
-  width?:          number;
-  height?:         number;
-}
+/* Re-export for backward-compat (CanvasNodeEditor imports CardData from here) */
+export type { CardData } from './CanvasCardData';
 
 /* Obsidian left-bar colours */
 const BAR: Record<string, string> = {
@@ -16,8 +14,8 @@ const BAR: Record<string, string> = {
 };
 
 const SIDES = [
-  { pos: Position.Top, id: 't' }, { pos: Position.Right, id: 'r' },
-  { pos: Position.Bottom, id: 'b' }, { pos: Position.Left, id: 'l' },
+  { pos: Position.Top,    id: 't' }, { pos: Position.Right,  id: 'r' },
+  { pos: Position.Bottom, id: 'b' }, { pos: Position.Left,   id: 'l' },
 ];
 
 const tbBtn: React.CSSProperties = {
@@ -54,9 +52,9 @@ function MD({ text }: { text: string }) {
   );
 }
 
-export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
+/* ── Text card (default / Obsidian-compatible) ── */
+function TextCard({ id, data: d, selected }: { id: string; data: CardData; selected: boolean }) {
   const { updateNodeData, deleteElements, fitView } = useReactFlow();
-  const d = data as CardData;
   const [editing,    setEditing]    = useState(d.defaultEditing ?? false);
   const [draft,      setDraft]      = useState(d.text);
   const [showColors, setShowColors] = useState(false);
@@ -73,21 +71,16 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
 
   const barColor = BAR[d.color ?? ''];
   const sep: React.CSSProperties = { width: '0.5px', background: 'rgba(0,0,0,0.1)', margin: '3px 2px' };
-
-  /* Border: Obsidian style — left bar for colour, blue all-around when selected */
-  const bw = selected ? 1.5 : 1;
-  const bc = selected ? '#4A9EFF' : 'rgba(0,0,0,0.08)';
+  const bc = selected ? '#4A9EFF' : 'rgba(0,0,0,0.10)';
   const cardBorder = {
-    borderTop:    `${bw}px solid ${bc}`,
-    borderRight:  `${bw}px solid ${bc}`,
-    borderBottom: `${bw}px solid ${bc}`,
-    borderLeft:   barColor && !selected ? `4px solid ${barColor}` : `${bw}px solid ${bc}`,
+    borderTop:    `1px solid ${bc}`,
+    borderRight:  `1px solid ${bc}`,
+    borderBottom: `1px solid ${bc}`,
+    borderLeft:   barColor && !selected ? `4px solid ${barColor}` : `1px solid ${bc}`,
   };
 
   return (
     <div style={{ position: 'relative' }}>
-
-      {/* ── Selection toolbar ── */}
       {selected && !editing && (
         <div className="nodrag nopan" style={{
           position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%',
@@ -104,10 +97,7 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
               <path d="M2 3h9M4.5 3V2a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M5 5.5v4M8 5.5v4M2.5 3l.65 7.5a.5.5 0 00.5.5h5.7a.5.5 0 00.5-.5L10.5 3"/>
             </svg>
           </button>
-
           <div style={sep} />
-
-          {/* Colour picker */}
           <div style={{ position: 'relative' }}>
             <button style={tbBtn} title="Colour"
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
@@ -138,9 +128,7 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
               </div>
             )}
           </div>
-
           <div style={sep} />
-
           <button style={tbBtn} title="Focus"
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -149,7 +137,6 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
               <path d="M1.5 4.5V2h2.5M8.5 2H11v2.5M11 8.5V11H8.5M4 11H1.5V8.5"/>
             </svg>
           </button>
-
           <button style={tbBtn} title="Edit"
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -161,29 +148,23 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
         </div>
       )}
 
-      {/* ── Card body ── */}
       <div onDoubleClick={e => { e.stopPropagation(); setEditing(true); }}
         style={{
           background: 'var(--cn-bg)', color: 'var(--cn-fg)',
           ...cardBorder,
-          borderRadius: 12, padding: '12px 16px',
+          borderRadius: 4, padding: '12px 16px',
           minWidth: 200, minHeight: 72, maxWidth: 360,
-          boxShadow: selected
-            ? '0 0 0 3px rgba(74,158,255,0.14), 0 6px 20px rgba(0,0,0,0.1)'
-            : '0 2px 8px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)',
-          fontFamily: 'inherit', position: 'relative',
-          transition: 'box-shadow 0.15s',
+          boxShadow: selected ? '0 2px 10px rgba(0,0,0,0.10)' : '0 1px 4px rgba(0,0,0,0.06)',
+          fontFamily: 'inherit', position: 'relative', transition: 'box-shadow 0.15s',
         }}>
-
         {SIDES.map(({ pos, id: hid }) => (
           <Handle key={hid} id={`src-${hid}`} type="source" position={pos}
-            style={{ opacity: selected ? 0.7 : 0.15, width: 8, height: 8, background: '#4A9EFF', border: '1.5px solid #fff' }} />
+            style={{ opacity: 0, width: 8, height: 8, background: '#4A9EFF', border: '1.5px solid #fff', transition: 'opacity 0.12s' }} />
         ))}
         {SIDES.map(({ pos, id: hid }) => (
           <Handle key={`t-${hid}`} id={`tgt-${hid}`} type="target" position={pos}
             style={{ opacity: 0, width: 14, height: 14 }} />
         ))}
-
         {editing ? (
           <textarea ref={taRef} value={draft} className="nodrag nopan"
             onChange={e => setDraft(e.target.value)}
@@ -192,17 +173,22 @@ export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
             style={{
               width: '100%', minHeight: 56, background: 'transparent',
               border: 'none', outline: 'none', resize: 'none',
-              color: 'var(--cn-fg)', fontFamily: 'inherit',
-              fontSize: 13, lineHeight: 1.65,
+              color: 'var(--cn-fg)', fontFamily: 'inherit', fontSize: 13, lineHeight: 1.65,
             }} />
         ) : (
-          <div style={{ pointerEvents: 'none' }}>
-            <MD text={d.text} />
-          </div>
+          <div style={{ pointerEvents: 'none' }}><MD text={d.text} /></div>
         )}
       </div>
     </div>
   );
+}
+
+/* ── Router: dispatches to the correct card form ── */
+export const CanvasNodeCard = memo(({ id, data, selected }: NodeProps) => {
+  const d = data as CardData;
+  if (d.cardType === 'entity')    return <CanvasEntityCard id={id} data={d} selected={selected ?? false} />;
+  if (d.cardType === 'connector') return <CanvasConnectorCard id={id} data={d} selected={selected ?? false} />;
+  return <TextCard id={id} data={d} selected={selected ?? false} />;
 });
 
 CanvasNodeCard.displayName = 'CanvasNodeCard';

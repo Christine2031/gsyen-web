@@ -6,9 +6,10 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { CanvasNodeCard, type CardData } from './CanvasNodeCard';
+import { CanvasBox } from './CanvasBox';
 import { canvasStore } from '../stores/canvasStore';
 
-const NODE_TYPES = { card: CanvasNodeCard };
+const NODE_TYPES = { card: CanvasNodeCard, box: CanvasBox };
 
 const EDGE_DEFAULTS = {
   style: { stroke: 'rgba(0,0,0,0.15)', strokeWidth: 1.5 },
@@ -98,27 +99,36 @@ interface InnerProps {
 
 function CanvasFlowInner({ nodes, edges, onNodesChange, onEdgesChange, onConnect, addCard, dark }: InnerProps) {
   const { screenToFlowPosition } = useReactFlow();
+  const containerRef = useRef<HTMLDivElement>(null);
 
-  const onDblClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).closest('.react-flow__node, .react-flow__edge, .react-flow__controls, .react-flow__panel')) return;
-    const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
-    addCard({ x: pos.x - 100, y: pos.y - 40 });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('.react-flow__node, .react-flow__edge, .react-flow__controls, .react-flow__panel, .react-flow__minimap')) return;
+      const pos = screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      addCard({ x: pos.x - 100, y: pos.y - 40 });
+    };
+    el.addEventListener('dblclick', handler, { capture: true });
+    return () => el.removeEventListener('dblclick', handler, { capture: true });
   }, [screenToFlowPosition, addCard]);
 
-  const bgColor  = dark ? '#1A1A1A' : '#F0EDE8';
-  const dotColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)';
+  const bgColor  = dark ? '#1A1A1A' : '#CAC4BA';
+  const dotColor = dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.18)';
   const vars     = dark
     ? { '--cn-bg': '#1E1E1E', '--cn-fg': '#CCCCCC', '--cn-border': '#383838', '--cn-dim': '#666' }
     : { '--cn-bg': '#FFFFFF', '--cn-fg': '#1A1A1A', '--cn-border': 'rgba(0,0,0,0.08)', '--cn-dim': '#AAA' };
 
   return (
-    <div onDoubleClick={onDblClick} style={{ width: '100%', height: '100%', background: bgColor, ...vars } as React.CSSProperties}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%', background: bgColor, ...vars } as React.CSSProperties}>
       {/* 覆盖 ReactFlow 默认 grab 光标：空白处用箭头，拖拽时用 grabbing */}
       <style>{`
         .react-flow__pane { cursor: default !important; }
         .react-flow__pane.dragging { cursor: grabbing !important; }
         .react-flow__node { cursor: default; }
-        .react-flow__node:hover .react-flow__handle { opacity: 0.6; }
+        .react-flow__node:hover .react-flow__handle[data-handletype="source"] { opacity: 0.55 !important; }
+        .react-flow__node.selected .react-flow__handle[data-handletype="source"] { opacity: 0.75 !important; }
       `}</style>
       <ReactFlow
         nodes={nodes} edges={edges}

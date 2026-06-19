@@ -131,7 +131,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
       setActiveFsFile(entry); setContent(text); setTitle(entry.name.replace(/\.[^.]+$/, ''));
       const t = /\.excalidraw$/i.test(entry.name)?'canvas':/\.canvas$/i.test(entry.name)?'nodes':/\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(entry.name)?'image':/\.(docx|xlsx|pptx|pdf)$/i.test(entry.name)?'office':'doc';
       setDocType(t); if(t==='canvas') setCanvasEverActive(true); if(t==='nodes') setNodesEverActive(true);
-      if (docId && /\.(md|txt)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
+      if (docId && /\.(md|txt|canvas)$/i.test(entry.name)) canvasStore.update(docId, { content: text });
       setEditorFade(1);
     }, 80);
   }, [docId]);
@@ -239,7 +239,7 @@ export function CanvasEditorContent({ docId, onClose }: Props) {
           )}
           {docId && nodesEverActive && (
             <div style={{ visibility: docType === 'nodes' ? 'visible' : 'hidden', pointerEvents: docType === 'nodes' ? 'auto' : 'none', position: 'absolute', inset: 0, paddingTop: CHROME_H + 1, display: 'flex' }}>
-              <CanvasNodeEditor ref={nodeEditorRef} docId={docId} dark={dark} />
+              <CanvasNodeEditor key={docId} ref={nodeEditorRef} docId={docId} dark={dark} />
             </div>
           )}
           <div style={{ display: docType === 'image' ? 'flex' : 'none', width:'100%', height:'100%', paddingTop: CHROME_H }}>

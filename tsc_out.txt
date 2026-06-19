@@ -1,0 +1,96 @@
+src/architecture/card.ts(40,10): error TS1005: '>' expected.
+src/architecture/card.ts(40,17): error TS1005: ')' expected.
+src/architecture/card.ts(41,14): error TS1136: Property assignment expected.
+src/architecture/card.ts(41,44): error TS1005: ';' expected.
+src/architecture/card.ts(42,23): error TS1005: ';' expected.
+src/architecture/card.ts(42,41): error TS1005: ';' expected.
+src/architecture/card.ts(42,52): error TS1005: ';' expected.
+src/architecture/card.ts(42,66): error TS1005: ',' expected.
+src/architecture/card.ts(44,11): error TS1005: '>' expected.
+src/architecture/card.ts(44,16): error TS1005: ',' expected.
+src/architecture/card.ts(44,18): error TS1136: Property assignment expected.
+src/architecture/card.ts(44,70): error TS1005: ',' expected.
+src/architecture/card.ts(44,71): error TS1109: Expression expected.
+src/architecture/card.ts(44,77): error TS1005: ',' expected.
+src/architecture/card.ts(44,84): error TS1161: Unterminated regular expression literal.
+src/architecture/card.ts(46,12): error TS1005: ';' expected.
+src/architecture/card.ts(46,19): error TS1136: Property assignment expected.
+src/architecture/card.ts(46,42): error TS1005: ';' expected.
+src/architecture/card.ts(46,49): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(46,50): error TS1109: Expression expected.
+src/architecture/card.ts(47,18): error TS1005: ',' expected.
+src/architecture/card.ts(48,16): error TS1005: '>' expected.
+src/architecture/card.ts(48,19): error TS1005: ')' expected.
+src/architecture/card.ts(48,24): error TS1005: ',' expected.
+src/architecture/card.ts(48,29): error TS1005: ',' expected.
+src/architecture/card.ts(48,36): error TS1136: Property assignment expected.
+src/architecture/card.ts(48,52): error TS1005: ',' expected.
+src/architecture/card.ts(48,58): error TS1005: ',' expected.
+src/architecture/card.ts(48,68): error TS1161: Unterminated regular expression literal.
+src/architecture/card.ts(49,9): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(49,10): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(49,11): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(50,8): error TS1110: Type expected.
+src/architecture/card.ts(53,14): error TS1005: '>' expected.
+src/architecture/card.ts(53,19): error TS1005: ')' expected.
+src/architecture/card.ts(54,38): error TS1005: ';' expected.
+src/architecture/card.ts(54,50): error TS1005: ';' expected.
+src/architecture/card.ts(55,23): error TS1005: ';' expected.
+src/architecture/card.ts(55,42): error TS1005: ';' expected.
+src/architecture/card.ts(56,17): error TS1005: ';' expected.
+src/architecture/card.ts(56,28): error TS1005: ';' expected.
+src/architecture/card.ts(56,46): error TS1005: ';' expected.
+src/architecture/card.ts(57,17): error TS1005: ';' expected.
+src/architecture/card.ts(58,9): error TS1109: Expression expected.
+src/architecture/card.ts(58,12): error TS1161: Unterminated regular expression literal.
+src/architecture/card.ts(59,7): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(60,6): error TS1110: Type expected.
+src/architecture/card.ts(61,3): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(62,1): error TS1128: Declaration or statement expected.
+src/architecture/card.ts(62,2): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(163,7): error TS1005: '>' expected.
+src/architecture/gsyen-core-draft.ts(163,16): error TS1005: ')' expected.
+src/architecture/gsyen-core-draft.ts(165,14): error TS1136: Property assignment expected.
+src/architecture/gsyen-core-draft.ts(165,52): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(165,74): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(166,5): error TS1109: Expression expected.
+src/architecture/gsyen-core-draft.ts(167,11): error TS1005: '>' expected.
+src/architecture/gsyen-core-draft.ts(167,16): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(167,32): error TS1109: Expression expected.
+src/architecture/gsyen-core-draft.ts(167,44): error TS1161: Unterminated regular expression literal.
+src/architecture/gsyen-core-draft.ts(170,12): error TS1005: '>' expected.
+src/architecture/gsyen-core-draft.ts(170,21): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(170,44): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(170,51): error TS1136: Property assignment expected.
+src/architecture/gsyen-core-draft.ts(170,76): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(170,85): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(170,86): error TS1109: Expression expected.
+src/architecture/gsyen-core-draft.ts(171,22): error TS1005: ',' expected.
+src/architecture/gsyen-core-draft.ts(173,16): error TS1005: '>' expected.
+src/architecture/gsyen-core-draft.ts(173,19): error TS1005: ')' expected.
+src/architecture/gsyen-core-draft.ts(173,28): error TS1005: ',' expected.
+src/architecture/gsyen-core-draft.ts(173,59): error TS1005: ',' expected.
+src/architecture/gsyen-core-draft.ts(173,66): error TS1136: Property assignment expected.
+src/architecture/gsyen-core-draft.ts(173,86): error TS1005: ',' expected.
+src/architecture/gsyen-core-draft.ts(174,17): error TS1005: ',' expected.
+src/architecture/gsyen-core-draft.ts(175,12): error TS1161: Unterminated regular expression literal.
+src/architecture/gsyen-core-draft.ts(176,9): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(176,10): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(176,11): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(177,8): error TS1110: Type expected.
+src/architecture/gsyen-core-draft.ts(181,14): error TS1005: '>' expected.
+src/architecture/gsyen-core-draft.ts(181,19): error TS1005: ')' expected.
+src/architecture/gsyen-core-draft.ts(182,38): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(182,50): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(183,23): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(183,42): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(184,17): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(184,28): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(184,46): error TS1005: ';' expected.
+src/architecture/gsyen-core-draft.ts(185,9): error TS1109: Expression expected.
+src/architecture/gsyen-core-draft.ts(185,11): error TS1109: Expression expected.
+src/architecture/gsyen-core-draft.ts(187,10): error TS1161: Unterminated regular expression literal.
+src/architecture/gsyen-core-draft.ts(188,7): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(189,6): error TS1110: Type expected.
+src/architecture/gsyen-core-draft.ts(190,3): error TS1128: Declaration or statement expected.
+src/architecture/gsyen-core-draft.ts(191,1): error TS1128: Declaration or statement expected.
