@@ -86,4 +86,28 @@ describe("mailbox repository", () => {
     expect(second).toEqual({ messageId: first.messageId, created: false });
     expect(usage?.sent_count).toBe(1);
   });
+
+  it("rejects an invalid daily send limit as a server configuration error", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "invalid-limit-owner",
+      localPart: "invalid-limit",
+      displayName: "Invalid Limit",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const invalidEnv = Object.assign(Object.create(testEnv), {
+      DAILY_SEND_LIMIT: "not-a-number",
+    }) as MailEnv;
+
+    await expect(queueOutboundMessage(
+      invalidEnv,
+      { ...mailbox, status: "active" },
+      { to: ["recipient@example.com"], cc: [], subject: "Hello", text: "Body" },
+      "client:20260729:invalid-limit",
+    )).rejects.toMatchObject({
+      status: 500,
+      code: "config_invalid",
+    });
+  });
 });

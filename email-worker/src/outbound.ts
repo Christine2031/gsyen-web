@@ -10,18 +10,26 @@ import {
 } from "./providers/resend";
 import type { MailEnv, OutboundJob } from "./types";
 
+class InvalidStoredMessageError extends Error {
+  readonly code = "invalid_stored_message";
+}
+
 function parseArray(value: string): string[] {
-  const parsed: unknown = JSON.parse(value);
-  if (!Array.isArray(parsed) || !parsed.every((item) => typeof item === "string")) {
-    throw new Error("Invalid stored recipient data");
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return parsed;
+    }
+  } catch {
+    // Converted below to a permanent stored-message failure.
   }
-  return parsed;
+  throw new InvalidStoredMessageError("Invalid stored recipient data");
 }
 
 function errorCode(error: unknown): string {
-  return error instanceof MailProviderError
-    ? error.code
-    : "unknown_send_error";
+  if (error instanceof MailProviderError) return error.code;
+  if (error instanceof InvalidStoredMessageError) return error.code;
+  return "unknown_send_error";
 }
 
 async function persistSentState(
@@ -65,19 +73,20 @@ export async function consumeOutbound(
   env: MailEnv,
 ): Promise<void> {
   for (const queueMessage of batch.messages) {
-    const record = await claimOutboundRecord(env, queueMessage.body.messageId);
-    if (!record) {
-      const status = await getOutboundStatus(env, queueMessage.body.messageId);
-      if (status === "sending") queueMessage.retry({ delaySeconds: 600 });
-      else queueMessage.ack();
-      continue;
-    }
-    if (record.mailbox_status !== "active") {
-      await markOutboundFailed(env, record.id, "mailbox_inactive");
-      queueMessage.ack();
-      continue;
-    }
+    const messageId = queueMessage.body.messageId;
     try {
+      const record = await claimOutboundRecord(env, messageId);
+      if (!record) {
+        const status = await getOutboundStatus(env, messageId);
+        if (status === "sending") queueMessage.retry({ delaySeconds: 600 });
+        else queueMessage.ack();
+        continue;
+      }
+      if (record.mailbox_status !== "active") {
+        await markOutboundFailed(env, record.id, "mailbox_inactive");
+        queueMessage.ack();
+        continue;
+      }
       const references = parseArray(record.references_json);
       const headers: Record<string, string> = {
         "X-GSYEN-Message-ID": record.id,
@@ -107,20 +116,21 @@ export async function consumeOutbound(
     } catch (error) {
       const code = errorCode(error);
       try {
-        await markOutboundFailed(env, record.id, code);
+        await markOutboundFailed(env, messageId, code);
       } catch (stateError) {
         console.error(JSON.stringify({
           event: "mail_failed_state_update_failed",
-          messageId: record.id,
+          messageId,
           error: stateError instanceof Error ? stateError.message : String(stateError),
         }));
       }
       console.error(JSON.stringify({
         event: "mail_send_failed",
-        messageId: record.id,
+        messageId,
         code,
       }));
-      if (error instanceof MailProviderError && error.permanent) {
+      if (error instanceof InvalidStoredMessageError
+        || (error instanceof MailProviderError && error.permanent)) {
         queueMessage.ack();
       } else if (error instanceof MailProviderError && error.retryAfterSeconds) {
         queueMessage.retry({ delaySeconds: error.retryAfterSeconds });

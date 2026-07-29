@@ -1,4 +1,5 @@
 import { ApiError } from "../http";
+import type { MessageCursor } from "../messageCursor";
 import type { MailEnv, MailFolder, MessageSummary } from "../types";
 
 const MESSAGE_COLUMNS = `
@@ -65,16 +66,19 @@ export async function listMessages(
   env: MailEnv,
   mailboxId: string,
   folder: MailFolder,
-  before?: string,
+  before?: MessageCursor,
 ): Promise<MessageSummary[]> {
   const filter = folderFilter(folder, new Date().toISOString());
-  const cursorClause = before ? "AND m.created_at < ?" : "";
-  const values = [mailboxId, ...filter.values, ...(before ? [before] : [])];
+  const cursorClause = before
+    ? "AND (m.created_at < ? OR (m.created_at = ? AND m.id < ?))"
+    : "";
+  const cursorValues = before ? [before.createdAt, before.createdAt, before.id] : [];
+  const values = [mailboxId, ...filter.values, ...cursorValues];
   const result = await env.DB.prepare(
     `SELECT ${MESSAGE_COLUMNS}
        FROM messages m
       WHERE m.mailbox_id = ? AND ${filter.clause} ${cursorClause}
-      ORDER BY m.created_at DESC LIMIT 50`,
+      ORDER BY m.created_at DESC, m.id DESC LIMIT 50`,
   ).bind(...values).all<MessageSummary>();
   return result.results;
 }

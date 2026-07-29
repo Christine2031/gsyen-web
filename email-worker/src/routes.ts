@@ -1,6 +1,7 @@
 import { requireAdmin, requireUser } from "./auth";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
+import { parseMessageCursor, serializeMessageCursor } from "./messageCursor";
 import {
   addMailboxAlias,
   createMailbox,
@@ -76,13 +77,6 @@ function parseFolder(value: string | null): MailFolder {
   return folder as MailFolder;
 }
 
-function parseBefore(value: string | null): string | undefined {
-  if (!value) return undefined;
-  if (value.length > 40 || Number.isNaN(Date.parse(value))) {
-    throw new ApiError(400, "invalid_cursor", "Message cursor is invalid");
-  }
-  return new Date(value).toISOString();
-}
 
 function parseStateBody(value: unknown): MessageStatePatch {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
@@ -165,11 +159,11 @@ export async function routeRequest(
   if (request.method === "GET" && path === "/v1/messages") {
     const mailbox = await currentMailbox(env, user.id);
     const folder = parseFolder(url.searchParams.get("folder"));
-    const before = parseBefore(url.searchParams.get("before"));
+    const before = parseMessageCursor(url.searchParams.get("before"));
     const messages = await listMessages(env, mailbox.id, folder, before);
     return json(request, env, {
       messages: messages.map(serializeMessage),
-      nextCursor: messages.at(-1)?.created_at ?? null,
+      nextCursor: serializeMessageCursor(messages.at(-1)),
     });
   }
 

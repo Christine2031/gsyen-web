@@ -29,7 +29,15 @@ export async function queueOutboundMessage(
       WHERE mailbox_id = ? AND client_request_id = ? AND direction = 'outbound'`,
   ).bind(mailbox.id, clientRequestId).first<{ id: string }>();
   if (existing) return { messageId: existing.id, created: false };
-  const limit = Number.parseInt(env.DAILY_SEND_LIMIT, 10);
+  const limitText = env.DAILY_SEND_LIMIT.trim();
+  const limit = Number.parseInt(limitText, 10);
+  if (!/^[1-9]\d*$/.test(limitText) || !Number.isSafeInteger(limit)) {
+    throw new ApiError(
+      500,
+      "config_invalid",
+      "Daily sending limit is misconfigured",
+    );
+  }
   const dayKey = new Date().toISOString().slice(0, 10);
   const usage = await env.DB.prepare(
     `INSERT INTO send_usage (owner_id, day_key, sent_count)

@@ -60,4 +60,35 @@ describe("message state", () => {
     expect(await listMessages(testEnv, mailbox.id, "starred")).toHaveLength(0);
     expect(await listMessages(testEnv, mailbox.id, "trash")).toHaveLength(1);
   });
+
+  it("paginates messages with identical timestamps without skipping rows", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "cursor-owner",
+      localPart: "cursor-owner",
+      displayName: "Cursor",
+    });
+    const createdAt = "2026-07-29T10:00:00.000Z";
+    const statements = Array.from({ length: 51 }, (_, index) => {
+      const id = `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
+      return testEnv.DB.prepare(
+        `INSERT INTO messages
+          (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+           subject, text_body, references_json, status, created_at, received_at)
+         VALUES (?, ?, 'inbound', 'inbox', ?, '[]', '[]', ?, ?, '[]',
+           'received', ?, ?)`,
+      ).bind(id, mailbox.id, "sender@example.com", `Message ${index}`, "Body", createdAt, createdAt);
+    });
+    await testEnv.DB.batch(statements);
+
+    const first = await listMessages(testEnv, mailbox.id, "inbox");
+    const last = first.at(-1);
+    const second = await listMessages(testEnv, mailbox.id, "inbox", {
+      createdAt: last!.created_at,
+      id: last!.id,
+    });
+
+    expect(first).toHaveLength(50);
+    expect(second).toHaveLength(1);
+    expect(new Set([...first, ...second].map((message) => message.id)).size).toBe(51);
+  });
 });
