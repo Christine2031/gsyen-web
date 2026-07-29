@@ -1,0 +1,27 @@
+{
+  "name": "@gsyen/mail-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "npm run types && tsc --noEmit && vitest run",
+    "deploy": "wrangler deploy --env production",
+    "dev": "wrangler dev --env development",
+    "migrate:local": "wrangler d1 migrations apply gsyen-mail-development --local --env development",
+    "test": "vitest run",
+    "types": "wrangler types"
+  },
+  "dependencies": {
+    "postal-mime": "2.7.5"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "0.19.0",
+    "@cloudflare/workers-types": "5.20260729.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10",
+    "wrangler": "4.115.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

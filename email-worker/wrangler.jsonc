@@ -1,0 +1,148 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gsyen-mail",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-29",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "MAIL_DOMAIN": "gsyen.com",
+    "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+    "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
+    "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
+    "AUTO_APPROVE_SIGNUPS": "false",
+    "MAX_MESSAGE_BYTES": "5242880",
+    "DAILY_SEND_LIMIT": "30"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gsyen-mail-development",
+      "database_id": "00000000-0000-0000-0000-000000000001",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "MAIL_OBJECTS",
+      "bucket_name": "gsyen-mail-development"
+    }
+  ],
+  "queues": {
+    "producers": [
+      {
+        "binding": "OUTBOUND_QUEUE",
+        "queue": "gsyen-mail-outbound-development"
+      }
+    ],
+    "consumers": [
+      {
+        "queue": "gsyen-mail-outbound-development",
+        "max_batch_size": 10,
+        "max_batch_timeout": 5,
+        "max_retries": 3,
+        "dead_letter_queue": "gsyen-mail-outbound-dlq-development"
+      }
+    ]
+  },
+  "env": {
+    "development": {
+      "name": "gsyen-mail-development",
+      "vars": {
+        "MAIL_DOMAIN": "gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
+        "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
+        "AUTO_APPROVE_SIGNUPS": "false",
+        "MAX_MESSAGE_BYTES": "5242880",
+        "DAILY_SEND_LIMIT": "30"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "gsyen-mail-development",
+          "database_id": "00000000-0000-0000-0000-000000000001",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MAIL_OBJECTS",
+          "bucket_name": "gsyen-mail-development"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "OUTBOUND_QUEUE",
+            "queue": "gsyen-mail-outbound-development"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "gsyen-mail-outbound-development",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "dead_letter_queue": "gsyen-mail-outbound-dlq-development"
+          }
+        ]
+      }
+    },
+    "production": {
+      "name": "gsyen-mail-production",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "mail-api.gsyen.com",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "MAIL_DOMAIN": "gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
+        "ALLOWED_ORIGINS": "https://gsyen.com",
+        "AUTO_APPROVE_SIGNUPS": "false",
+        "MAX_MESSAGE_BYTES": "5242880",
+        "DAILY_SEND_LIMIT": "30"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "gsyen-mail-production",
+          "database_id": "0c60af3a-d343-41a8-a0c5-8b2ae4be200d",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "MAIL_OBJECTS",
+          "bucket_name": "gsyen-mail-production"
+        }
+      ],
+      "queues": {
+        "producers": [
+          {
+            "binding": "OUTBOUND_QUEUE",
+            "queue": "gsyen-mail-outbound-production"
+          }
+        ],
+        "consumers": [
+          {
+            "queue": "gsyen-mail-outbound-production",
+            "max_batch_size": 10,
+            "max_batch_timeout": 5,
+            "max_retries": 3,
+            "dead_letter_queue": "gsyen-mail-outbound-dlq-production"
+          }
+        ]
+      }
+    }
+  }
+}
+
