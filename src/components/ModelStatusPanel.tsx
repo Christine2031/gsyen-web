@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { ChevronRight, X } from 'lucide-react';
-import { CHATGPT_MODELS, MODELS, ModelId } from '../config/models';
+import { CHATGPT_MODELS, MODELS, ModelId, normalizeChatGptModel } from '../config/models';
 import { useModelHealth } from '../hooks/useModelHealth';
 import { startLocalChatGptBind } from '../services/localBridge';
 import { ModelStatusSelect } from './ModelStatusSelect';
@@ -22,8 +22,7 @@ export function ModelStatusPanel({ lang, selectedModel, onSelectModel, onClose, 
   const [loginNotice, setLoginNotice] = useState<string | null>(null);
   const [chatGptModel, setChatGptModel] = useState(() => {
     const saved = localStorage.getItem('gsyen-chatgpt-model') ?? localStorage.getItem('gsyen-chatgpt-tier');
-    if (saved === 'mini' || saved === 'gpt-5-5-mini') return 'gpt-5-4-mini';
-    return CHATGPT_MODELS.some(m => m.id === saved) ? saved! : CHATGPT_MODELS[0].id;
+    return normalizeChatGptModel(saved);
   });
   const health = useModelHealth(selectedModel, binding === 'opened' ? 5_000 : 30_000, refreshKey);
   const selected = MODELS.find(m => m.id === selectedModel) ?? { id: selectedModel, label: selectedModel };

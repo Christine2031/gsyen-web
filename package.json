@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.88.304",
+  "version": "2.88.305",
   "description": "GSYEN AI atelier workspace",
   "author": "GSYEN",
   "type": "module",
@@ -12,7 +12,7 @@
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "electron:dev": "concurrently \"cross-env API_ONLY=true tsx server.ts\" \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:dev": "cross-env LOCAL_BRIDGE_TOKEN=gsyen-electron-dev-only concurrently \"cross-env API_ONLY=true tsx server.ts\" \"vite\" \"wait-on http://127.0.0.1:5173 && cross-env NODE_ENV=development electron .\"",
     "electron:build": "npm run build && electron-builder",
     "electron:preview": "cross-env NODE_ENV=production electron .",
     "design:lock": "node scripts/check-gsyen-design-lock.cjs",
@@ -23,7 +23,8 @@
     "version:release": "node -e \"const v=require('./package.json').version;require('child_process').execSync('git add -A && git commit -m \\\"release: v'+v+'\\\" && git tag v'+v+' && git push && git push --tags',{stdio:'inherit'});\"",
     "smoke:chatgpt": "node scripts/smoke-chatgpt-windows.cjs",
     "smoke:chatgpt:desktop": "npm run build && node scripts/smoke-chatgpt-windows.cjs --desktop",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:electron-security": "node --test electron/*.node-test.cjs"
   },
   "build": {
     "appId": "com.gsyen.app",
@@ -122,8 +123,9 @@
     "mammoth": "^1.12.0",
     "mermaid": "^11.15.0",
     "pdfjs-dist": "^6.0.227",
+    "sanitize-html": "^2.17.6",
     "turndown": "^7.2.4",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
     "@codemirror/lang-markdown": "^6.5.0",
@@ -160,5 +162,8 @@
     "vite": "^6.2.3",
     "vitest": "^4.1.10",
     "wait-on": "^9.0.10"
+  },
+  "overrides": {
+    "lodash-es": "4.18.1"
   }
 }

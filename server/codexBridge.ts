@@ -4,6 +4,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { imageAttachmentNote, providerText, type ProviderAttachment } from '../shared/providerMessages';
+import { codexProcessEnv } from './codexProcessEnv';
 
 export interface CodexMessage {
   role: string;
@@ -67,12 +68,13 @@ async function runCodexCommand(
   input = '',
   timeoutMs = 10_000,
 ): Promise<CodexCommandResult> {
+  const env = await codexProcessEnv();
   return new Promise((resolve) => {
     let stdout = '';
     let stderr = '';
     let timedOut = false;
     const child = spawn(codexPath, args, {
-      env: { ...process.env, NO_COLOR: '1' },
+      env,
       windowsHide: true,
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -152,12 +154,13 @@ export async function startCodexDeviceLogin(): Promise<CodexDeviceLogin> {
 
   cachedHealth = null;
   activeLogin?.kill();
+  const env = await codexProcessEnv();
   const child = spawn(codexPath, [
     'login',
     '--device-auth',
     '-c', 'service_tier="flex"',
   ], {
-    env: { ...process.env, NO_COLOR: '1' },
+    env,
     windowsHide: true,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -228,7 +231,7 @@ GSYEN 基础系统规则：
 ${systemPrompt}
 
 当前模块：${domain || 'MUSE'}
-ChatGPT 模型：${chatGptModel || 'gpt-5-5'}
+ChatGPT 模型：${chatGptModel || 'gpt-5-6-sol'}
 
 最近对话：
 ${transcript}

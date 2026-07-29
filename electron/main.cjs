@@ -6,7 +6,8 @@ const { startV2ray, stopV2ray, switchNode, getNodes, getStatus, setKey, setSub, 
 const { createFullscreenController } = require('./fullscreen.cjs');
 const { createTray } = require('./tray.cjs');
 const { registerUpdaterIpc, setupAutoUpdater } = require('./updater.cjs');
-const { startLocalServer, stopLocalServer } = require('./local-server.cjs');
+const { startLocalServer, stopLocalServer, getLocalBridgeConfig } = require('./local-server.cjs');
+const { registerGsyenApiCors } = require('./gsyen-api-cors.cjs');
 
 Sentry.init({
   dsn: 'https://a7b7176417e2f24b54156ef4ff01e8b2@o4511541959720960.ingest.us.sentry.io/4511541969551360',
@@ -16,6 +17,7 @@ app.setAppUserModelId('com.gsyen.app');
 
 const isDev = !app.isPackaged;
 const CANVAS_DIR = path.join(app.getPath('userData'), 'canvas');
+const CANVAS_ID_PATTERN = /^[A-Za-z0-9_-]{1,128}$/;
 
 let win  = null;
 let tray = null;
@@ -68,12 +70,14 @@ ipcMain.handle('canvas:readAll', () => {
 });
 
 ipcMain.handle('canvas:write', (_e, id, data) => {
+  if (typeof id !== 'string' || !CANVAS_ID_PATTERN.test(id)) return false;
   if (!fs.existsSync(CANVAS_DIR)) fs.mkdirSync(CANVAS_DIR, { recursive: true });
   fs.writeFileSync(path.join(CANVAS_DIR, `${id}.json`), JSON.stringify(data, null, 2));
   return true;
 });
 
 ipcMain.handle('canvas:delete', (_e, id) => {
+  if (typeof id !== 'string' || !CANVAS_ID_PATTERN.test(id)) return false;
   const file = path.join(CANVAS_DIR, `${id}.json`);
   if (fs.existsSync(file)) fs.unlinkSync(file);
   return true;
@@ -81,6 +85,7 @@ ipcMain.handle('canvas:delete', (_e, id) => {
 
 ipcMain.handle('app:getPath',    () => app.getPath('userData'));
 ipcMain.handle('app:getVersion', () => app.getVersion());
+ipcMain.handle('bridge:getConfig', () => getLocalBridgeConfig());
 
 // ── Library 文件系统 IPC ──────────────────────────────────────────────────────
 require('./ipc-library-fs.cjs')(ipcMain);
@@ -134,19 +139,8 @@ function createWindow() {
     },
   });
 
-  // 生产模式从 file:// 加载，向 Cloud Run 发请求时 Origin 为 null，
-  // CORS 会被拒绝导致 session 无法恢复。拦截请求补上正确的 Origin。
-  // 注意：Chrome URL pattern 的 * 只能放在 host 最前（*.run.app），
-  // 不能放中间（gsyen-api-*.run.app 非法 → main 进程抛异常 → 白屏）。
-  win.webContents.session.webRequest.onBeforeSendHeaders(
-    { urls: ['https://*.run.app/*'] },
-    (details, callback) => {
-      if (details.url.includes('gsyen-api')) {
-        details.requestHeaders['Origin'] = 'https://gsyen.com';
-      }
-      callback({ requestHeaders: details.requestHeaders });
-    }
-  );
+  // 正式版补齐 file:// Origin；开发版同时把响应 CORS 收敛到本地 Vite Origin。
+  registerGsyenApiCors(win.webContents.session, isDev);
 
   if (isDev) {
     win.loadURL('http://127.0.0.1:5173');
@@ -158,6 +152,12 @@ function createWindow() {
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: 'deny' };
+  });
+  win.webContents.on('will-navigate', (event, url) => {
+    const allowed = isDev
+      ? url.startsWith('http://127.0.0.1:5173/')
+      : url.startsWith('file:');
+    if (!allowed) event.preventDefault();
   });
 
   // 最大化状态变化 → 通知渲染层切换 max/restore 图标

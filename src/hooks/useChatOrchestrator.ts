@@ -8,6 +8,7 @@ import { documentAttachmentMeta } from '../utils/chatDocuments';
 import { ModelId } from '../config/models';
 import { useChatStream } from './useChatStream';
 import { useChatPromptQueue } from './useChatPromptQueue';
+import { settleInterruptedAssistant } from './chatStreamingState';
 
 interface OrchestratorOpts {
   lang: 'zh' | 'en';
@@ -41,6 +42,7 @@ export function useChatOrchestrator({
   const runPrompt = useCallback(async ({ text, attachments = [], timestamp }: { text: string; attachments?: Array<ChatAttachment | ChatDocumentSource>; timestamp?: string }) => {
     if (!text.trim() && attachments.length === 0) return;
     isBusyRef.current = true;
+    let activeAssistantId: string | null = null;
 
     try {
       const newDocuments = attachments.filter((attachment): attachment is ChatDocumentSource =>
@@ -66,6 +68,7 @@ export function useChatOrchestrator({
       if (currentTeamId && !/^@缈缈|^@miaomiao/i.test(text.trimStart())) return;
 
       const aiId = `ai-${Date.now()}`;
+      activeAssistantId = aiId;
       const aiTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       setMessages([...history, { id: aiId, role: 'model', content: '', timestamp: aiTime, streaming: true }]);
 
@@ -112,6 +115,9 @@ export function useChatOrchestrator({
         },
       });
     } finally {
+      if (activeAssistantId) {
+        setMessages(current => settleInterruptedAssistant(current, activeAssistantId));
+      }
       isBusyRef.current = false;
     }
   }, [selectedModel, lang, saveChat, setMessages, send, currentTeamId, sourceDocuments, showToast]);

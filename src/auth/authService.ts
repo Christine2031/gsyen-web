@@ -3,60 +3,67 @@ import { authProxy } from './gsyenApiProxy';
 import { formatAuthError } from './authUtils';
 import type { UserTier, OAuthProvider, AuthResult } from '../types/auth';
 
-/**
- * 初始化用户数据（tier、login_provider）
- * 前期：不需要邮箱验证，直接进入
- * 后期：可扩展为邮箱验证、企业 SSO 等
- */
-export async function initializeUserData(userId: string, provider: string = 'email'): Promise<UserTier | null> {
+const USER_TIERS = new Set<UserTier>([
+  'free_unverified',
+  'free',
+  'pro_month',
+  'pro_year',
+  'enterprise',
+  'admin',
+  'owner',
+]);
+
+export interface ResolvedMembership {
+  tier: UserTier;
+  emailVerified: boolean;
+}
+
+function resolvedMembership(data: unknown): ResolvedMembership | null {
+  const row = (Array.isArray(data) ? data[0] : data) as {
+    tier?: unknown;
+    email_verified?: unknown;
+  } | null;
+  if (
+    typeof row?.tier !== 'string'
+    || !USER_TIERS.has(row.tier as UserTier)
+    || typeof row.email_verified !== 'boolean'
+  ) return null;
+
+  return {
+    tier: row.tier as UserTier,
+    emailVerified: row.email_verified,
+  };
+}
+
+async function resolveMyTier(): Promise<ResolvedMembership | null> {
   if (!supabase) return null;
 
   try {
-    // 1. 尝试查询现有 tier 记录
-    const { data: existingTier, error: selectError } = await supabase
-      .from('gsyen_user_tiers')
-      .select('tier, login_provider')
-      .eq('user_id', userId)
-      .single();
-
-    if (existingTier) {
-      return (existingTier.tier as UserTier) ?? 'free_unverified';
+    const { data, error } = await supabase.rpc('gsyen_resolve_my_tier');
+    if (error) {
+      console.warn(`[Auth] Failed to resolve membership (${error.code}):`, error.message);
+      return null;
     }
 
-    // 2. 如果是 "not found" 错误，创建新记录
-    if (selectError?.code === 'PGRST116') {
-      console.log(`[Auth] Creating new user tier record for ${userId}`);
-
-      const { data: newTier, error: insertError } = await supabase
-        .from('gsyen_user_tiers')
-        .insert({
-          user_id: userId,
-          tier: 'free_unverified',
-          login_provider: provider,
-          created_at: new Date().toISOString(),
-        })
-        .select('tier')
-        .single();
-
-      if (insertError) {
-        console.error('[Auth] Failed to create user tier:', insertError.message);
-        return 'free_unverified';
-      }
-
-      return (newTier?.tier as UserTier) ?? 'free_unverified';
-    }
-
-    // 3. 其他数据库错误（如 403 RLS 权限），降级处理
-    if (selectError) {
-      console.warn(`[Auth] Database error when fetching tier (${selectError.code}):`, selectError.message);
-      return 'free_unverified'; // 降级：仍然允许进入
-    }
-
-    return 'free_unverified';
+    const membership = resolvedMembership(data);
+    if (!membership) console.warn('[Auth] Membership resolver returned invalid data');
+    return membership;
   } catch (err) {
-    console.error('[Auth] Exception in initializeUserData:', err);
-    return 'free_unverified'; // 降级：网络错误等也允许进入
+    console.error('[Auth] Exception while resolving membership:', err);
+    return null;
   }
+}
+
+/**
+ * Resolve the authenticated user's server-owned membership.
+ * Parameters remain for call-site compatibility; identity/provider are derived
+ * from the authenticated Supabase session inside the database.
+ */
+export async function initializeUserData(
+  _userId: string,
+  _provider: string = 'email',
+): Promise<ResolvedMembership | null> {
+  return resolveMyTier();
 }
 
 /**
@@ -173,18 +180,8 @@ export async function resetPasswordForEmail(email: string): Promise<AuthResult> 
 /**
  * 邮箱验证后升级 tier：free_unverified → free
  */
-export async function upgradeTierToFree(userId: string): Promise<void> {
-  if (!supabase) return;
-  try {
-    await supabase
-      .from('gsyen_user_tiers')
-      .update({ tier: 'free' })
-      .eq('user_id', userId)
-      .eq('tier', 'free_unverified');
-    console.log(`[Auth] Upgraded tier to free for ${userId}`);
-  } catch (err) {
-    console.error('[Auth] Failed to upgrade tier to free:', err);
-  }
+export async function upgradeTierToFree(_userId: string): Promise<ResolvedMembership | null> {
+  return resolveMyTier();
 }
 
 /**

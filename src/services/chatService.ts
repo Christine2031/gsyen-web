@@ -1,5 +1,7 @@
 import { ChatMessage } from '../types/chat';
 import { probeLocalChatGptBridge } from './localBridge';
+import { normalizeChatGptModel } from '../config/models';
+import { getChatAccessToken } from '../auth/chatAccessToken';
 
 export class ChatGptBridgeUnavailableError extends Error {
   detail?: string;
@@ -26,22 +28,30 @@ export async function sendToGateway(
   const clientDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
   let bridgeBase = '';
+  let bridgeHeaders: Record<string, string> = {};
   if (model === 'chatgpt-pro') {
     const probe = await probeLocalChatGptBridge();
     if (probe?.health.status !== 'online') {
       throw new ChatGptBridgeUnavailableError(probe?.health.error);
     }
     bridgeBase = probe.base;
+    bridgeHeaders = probe.headers;
   }
-  const savedChatGptModel = localStorage.getItem('gsyen-chatgpt-model') ?? 'gpt-5-5';
+  const savedChatGptModel = localStorage.getItem('gsyen-chatgpt-model');
   const chatGptModel = model === 'chatgpt-pro'
-    ? savedChatGptModel === 'mini' || savedChatGptModel === 'gpt-5-5-mini'
-      ? 'gpt-5-4-mini'
-      : savedChatGptModel
+    ? normalizeChatGptModel(savedChatGptModel)
     : null;
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (model === 'chatgpt-pro') {
+    Object.assign(headers, bridgeHeaders);
+  } else {
+    const accessToken = await getChatAccessToken();
+    if (!accessToken) throw new Error('AUTH_REQUIRED');
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
   const res = await fetch(`${bridgeBase}/api/chat`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     signal,
     body: JSON.stringify({
       model,

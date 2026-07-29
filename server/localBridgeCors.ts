@@ -16,7 +16,7 @@ export function registerLocalBridgeCors(app: any) {
       res.setHeader('Access-Control-Max-Age', '600');
     }
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-GSYEN-Bridge-Token');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
   });

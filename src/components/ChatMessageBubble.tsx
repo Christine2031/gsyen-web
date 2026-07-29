@@ -1,10 +1,11 @@
-import { useEffect, useState, type ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
 import { motion } from 'motion/react';
 import { ChatImageAttachment, ChatMessage } from '../types/chat';
 import { renderMessageContent } from '../utils/renderMessage';
 import { exportQuoteCard } from '../utils/exportCard';
 import { ActionCardView } from './ActionCardView';
 import { DocumentIcon } from './ChatAttachmentStrip';
+import { ChatImageLightbox } from './ChatImageLightbox';
 import { CheckIcon, CopyIcon, DownloadIcon, MuseIcon, UserIcon } from '../gsyen-designer';
 
 interface ChatMessageBubbleProps {
@@ -26,15 +27,9 @@ export function ChatMessageBubble({ msg, lang, isCopiedId, onCopy }: ChatMessage
     </span>
   ) : undefined;
   const [preview, setPreview] = useState<ChatImageAttachment | null>(null);
-
-  useEffect(() => {
-    if (!preview) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setPreview(null);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [preview]);
+  const images = (msg.attachments ?? []).filter(
+    (item): item is ChatImageAttachment => item.type === 'image',
+  );
 
   return (
     <>
@@ -98,20 +93,13 @@ export function ChatMessageBubble({ msg, lang, isCopiedId, onCopy }: ChatMessage
       </motion.div>
 
       {preview && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#1A1A1A]/85 px-5 py-6"
-          onClick={() => setPreview(null)}>
-          <div className="max-w-[92vw] max-h-[92vh] space-y-3" onClick={event => event.stopPropagation()}>
-            <img src={preview.dataUrl} alt={preview.name}
-              className="max-w-[92vw] max-h-[84vh] object-contain bg-[#0F0F0F] border border-white/15 shadow-2xl" />
-            <div className="flex items-center justify-between gap-4 text-white/70">
-              <span className="truncate fs-xs font-mono tracking-widest uppercase">{preview.name}</span>
-              <button type="button" onClick={() => setPreview(null)}
-                className="shrink-0 border border-white/20 px-3 py-1.5 fs-xs font-mono uppercase tracking-widest hover:bg-white hover:text-[#1A1A1A] transition">
-                {lang === 'zh' ? '关闭' : 'Close'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <ChatImageLightbox
+          key={preview.id}
+          images={images}
+          initialImageId={preview.id}
+          lang={lang}
+          onClose={() => setPreview(null)}
+        />
       )}
     </>
   );

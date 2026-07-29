@@ -3,7 +3,8 @@
  * All requests go with credentials: 'include' so the browser
  * sends the HttpOnly gsyen_rt cookie automatically.
  */
-const BASE = (import.meta.env.VITE_GSYEN_API_URL as string | undefined) || 'http://localhost:3000';
+const BASE = (import.meta.env.VITE_GSYEN_API_URL as string | undefined)
+  || 'https://gsyen-api-776196228503.asia-east1.run.app';
 
 export interface AuthProxyResult {
   ok: boolean;

@@ -20,12 +20,12 @@ export const MODELS: ModelConfig[] = [
 ];
 
 export const CHATGPT_MODELS: ChatGptModelConfig[] = [
-  { id: 'gpt-5-5', label: 'GPT-5.5' },
-  { id: 'gpt-5-4', label: 'GPT-5.4' },
-  { id: 'gpt-5-4-mini', label: 'GPT-5.4-MINI' },
-  { id: 'gpt-5-3-codex-spark', label: 'GPT-5.3-CODEX-SPARK' },
+  { id: 'gpt-5-6-sol', label: 'GPT-5.6-SOL' },
+  { id: 'gpt-5-6-terra', label: 'GPT-5.6-TERRA' },
+  { id: 'gpt-5-6-luna', label: 'GPT-5.6-LUNA' },
 ];
 
+export const DEFAULT_CHATGPT_MODEL = CHATGPT_MODELS[0].id;
 export const DEFAULT_MODEL: ModelId = 'kimi';
 
 const enabledModelIds = new Set(MODELS.filter(m => !m.disabled).map(m => m.id));
@@ -36,4 +36,10 @@ export function isModelId(value: string | null | undefined): value is ModelId {
 
 export function firstEnabledModel(): ModelId {
   return (MODELS.find(m => !m.disabled)?.id ?? DEFAULT_MODEL) as ModelId;
+}
+
+export function normalizeChatGptModel(value: string | null | undefined): string {
+  return CHATGPT_MODELS.some(model => model.id === value)
+    ? value!
+    : DEFAULT_CHATGPT_MODEL;
 }
