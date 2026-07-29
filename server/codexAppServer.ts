@@ -176,7 +176,7 @@ async function runTurn(
     };
     const onClose = (error: Error) => finish(() => reject(error));
     const onMessage = (message: any) => {
-      if (message?.params?.threadId && message.params.threadId !== session.threadId) return;
+      if (message?.params?.threadId !== session.threadId) return;
       if (message.method === 'item/agentMessage/delta') {
         const delta = message.params?.delta || '';
         fullText += delta;

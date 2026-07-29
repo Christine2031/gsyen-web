@@ -21,12 +21,12 @@ function publicOfficeError(error) {
   return 'Office 文档无法安全预览。';
 }
 
-function runWorker(filePath, ext) {
+function runWorker(fileBytes, ext) {
   return new Promise((resolve, reject) => {
     const worker = new Worker(
       path.join(__dirname, 'office-parser-worker.cjs'),
       {
-        workerData: { filePath, ext, limits: OFFICE_LIMITS },
+        workerData: { fileBytes, ext, limits: OFFICE_LIMITS },
         resourceLimits: {
           maxOldGenerationSizeMb: OFFICE_LIMITS.workerHeapMb,
           maxYoungGenerationSizeMb: 32,
@@ -73,8 +73,8 @@ async function parseOfficeSafely(filePath, ext) {
   }
   activeWorkers += 1;
   try {
-    await preflightOfficeFile(filePath, ext);
-    return await runWorker(filePath, ext);
+    const fileBytes = await preflightOfficeFile(filePath, ext);
+    return await runWorker(fileBytes, ext);
   } finally {
     activeWorkers -= 1;
   }

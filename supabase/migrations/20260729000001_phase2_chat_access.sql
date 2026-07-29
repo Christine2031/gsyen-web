@@ -78,6 +78,10 @@ BEGIN
    WHERE user_id = current_user_id
    FOR UPDATE;
 
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'chat usage row missing after initialization';
+  END IF;
+
   IF usage_row.minute_window <> current_minute THEN
     usage_row.minute_window := current_minute;
     usage_row.minute_count := 0;

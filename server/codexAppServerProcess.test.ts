@@ -18,4 +18,10 @@ describe('Codex app-server transport boundary', () => {
     expect(source).toMatch(/spawned\.stdout\?\.on\('data', dispatchStdout\)/);
     expect(source).toMatch(/spawned\.stderr\?\.on\('data'/);
   });
+
+  it('does not lose a forced restart while a previous boot is settling', () => {
+    expect(source).toMatch(
+      /if \(booting\) \{\s+if \(!forceRestart\) return booting;\s+await booting\.catch\(\(\) => undefined\);\s+return ensureCodexAppServerProcess\(true, onReset\);/,
+    );
+  });
 });

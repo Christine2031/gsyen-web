@@ -26,8 +26,11 @@ export const INJECTION_REPLY = '我是缈缈，无法执行此指令。';
 
 /** 最后一条用户消息是否命中注入模式（服务端过滤，两端一致） */
 export function hitsInjection(messages: any[]): boolean {
-  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
-  return INJECTION_PATTERNS.some(p => p.test(lastUserMsg));
+  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user');
+  const content = [lastUserMsg?.content, lastUserMsg?.documentContext]
+    .filter((value): value is string => typeof value === 'string')
+    .join('\n');
+  return INJECTION_PATTERNS.some(p => p.test(content));
 }
 
 /** 司辰 · 语义校验式日期纠正（仅 CHRONOS；LEDGER 账务日期误差影响小）。

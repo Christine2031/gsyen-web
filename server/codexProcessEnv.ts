@@ -28,10 +28,19 @@ function configuredProxy(env: NodeJS.ProcessEnv): string {
 }
 
 function withProxy(env: NodeJS.ProcessEnv, proxy: string): NodeJS.ProcessEnv {
-  return {
+  const isSocks = /^socks5h?:\/\//i.test(proxy);
+  const nextEnv: NodeJS.ProcessEnv = {
     ...env,
     NO_COLOR: '1',
     ALL_PROXY: proxy,
+  };
+  if (isSocks) {
+    if (nextEnv.HTTPS_PROXY === proxy) delete nextEnv.HTTPS_PROXY;
+    if (nextEnv.HTTP_PROXY === proxy) delete nextEnv.HTTP_PROXY;
+    return nextEnv;
+  }
+  return {
+    ...nextEnv,
     HTTPS_PROXY: proxy,
     HTTP_PROXY: proxy,
   };

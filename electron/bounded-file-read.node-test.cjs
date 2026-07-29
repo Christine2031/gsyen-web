@@ -43,6 +43,26 @@ test('bounded reader rejects one byte over before returning content', async () =
   }
 });
 
+test('direct buffer reads fall back to the configured binary limit', async () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsyen-bounded-buffer-'));
+  const file = path.join(temp, 'over.bin');
+  fs.writeFileSync(file, Buffer.from('123'));
+
+  try {
+    const reader = createBoundedReader({
+      maxBinaryBytes: 2,
+      maxActiveBytes: 4,
+      maxActiveJobs: 1,
+    });
+    await assert.rejects(
+      reader.readBuffer(file),
+      error => error.code === 'FILE_TOO_LARGE',
+    );
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
 test('bounded reader rejects directories as file inputs', async () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsyen-bounded-read-dir-'));
   try {

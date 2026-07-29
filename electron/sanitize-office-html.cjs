@@ -16,13 +16,12 @@ function sanitizeOfficeHtml(html) {
       th: ['colspan', 'rowspan'],
     },
     allowedSchemes: ['http', 'https', 'mailto'],
-    allowedSchemesByTag: { img: ['data', 'http', 'https'] },
+    allowedSchemesByTag: { img: ['data'] },
     allowProtocolRelative: false,
     disallowedTagsMode: 'discard',
     exclusiveFilter: frame =>
       frame.tag === 'img' &&
       typeof frame.attribs?.src === 'string' &&
-      frame.attribs.src.startsWith('data:') &&
       !/^data:image\/(?:png|jpe?g|gif|webp);base64,/i.test(frame.attribs.src),
     transformTags: {
       a: (_tagName, attribs) => ({

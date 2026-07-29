@@ -48,6 +48,47 @@ test('an open-file grant does not authorize sibling files', () => {
   }
 });
 
+test('mixed dialog selections grant files and directories by actual type', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsyen-cap-mixed-'));
+  const selectedFile = path.join(temp, 'selected.txt');
+  const selectedDirectory = path.join(temp, 'selected-folder');
+  fs.writeFileSync(selectedFile, 'selected');
+  fs.mkdirSync(selectedDirectory);
+
+  try {
+    const caps = new PathCapabilities(path.join(temp, 'caps.json'));
+    caps.grantDialogSelection(
+      [selectedFile, selectedDirectory],
+      ['openFile', 'openDirectory'],
+    );
+
+    assert.equal(caps.requireAllowed(selectedFile), fs.realpathSync.native(selectedFile));
+    assert.equal(
+      caps.requireAllowed(path.join(selectedDirectory, 'future.txt')).endsWith('future.txt'),
+      true,
+    );
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
+test('listable directory checks reject an authorized file path', () => {
+  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsyen-cap-listable-'));
+  const selectedFile = path.join(temp, 'selected.txt');
+  fs.writeFileSync(selectedFile, 'selected');
+
+  try {
+    const caps = new PathCapabilities(path.join(temp, 'caps.json'));
+    caps.grantDirectories([temp]);
+    assert.throws(
+      () => caps.requireListableDirectory(selectedFile),
+      /existing directory/i,
+    );
+  } finally {
+    fs.rmSync(temp, { recursive: true, force: true });
+  }
+});
+
 test('legacy ambiguous directory arrays fail closed', () => {
   const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'gsyen-cap-legacy-'));
   const stateFile = path.join(temp, 'caps.json');

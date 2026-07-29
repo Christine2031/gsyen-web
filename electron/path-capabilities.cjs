@@ -74,9 +74,20 @@ class PathCapabilities {
     this.save();
   }
 
-  grantDialogSelection(filePaths, properties = []) {
-    if (properties.includes('openDirectory')) this.grantDirectories(filePaths);
-    else this.grantFiles(filePaths);
+  grantDialogSelection(filePaths) {
+    const directories = [];
+    const files = [];
+    for (const candidate of filePaths) {
+      try {
+        const stat = fs.statSync(candidate);
+        if (stat.isDirectory()) directories.push(candidate);
+        else if (stat.isFile()) files.push(candidate);
+      } catch {
+        // A selection that vanished before authorization is ignored.
+      }
+    }
+    if (directories.length) this.grantDirectories(directories);
+    if (files.length) this.grantFiles(files);
   }
 
   isDirectoryAllowed(candidate) {
@@ -100,6 +111,9 @@ class PathCapabilities {
     }
     const canonical = canonicalPath(candidate);
     this.listAllowedFiles(canonical);
+    if (!fs.existsSync(canonical) || !fs.statSync(canonical).isDirectory()) {
+      throw new Error('Path is not authorized: an existing directory is required.');
+    }
     return canonical;
   }
 

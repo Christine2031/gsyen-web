@@ -28,13 +28,14 @@ function createBoundedReader(options = {}) {
   let activeJobs = 0;
 
   async function readBuffer(filePath, maxBytes) {
+    const byteLimit = positiveLimit(maxBytes, limits.maxBinaryBytes);
     const handle = await fs.promises.open(filePath, 'r');
     let reservedBytes = 0;
     let reservationHeld = false;
     try {
       const stat = await handle.stat();
       if (!stat.isFile()) throw resourceError('NOT_A_FILE');
-      if (!Number.isSafeInteger(stat.size) || stat.size > maxBytes) {
+      if (!Number.isSafeInteger(stat.size) || stat.size > byteLimit) {
         throw resourceError('FILE_TOO_LARGE');
       }
       if (activeJobs >= limits.maxActiveJobs ||

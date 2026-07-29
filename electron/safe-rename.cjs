@@ -1,7 +1,12 @@
 const fs = require('node:fs');
 
 function renameFileNoReplace(source, target) {
-  fs.linkSync(source, target);
+  try {
+    fs.linkSync(source, target);
+  } catch (error) {
+    if (error?.code === 'EEXIST') throw error;
+    fs.copyFileSync(source, target, fs.constants.COPYFILE_EXCL);
+  }
   try {
     fs.unlinkSync(source);
   } catch (error) {

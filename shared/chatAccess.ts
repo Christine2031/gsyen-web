@@ -36,7 +36,7 @@ export type ChatIdentityResult =
   | { ok: true; userId: string }
   | ChatAccessDenied;
 
-interface ResolvedChatIdentity {
+export interface AuthenticatedChatIdentity {
   ok: true;
   userId: string;
   url: string;
@@ -77,7 +77,7 @@ function denied(
 async function resolveChatIdentity(
   headers: Headers,
   deps: ChatAccessDeps = {},
-): Promise<ResolvedChatIdentity | ChatAccessDenied> {
+): Promise<AuthenticatedChatIdentity | ChatAccessDenied> {
   const token = bearerToken(headers);
   if (!token) return denied(401, 'AUTH_REQUIRED', 'Sign in before using AI chat.');
 
@@ -108,13 +108,16 @@ export async function verifyChatIdentity(
   return identity.ok ? { ok: true, userId: identity.userId } : identity;
 }
 
-export async function enforceChatAccess(
+export function authenticateChatAccess(
   headers: Headers,
   deps: ChatAccessDeps = {},
-): Promise<ChatAccessResult> {
-  const identity = await resolveChatIdentity(headers, deps);
-  if (identity.ok === false) return identity;
+): Promise<AuthenticatedChatIdentity | ChatAccessDenied> {
+  return resolveChatIdentity(headers, deps);
+}
 
+export async function consumeChatQuota(
+  identity: AuthenticatedChatIdentity,
+): Promise<ChatAccessResult> {
   try {
     const quotaResponse = await identity.fetcher(`${identity.url}/rest/v1/rpc/gsyen_consume_chat_quota`, {
       method: 'POST',
@@ -147,6 +150,15 @@ export async function enforceChatAccess(
   } catch {
     return denied(503, 'CHAT_AUTH_UNAVAILABLE', 'Chat authorization is temporarily unavailable.');
   }
+}
+
+export async function enforceChatAccess(
+  headers: Headers,
+  deps: ChatAccessDeps = {},
+): Promise<ChatAccessResult> {
+  const identity = await authenticateChatAccess(headers, deps);
+  if (identity.ok === false) return identity;
+  return consumeChatQuota(identity);
 }
 
 export function chatAccessHeaders(result: ChatAccessResult): Record<string, string> {

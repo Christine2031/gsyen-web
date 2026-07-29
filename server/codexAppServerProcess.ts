@@ -54,7 +54,11 @@ export async function ensureCodexAppServerProcess(
   onReset: () => void,
 ): Promise<void> {
   if (!forceRestart && child && child.exitCode === null && !child.killed) return;
-  if (booting) return booting;
+  if (booting) {
+    if (!forceRestart) return booting;
+    await booting.catch(() => undefined);
+    return ensureCodexAppServerProcess(true, onReset);
+  }
 
   booting = (async () => {
     if (forceRestart && child) {

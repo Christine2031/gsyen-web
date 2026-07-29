@@ -40,6 +40,25 @@ describe('phase 3 membership security migration contract', () => {
     expect(sql).toMatch(/FROM public\.gsyen_resolve_my_tier\(\) AS resolved/);
   });
 
+  it('avoids unchanged membership writes and fails closed on missing quota rows', () => {
+    expect(sql).toMatch(
+      /ON CONFLICT \(user_id\) DO UPDATE[\s\S]*WHERE tiers\.login_provider IS DISTINCT FROM EXCLUDED\.login_provider/,
+    );
+    expect(sql).toMatch(
+      /IF NOT FOUND THEN\s+SELECT[\s\S]*FROM public\.gsyen_user_tiers AS tiers/,
+    );
+    expect(sql).toMatch(
+      /FOR UPDATE;\s+IF NOT FOUND THEN\s+RAISE EXCEPTION 'chat usage row missing after initialization'/,
+    );
+  });
+
+  it('adds large-table checks without holding a full-scan exclusive lock', () => {
+    expect(sql).toMatch(/gsyen_user_tiers_tier_check[\s\S]*NOT VALID/);
+    expect(sql).toMatch(/VALIDATE CONSTRAINT gsyen_user_tiers_tier_check/);
+    expect(sql).toMatch(/gsyen_tier_entitlement_attestation_check[\s\S]*NOT VALID/);
+    expect(sql).toMatch(/VALIDATE CONSTRAINT gsyen_tier_entitlement_attestation_check/);
+  });
+
   it('only exposes the resolver and quota RPCs to authenticated users', () => {
     expect(sql).toMatch(
       /REVOKE ALL ON FUNCTION public\.gsyen_resolve_my_tier\(\) FROM PUBLIC, anon/,

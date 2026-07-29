@@ -10,6 +10,9 @@ describe('phase 2 chat quota migration contract', () => {
   it('meters authenticated users atomically and fails closed for anonymous callers', () => {
     expect(sql).toMatch(/current_user_id UUID := auth\.uid\(\)/);
     expect(sql).toMatch(/FOR UPDATE/);
+    expect(sql).toMatch(
+      /FOR UPDATE;\s+IF NOT FOUND THEN\s+RAISE EXCEPTION 'chat usage row missing after initialization'/,
+    );
     expect(sql).toMatch(/SECURITY DEFINER/);
     expect(sql).toMatch(/SET search_path = public, pg_temp/);
     expect(sql).toMatch(/REVOKE ALL .* FROM PUBLIC, anon/);

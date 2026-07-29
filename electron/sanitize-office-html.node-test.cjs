@@ -10,6 +10,7 @@ test('removes executable Office HTML while preserving document structure', () =>
     '<table><tr><td colspan="2">safe</td></tr></table>',
     '<img src="data:image/png;base64,AAAA" onerror="steal()">',
     '<img src="data:image/svg+xml;base64,PHN2ZyBvbmxvYWQ9c3RlYWwoKT4=">',
+    '<img src="https://tracker.example/pixel.png">',
   ].join('');
   const clean = sanitizeOfficeHtml(dirty);
 
@@ -18,4 +19,5 @@ test('removes executable Office HTML while preserving document structure', () =>
   assert.match(clean, /colspan="2"/);
   assert.doesNotMatch(clean, /script|onclick|onerror|javascript:/i);
   assert.doesNotMatch(clean, /image\/svg\+xml/i);
+  assert.doesNotMatch(clean, /tracker\.example/i);
 });

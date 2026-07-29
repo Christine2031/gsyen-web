@@ -168,7 +168,8 @@ module.exports = function registerLibraryFsHandlers(ipcMain) {
   // 重命名（文件 + 目录均支持）
   ipcMain.handle('library:rename', (_e, oldPath, newName) => {
     try {
-      if (typeof newName !== 'string' || path.basename(newName) !== newName || !newName.trim()) {
+      if (typeof newName !== 'string' || path.basename(newName) !== newName
+        || !newName.trim() || newName === '.' || newName === '..') {
         return { ok: false, error: 'invalid name' };
       }
       const source = approved(oldPath);

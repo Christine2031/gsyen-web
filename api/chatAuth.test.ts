@@ -56,7 +56,7 @@ describe('POST /api/chat authorization boundary', () => {
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 
-  it('rejects oversized authorized input before contacting a model', async () => {
+  it('rejects oversized authorized input without consuming quota or contacting a model', async () => {
     const fetcher = authorizeNextRequest({
       allowed: true,
       tier: 'free',
@@ -79,11 +79,11 @@ describe('POST /api/chat authorization boundary', () => {
 
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toMatchObject({ code: 'CHAT_REQUEST_TOO_LARGE' });
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it('returns 400 rather than leaking a parser failure for invalid JSON', async () => {
-    authorizeNextRequest({
+    const fetcher = authorizeNextRequest({
       allowed: true,
       tier: 'free',
       minute_remaining: 4,
@@ -102,5 +102,6 @@ describe('POST /api/chat authorization boundary', () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toMatchObject({ code: 'INVALID_CHAT_REQUEST' });
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

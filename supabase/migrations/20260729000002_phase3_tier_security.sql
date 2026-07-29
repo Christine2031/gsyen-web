@@ -17,7 +17,10 @@ ALTER TABLE public.gsyen_user_tiers
       'free_unverified', 'free', 'pro_month', 'pro_year',
       'enterprise', 'admin', 'owner'
     )
-  );
+  ) NOT VALID;
+
+ALTER TABLE public.gsyen_user_tiers
+  VALIDATE CONSTRAINT gsyen_user_tiers_tier_check;
 
 ALTER TABLE public.gsyen_user_tiers
   DROP CONSTRAINT IF EXISTS gsyen_tier_entitlement_attestation_check;
@@ -33,7 +36,10 @@ ALTER TABLE public.gsyen_user_tiers
       entitlement_verified_at IS NOT NULL
       AND NULLIF(BTRIM(entitlement_source), '') IS NOT NULL
     )
-  );
+  ) NOT VALID;
+
+ALTER TABLE public.gsyen_user_tiers
+  VALIDATE CONSTRAINT gsyen_tier_entitlement_attestation_check;
 
 DROP POLICY IF EXISTS "gsyen_user_tiers_select" ON public.gsyen_user_tiers;
 DROP POLICY IF EXISTS "gsyen_user_tiers_insert" ON public.gsyen_user_tiers;
@@ -98,15 +104,41 @@ BEGIN
           EXCLUDED.email_verified_at
         ),
         tier = CASE
-          WHEN tiers.tier = 'free_unverified' AND confirmed_at IS NOT NULL
+          WHEN tiers.tier = 'free_unverified'
+            AND EXCLUDED.email_verified_at IS NOT NULL
           THEN 'free'
           ELSE tiers.tier
         END
+    WHERE tiers.login_provider IS DISTINCT FROM EXCLUDED.login_provider
+       OR tiers.email_verified_at IS DISTINCT FROM COALESCE(
+         tiers.email_verified_at,
+         EXCLUDED.email_verified_at
+       )
+       OR tiers.tier IS DISTINCT FROM CASE
+         WHEN tiers.tier = 'free_unverified'
+           AND EXCLUDED.email_verified_at IS NOT NULL
+         THEN 'free'
+         ELSE tiers.tier
+       END
   RETURNING
     tiers.tier,
     tiers.entitlement_verified_at,
     tiers.entitlement_source
   INTO stored_tier, attested_at, attestation_source;
+
+  IF NOT FOUND THEN
+    SELECT
+      tiers.tier,
+      tiers.entitlement_verified_at,
+      tiers.entitlement_source
+    INTO stored_tier, attested_at, attestation_source
+    FROM public.gsyen_user_tiers AS tiers
+    WHERE tiers.user_id = current_user_id;
+  END IF;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'membership row missing after resolution';
+  END IF;
 
   IF stored_tier = 'free' AND confirmed_at IS NULL THEN
     stored_tier := 'free_unverified';
@@ -176,6 +208,10 @@ BEGIN
     FROM public.gsyen_chat_usage
    WHERE user_id = current_user_id
    FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'chat usage row missing after initialization';
+  END IF;
 
   IF usage_row.minute_window <> current_minute THEN
     usage_row.minute_window := current_minute;

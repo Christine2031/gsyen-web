@@ -98,23 +98,14 @@ function assertOfficeOutput(value, maxBytes = OFFICE_LIMITS.maxOutputBytes) {
 }
 
 async function preflightOfficeFile(filePath, ext) {
-  const handle = await fs.promises.open(filePath, 'r');
-  try {
-    const stat = await handle.stat();
-    if (!stat.isFile()) throw officeError('OFFICE_NOT_A_FILE');
-    if (!Number.isSafeInteger(stat.size) || stat.size > OFFICE_LIMITS.maxInputBytes) {
-      throw officeError('OFFICE_INPUT_LIMIT');
-    }
-  } finally {
-    await handle.close();
-  }
+  const buffer = await preflightReader.readBuffer(
+    filePath,
+    OFFICE_LIMITS.maxInputBytes,
+  );
   if (ext === '.docx' || ext === '.xlsx') {
-    const buffer = await preflightReader.readBuffer(
-      filePath,
-      OFFICE_LIMITS.maxInputBytes,
-    );
     inspectZipContainer(buffer);
   }
+  return buffer;
 }
 
 module.exports = {

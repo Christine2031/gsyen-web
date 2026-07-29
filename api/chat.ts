@@ -5,7 +5,11 @@ import { SYSTEM_PROMPT } from '../shared/systemPrompt';
 import { MODEL_ROUTES } from '../shared/chatConfig';
 import { runOllamaStructuredChat, hitsInjection, INJECTION_REPLY } from '../shared/structuredChat';
 import { toOpenAiMessages } from '../shared/providerMessages';
-import { chatAccessHeaders, enforceChatAccess } from '../shared/chatAccess';
+import {
+  authenticateChatAccess,
+  chatAccessHeaders,
+  consumeChatQuota,
+} from '../shared/chatAccess';
 import { validateChatRequestBody } from '../shared/chatRequest';
 
 const sse = (content: string, extraHeaders: Record<string, string> = {}) =>
@@ -23,10 +27,13 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   try {
-    const access = await enforceChatAccess(req.headers);
-    const quotaHeaders = chatAccessHeaders(access);
-    if (access.ok === false) {
-      return json({ error: access.message, code: access.code }, access.status, quotaHeaders);
+    const identity = await authenticateChatAccess(req.headers);
+    if (identity.ok === false) {
+      return json(
+        { error: identity.message, code: identity.code },
+        identity.status,
+        chatAccessHeaders(identity),
+      );
     }
 
     let body: any;
@@ -36,7 +43,6 @@ export default async function handler(req: Request): Promise<Response> {
       return json(
         { error: 'Chat request body must be valid JSON.', code: 'INVALID_CHAT_REQUEST' },
         400,
-        quotaHeaders,
       );
     }
     const validation = validateChatRequestBody(body);
@@ -44,8 +50,13 @@ export default async function handler(req: Request): Promise<Response> {
       return json(
         { error: validation.message, code: validation.code },
         validation.status,
-        quotaHeaders,
       );
+    }
+
+    const access = await consumeChatQuota(identity);
+    const quotaHeaders = chatAccessHeaders(access);
+    if (access.ok === false) {
+      return json({ error: access.message, code: access.code }, access.status, quotaHeaders);
     }
     const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null } = body;
 

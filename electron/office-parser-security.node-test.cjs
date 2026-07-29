@@ -32,7 +32,8 @@ test('Office preflight accepts a small valid workbook and records ZIP bounds', a
     const receipt = inspectZipContainer(bytes);
     assert.equal(receipt.entries > 0, true);
     assert.equal(receipt.expandedBytes > 0, true);
-    await preflightOfficeFile(file, '.xlsx');
+    const validated = await preflightOfficeFile(file, '.xlsx');
+    assert.deepEqual(validated, bytes);
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
