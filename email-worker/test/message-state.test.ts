@@ -4,6 +4,7 @@ import {
   type D1Migration,
 } from "cloudflare:test";
 import { beforeEach, describe, expect, it } from "vitest";
+import { parseMessageCursor, serializeMessageCursor } from "../src/messageCursor";
 import {
   createMailbox,
   listMessages,
@@ -67,7 +68,7 @@ describe("message state", () => {
       localPart: "cursor-owner",
       displayName: "Cursor",
     });
-    const createdAt = "2026-07-29T10:00:00.000Z";
+    const createdAt = "2020-01-01T10:00:00.000Z";
     const statements = Array.from({ length: 51 }, (_, index) => {
       const id = `00000000-0000-4000-8000-${String(index).padStart(12, "0")}`;
       return testEnv.DB.prepare(
@@ -82,10 +83,9 @@ describe("message state", () => {
 
     const first = await listMessages(testEnv, mailbox.id, "inbox");
     const last = first.at(-1);
-    const second = await listMessages(testEnv, mailbox.id, "inbox", {
-      createdAt: last!.created_at,
-      id: last!.id,
-    });
+    const serialized = serializeMessageCursor(last);
+    const cursor = parseMessageCursor(serialized);
+    const second = await listMessages(testEnv, mailbox.id, "inbox", cursor);
 
     expect(first).toHaveLength(50);
     expect(second).toHaveLength(1);
