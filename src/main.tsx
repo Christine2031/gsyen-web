@@ -2,6 +2,7 @@ import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
+import './styles/gsyen-icon-language.css';
 import './styles/index-layers/01-command-bus-foundation.css';
 import './styles/index-layers/02-workbench-base.css';
 import './styles/index-layers/03-archive-standby.css';

@@ -11,7 +11,7 @@ const ENTITY_LABEL: Record<EntityType, string> = {
 };
 
 const STATUS_DOT: Record<StatusColor, string> = {
-  green: '#22C55E', amber: '#F59E0B', red: '#EF4444', gray: '#D1D5DB',
+  green: '#22C55E', amber: '#F59E0B', yellow: '#EAB308', red: '#EF4444', gray: '#D1D5DB',
 };
 
 const ENTITY_PATH: Record<EntityType, string> = {
@@ -70,7 +70,7 @@ export const CanvasEntityCard = memo(({ id, data: d, selected }: EntityCardProps
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.08)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             onClick={() => deleteElements({ nodes: [{ id }] })}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--cn-dim)" strokeWidth="1.4" strokeLinecap="round">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--cn-dim)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M2 3h9M4.5 3V2a.5.5 0 01.5-.5h3a.5.5 0 01.5.5v1M5 5.5v4M8 5.5v4M2.5 3l.65 7.5a.5.5 0 00.5.5h5.7a.5.5 0 00.5-.5L10.5 3"/>
             </svg>
           </button>
@@ -78,7 +78,7 @@ export const CanvasEntityCard = memo(({ id, data: d, selected }: EntityCardProps
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             onClick={() => fitView({ nodes: [{ id }], duration: 350, padding: 0.35 })}>
-            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--cn-dim)" strokeWidth="1.4" strokeLinecap="round">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="var(--cn-dim)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M1.5 4.5V2h2.5M8.5 2H11v2.5M11 8.5V11H8.5M4 11H1.5V8.5"/>
             </svg>
           </button>
@@ -148,7 +148,7 @@ export const CanvasEntityCard = memo(({ id, data: d, selected }: EntityCardProps
             {d.lastMessage && (
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 5 }}>
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(0,0,0,0.28)"
-                  strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 1, flexShrink: 0 }}>
+                  strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 1, flexShrink: 0 }}>
                   <path d="M1.5 2h9a.5.5 0 01.5.5v5.5a.5.5 0 01-.5.5H6.5L4 10.5V8.5H1.5a.5.5 0 01-.5-.5V2.5a.5.5 0 01.5-.5z"/>
                 </svg>
                 <span style={{

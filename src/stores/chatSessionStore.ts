@@ -137,8 +137,8 @@ export const chatSessionStore = {
     };
     if (idx >= 0) all[idx] = record; else all.unshift(record);
     const sorted = all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sorted));
     if (_uid) {
-      localStorage.setItem(SESSIONS_KEY, JSON.stringify(sorted));
       _upsert(record);
       // Real-time local vault write (fire and forget)
       localVaultService.saveSession(record);

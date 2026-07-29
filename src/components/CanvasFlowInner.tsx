@@ -15,6 +15,8 @@ import { CanvasNodeCard } from './CanvasNodeCard';
 import { CanvasBox } from './CanvasBox';
 import { CanvasRightControls } from './CanvasFlowPanels';
 import { EDGE_DEFAULTS, buildRelationView } from './CanvasNodeRelationView';
+import { CanvasSourceCodeViewer } from './CanvasSourceCodeViewer';
+import { CanvasAskBar, type CanvasAskMessage } from './CanvasAskBar';
 
 const NODE_TYPES = { card: CanvasNodeCard, box: CanvasBox };
 
@@ -50,6 +52,11 @@ interface InnerProps {
   onNodeDrag: (_event: globalThis.MouseEvent | TouchEvent, node: Node) => void;
   onNodeDragStop: (_event: globalThis.MouseEvent | TouchEvent, node: Node) => void;
   onViewportChange?: (vp: Viewport) => void;
+  focusPortalId?: string | null;
+  onPortalNodeDoubleClick?: (nodeId: string) => void;
+  onAskCanvas?: (query: string) => void | Promise<void>;
+  askMessages?: CanvasAskMessage[];
+  askBusy?: boolean;
   dark: boolean;
 }
 
@@ -62,13 +69,19 @@ export function CanvasFlowInner({
   onNodeDrag,
   onNodeDragStop,
   onViewportChange,
+  focusPortalId,
+  onPortalNodeDoubleClick,
+  onAskCanvas,
+  askMessages,
+  askBusy,
   dark,
 }: InnerProps) {
   useOnViewportChange({ onChange: vp => onViewportChange?.(vp) });
   const { fitView } = useReactFlow();
   const containerRef = useRef<HTMLDivElement>(null);
   const didInitialFitRef = useRef(false);
-  const relationView = useMemo(() => buildRelationView(nodes, edges), [nodes, edges]);
+  const lastPortalFitRef = useRef<string | null>(null);
+  const relationView = useMemo(() => buildRelationView(nodes, edges, focusPortalId), [edges, focusPortalId, nodes]);
 
   useEffect(() => {
     if (didInitialFitRef.current) return;
@@ -84,6 +97,31 @@ export function CanvasFlowInner({
     }, 80);
     return () => window.clearTimeout(timer);
   }, [fitView, nodes]);
+
+  useEffect(() => {
+    if (!focusPortalId) {
+      lastPortalFitRef.current = null;
+      return;
+    }
+    if (lastPortalFitRef.current === focusPortalId) return;
+
+    const focusNode = relationView.nodes.find(node => node.id === focusPortalId);
+    const childIds = (focusNode?.data as any)?.childIds;
+    const visibleIds = new Set([
+      focusPortalId,
+      ...(Array.isArray(childIds) ? childIds.filter(Boolean) : []),
+    ]);
+    const fitNodes = relationView.nodes
+      .filter(node => visibleIds.has(node.id) && !node.hidden)
+      .map(node => ({ id: node.id }));
+    if (fitNodes.length === 0) return;
+
+    lastPortalFitRef.current = focusPortalId;
+    const timer = window.setTimeout(() => {
+      fitView({ nodes: fitNodes, duration: 220, padding: 0.2 });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [fitView, focusPortalId, relationView.nodes]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -107,7 +145,7 @@ export function CanvasFlowInner({
   } as CSSProperties;
 
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%', background: bgColor, ...vars }}>
+    <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', background: bgColor, ...vars }}>
       <style>{`
         .react-flow__pane { cursor: default !important; }
         .react-flow__pane.dragging { cursor: grabbing !important; }
@@ -123,6 +161,10 @@ export function CanvasFlowInner({
         onConnect={onConnect}
         onNodeDrag={onNodeDrag}
         onNodeDragStop={onNodeDragStop}
+        onNodeDoubleClick={(_event, node) => {
+          const ids = (node.data as any).childIds;
+          if (Array.isArray(ids) && ids.length > 0) onPortalNodeDoubleClick?.(node.id);
+        }}
         nodeTypes={NODE_TYPES}
         defaultEdgeOptions={EDGE_DEFAULTS}
         colorMode={dark ? 'dark' : 'light'}
@@ -133,7 +175,9 @@ export function CanvasFlowInner({
       >
         <StarBackground color={dotColor} />
         <CanvasRightControls dark={dark} />
+        {onAskCanvas && <CanvasAskBar busy={askBusy} messages={askMessages} onSubmit={onAskCanvas} />}
       </ReactFlow>
+      <CanvasSourceCodeViewer />
     </div>
   );
 }

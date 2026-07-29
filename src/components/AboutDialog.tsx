@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, RefreshCw } from 'lucide-react';
 import VintageCar from './VintageCar';
 import BrandWordmark from './BrandWordmark';
+import { CloseIcon, RefreshIcon } from '../gsyen-designer';
 
 interface AboutDialogProps {
   lang: 'zh' | 'en';
@@ -45,7 +45,7 @@ export default function AboutDialog({ lang, onClose }: AboutDialogProps) {
         {/* 关闭按钮 */}
         <div className="w-full flex justify-end px-3 pt-3 pb-1">
           <button onClick={onClose} className="p-1 text-[#1A1A1A]/30 hover:text-[#1A1A1A] transition-colors">
-            <X className="w-3.5 h-3.5" />
+            <CloseIcon className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -69,7 +69,7 @@ export default function AboutDialog({ lang, onClose }: AboutDialogProps) {
         <div className="w-full px-5 mb-3">
           <button onClick={checkUpdate} disabled={checking}
             className="w-full flex items-center justify-center gap-2 py-2 border border-[#1A1A1A]/12 bg-white/70 fs-xs font-mono font-bold tracking-widest uppercase text-[#1A1A1A]/70 hover:text-[#1A1A1A] hover:border-[#1A1A1A]/30 transition-all disabled:opacity-50">
-            <RefreshCw className={`w-3 h-3 ${checking ? 'animate-spin' : ''}`} />
+            <RefreshIcon className={`w-3 h-3 ${checking ? 'animate-spin' : ''}`} />
             {checking ? (lang === 'zh' ? '检查中…' : 'Checking…') : (lang === 'zh' ? '检查更新' : 'Check for Updates')}
           </button>
           {checkResult && (

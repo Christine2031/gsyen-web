@@ -284,6 +284,6 @@
   justify-self: start;
 }
 
-.gsyen-standby-input-footer button {
+.gsyen-standby-input-footer > button {
   justify-self: end;
 }

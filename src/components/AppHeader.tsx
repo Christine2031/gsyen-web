@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Globe, Users, User } from 'lucide-react';
 import { AnimatePresence } from 'motion/react';
 import { translations } from '../translations';
 import VintageCar from './VintageCar';
 import AppHeaderBrandWordmark from './AppHeaderBrandWordmark';
-import { WinCtrlButton } from '../gsyen-designer';
+import { GlobeIcon, UserIcon, UsersIcon, WinCtrlButton } from '../gsyen-designer';
 import AboutDialog from './AboutDialog';
 import AuthModal from '../auth/AuthModal';
 import ResetPasswordModal from '../auth/ResetPasswordModal';
@@ -171,7 +170,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
               onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
               className="gsyen-account-segment gsyen-account-language flex items-center gap-1 px-2 py-1.5 border border-[#1A1A1A]/10 bg-[#1A1A1A]/5 text-[#1A1A1A]/55 hover:text-[#1A1A1A] transition-all shrink-0"
             >
-              <Globe className="w-3 h-3" />
+              <GlobeIcon className="w-3 h-3" />
               <span className="gsyen-account-language-label fs-xs font-bold tracking-wider uppercase">
                 {lang === 'zh' ? '中文' : 'EN'}
               </span>
@@ -187,7 +186,7 @@ export default function AppHeader({ lang, setLang, activeSpace, setActiveSpace, 
                   className="gsyen-account-segment gsyen-account-user flex items-center gap-1.5 px-2 py-1.5 fs-xs font-bold tracking-wider uppercase text-[#1A1A1A]/50 hover:text-[#1A1A1A]/80 whitespace-nowrap shrink-0 font-mono transition-colors"
                   title={activeTeam ? '团队成员' : undefined}
                 >
-                  {activeTeam ? <Users className="w-3.5 h-3.5" strokeWidth={1.5} /> : <User className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                  {activeTeam ? <UsersIcon className="w-3.5 h-3.5" /> : <UserIcon className="w-3.5 h-3.5" />}
                   <span className="gsyen-account-name truncate">{accountName}</span>
                 </button>
                 <div className="gsyen-account-segment gsyen-account-tier">

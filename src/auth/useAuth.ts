@@ -22,10 +22,10 @@ function readTier(uid: string): TierCache | null {
   try { const r = localStorage.getItem(TIER_KEY(uid)); return r ? JSON.parse(r) : null; }
   catch { return null; }
 }
-function writeTier(uid: string, tier: UserTier) {
+function writeTier(uid: string, tier: UserTier, emailVerified: boolean) {
   try {
     localStorage.setItem(TIER_KEY(uid), JSON.stringify({
-      tier, ev: tier !== 'free_unverified' && tier !== null,
+      tier, ev: emailVerified,
     }));
   } catch {}
 }
@@ -62,6 +62,7 @@ let _store: AuthStore = {
 let _initialized = false;
 let _currentUid: string | null = null;
 const _listeners = new Set<(s: AuthStore) => void>();
+const _tierRefreshes = new Map<string, Promise<UserTier | null>>();
 
 // 读取页面加载时的 hash（魔法链接），模块初始化即捕获，防止后续被清除后读不到
 const _magicLinkOnLoad =
@@ -72,6 +73,60 @@ let _magicLinkHandled = false;
 function _set(patch: Partial<AuthStore>) {
   _store = { ..._store, ...patch };
   _listeners.forEach(fn => fn(_store));
+}
+
+function _applyTier(
+  user: NonNullable<AuthState['user']>,
+  provider: LoginProvider | null,
+  tier: UserTier | null,
+  emailVerified: boolean,
+  justVerified = false,
+) {
+  if (!tier || _store.user?.id !== user.id) return;
+  writeTier(user.id, tier, emailVerified);
+  _set({
+    tier,
+    emailVerified,
+    ...(justVerified && emailVerified ? { justVerified: true } : {}),
+  });
+  _writeSnap({
+    uid: user.id,
+    email: user.email ?? '',
+    tier,
+    ev: emailVerified,
+    provider,
+  });
+}
+
+function _refreshTier(
+  user: NonNullable<AuthState['user']>,
+  provider: LoginProvider | null,
+): Promise<UserTier | null> {
+  const active = _tierRefreshes.get(user.id);
+  if (active) return active;
+
+  const request = initializeUserData(user.id, provider ?? 'email')
+    .then(membership => {
+      _applyTier(
+        user,
+        provider,
+        membership?.tier ?? null,
+        membership?.emailVerified ?? false,
+      );
+      return membership?.tier ?? null;
+    })
+    .finally(() => {
+      if (_tierRefreshes.get(user.id) === request) _tierRefreshes.delete(user.id);
+    });
+  _tierRefreshes.set(user.id, request);
+  return request;
+}
+
+function _refreshCurrentTier() {
+  const user = _store.session?.user;
+  if (!user) return;
+  const provider = (user.user_metadata?.provider ?? null) as LoginProvider | null;
+  _refreshTier(user, provider).catch(() => {});
 }
 
 // ── Auth state listener（全局注册一次）────────────────────────────────────────
@@ -101,6 +156,7 @@ function _initListener() {
     // TOKEN_REFRESHED：同一用户只更新 session/user，不重置 tier/emailVerified（防闪烁）
     if (_event === 'TOKEN_REFRESHED' && prevUid === user.id) {
       _set({ user, session, loginProvider: provider });
+      _refreshTier(user, provider).catch(() => {});
       return;
     }
 
@@ -121,28 +177,20 @@ function _initListener() {
       _magicLinkHandled = true;
       window.history.replaceState(null, '', window.location.pathname);
       upgradeTierToFree(user.id)
-        .then(() => {
-          writeTier(user.id, 'free');
-          if (_store.user?.id === user.id) {
-            _set({ tier: 'free', emailVerified: true, justVerified: true });
-            _writeSnap({ uid: user.id, email: user.email ?? '', tier: 'free', ev: true, provider });
-          }
+        .then(membership => {
+          _applyTier(
+            user,
+            provider,
+            membership?.tier ?? null,
+            membership?.emailVerified ?? false,
+            true,
+          );
         })
         .catch(() => {});
       return;
     }
 
-    if (!cached || _event === 'SIGNED_IN') {
-      initializeUserData(user.id, user.user_metadata?.provider ?? 'email')
-        .then(tier => {
-          if (tier) writeTier(user.id, tier);
-          if (_store.user?.id === user.id) {
-            const ev = tier !== 'free_unverified' && tier !== null;
-            _set({ tier, emailVerified: ev });
-            _writeSnap({ uid: user.id, email: user.email ?? '', tier, ev, provider });
-          }
-        });
-    }
+    _refreshTier(user, provider).catch(() => {});
   });
 }
 
@@ -154,6 +202,11 @@ function _boot() {
   if (!supabase) { _set({ loading: false }); return; }
 
   _initListener();
+  window.addEventListener('focus', _refreshCurrentTier);
+  window.addEventListener('online', _refreshCurrentTier);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') _refreshCurrentTier();
+  });
 
   (async () => {
     try {
@@ -169,12 +222,8 @@ function _boot() {
           emailVerified: cached?.ev ?? false,
           loading: false,
         });
-        initializeUserData(local.user.id, local.user.user_metadata?.provider ?? 'email')
-          .then(tier => {
-            if (tier) writeTier(local.user.id, tier);
-            if (_store.user?.id === local.user.id)
-              _set({ tier, emailVerified: tier !== 'free_unverified' && tier !== null });
-          }).catch(() => {});
+        const provider = (local.user.user_metadata?.provider ?? null) as LoginProvider | null;
+        _refreshTier(local.user, provider).catch(() => {});
         if (local.refresh_token) authProxy.saveSession(local.refresh_token).catch(() => {});
         return;
       }

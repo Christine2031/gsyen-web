@@ -14,7 +14,7 @@ interface Props { open: boolean; P: Palette; dark: boolean; onSettings: () => vo
 
 const CloudIcon = ({ color }: { color: string }) => (
   <svg width="14" height="10" viewBox="-0.5 3.5 25 17" fill="none" stroke={color}
-    strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.85 }}>
+    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, opacity: 0.85 }}>
     <path d="M19.453 9.95q.961.058 1.787.468.826.41 1.442 1.066.615.657.966 1.512.352.856.352 1.816 0 1.008-.387 1.893-.386.885-1.049 1.547-.662.662-1.546 1.049-.885.387-1.893.387H6q-1.242 0-2.332-.475-1.09-.475-1.904-1.29-.815-.814-1.29-1.903Q0 14.93 0 13.688q0-.985.31-1.887.311-.903.862-1.658.55-.756 1.324-1.325.774-.568 1.711-.861.434-.129.85-.187.416-.06.861-.082h.012q.515-.786 1.207-1.413.691-.627 1.5-1.066.808-.44 1.705-.668.896-.229 1.845-.229 1.278 0 2.456.417 1.177.416 2.144 1.16.967.744 1.658 1.78.692 1.038 1.008 2.28z"/>
   </svg>
 );
@@ -129,7 +129,7 @@ export function CanvasLibrary({ open, P, dark, onSettings, nodesMode }: Props) {
             onMouseEnter={e => (e.currentTarget as HTMLElement).style.color = P.fg}
             onMouseLeave={e => (e.currentTarget as HTMLElement).style.color = P.menuFg}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3.5"/>
               <path d="M10.5 3.6L10.1 1.2L14.9 1.2L13.5 3.6L18.5 6.5L20.4 4.9L22.3 8.2L20 9.1L20 14.9L22.3 15.8L20.4 19.1L18.5 17.5L13.5 20.4L13.9 22.8L10.1 22.8L10.5 20.4L5.5 17.5L3.6 19.1L1.7 15.8L4 14.9L4 9.1L1.7 8.2L3.6 4.9L5.5 6.5Z"/>
             </svg>

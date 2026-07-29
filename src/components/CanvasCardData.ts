@@ -2,14 +2,14 @@ export type CardType      = 'text' | 'entity' | 'connector' | 'solid';
 export type CardSize      = 'S' | 'M' | 'L';
 export type ContentType   = 'note' | 'code' | 'image' | 'link' | 'task' | 'quote' | 'table' | 'math';
 export type CardBorder    = 'solid' | 'dashed';
-export type CardAccent    = '' | 'blue' | 'green' | 'amber' | 'red' | 'purple' | 'cyan' | 'black';
+export type CardAccent    = '' | 'blue' | 'green' | 'amber' | 'yellow' | 'red' | 'purple' | 'cyan' | 'gray' | 'black';
 export type CardElevation = 'flat' | 'float';
 export type CardOpacity   = 'solid' | 'frosted';
 export type CardCorner    = 'sm' | 'none';
 export type CardDensity   = 'compact' | 'loose';
 export type CardState     = 'normal' | 'highlight' | 'fade';
 export type EntityType    = 'contact' | 'order' | 'task' | 'schedule' | 'file' | 'custom';
-export type StatusColor   = 'green' | 'amber' | 'red' | 'gray';
+export type StatusColor   = 'green' | 'amber' | 'yellow' | 'red' | 'gray';
 export type ConnectorType = 'calls' | 'imports' | 'routes' | 'references' | 'custom';
 export type ModuleColor   = 'purple' | 'blue' | 'green' | 'amber' | 'red' | 'teal';
 
@@ -22,6 +22,10 @@ export interface CardData extends Record<string, unknown> {
   defaultEditing?:  boolean;
   width?:           number;
   height?:          number;
+  childIds?:        string[];
+  parentPortalId?:  string;
+  portalExpanded?:  boolean;
+  sourcePath?:      string;
 
   /* visual properties (Card Panel) */
   contentType?:     ContentType;
@@ -75,6 +79,7 @@ export interface BoxData extends Record<string, unknown> {
 export const STATUS_COLORS: Record<StatusColor, { bg: string; fg: string }> = {
   green: { bg: '#DCFCE7', fg: '#166534' },
   amber: { bg: '#FEF9C3', fg: '#854D0E' },
+  yellow:{ bg: '#FEF9C3', fg: '#713F12' },
   red:   { bg: '#FEE2E2', fg: '#991B1B' },
   gray:  { bg: '#F3F4F6', fg: '#374151' },
 };

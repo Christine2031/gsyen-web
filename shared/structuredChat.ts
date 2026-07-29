@@ -11,6 +11,7 @@ import {
   INJECTION_PATTERNS,
   OLLAMA_BASE_URL,
 } from './chatConfig';
+import { providerText } from './providerMessages';
 
 /** 按领域选择 system 后缀（LEDGER 记账 / CHRONOS 日程 / 无关闲聊） */
 export function domainSuffix(domain: string | null, scheduleIntent: unknown, today: string, events: any[]): string {
@@ -25,8 +26,11 @@ export const INJECTION_REPLY = '我是缈缈，无法执行此指令。';
 
 /** 最后一条用户消息是否命中注入模式（服务端过滤，两端一致） */
 export function hitsInjection(messages: any[]): boolean {
-  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user')?.content || '';
-  return INJECTION_PATTERNS.some(p => p.test(lastUserMsg));
+  const lastUserMsg = [...messages].reverse().find((m: any) => m.role === 'user');
+  const content = [lastUserMsg?.content, lastUserMsg?.documentContext]
+    .filter((value): value is string => typeof value === 'string')
+    .join('\n');
+  return INJECTION_PATTERNS.some(p => p.test(content));
 }
 
 /** 司辰 · 语义校验式日期纠正（仅 CHRONOS；LEDGER 账务日期误差影响小）。
@@ -65,7 +69,7 @@ export async function runOllamaStructuredChat(opts: {
 
   const ollamaPayload = [
     { role: 'system', content: systemPrompt + domainSuffix(domain, scheduleIntent, today, events) },
-    ...messages.map((m: any) => ({ role: m.role === 'model' ? 'assistant' : 'user', content: m.content })),
+    ...messages.map((m: any) => ({ role: m.role === 'model' ? 'assistant' : 'user', content: providerText(m) })),
   ];
 
   const ollamaRes = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {

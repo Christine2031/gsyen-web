@@ -135,7 +135,7 @@
     padding: 0 10px 10px !important;
   }
 
-  .gsyen-standby-input-footer button {
+  .gsyen-standby-input-footer > button {
     width: 30px !important;
     height: 30px !important;
   }

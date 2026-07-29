@@ -164,7 +164,7 @@
 .gsyen-system-bus,
 .gsyen-system-count,
 .gsyen-pulse-panel-action,
-.gsyen-standby-input-footer button,
+.gsyen-standby-input-footer > button,
 .gsyen-standby-actions button,
 .gsyen-system-panel-action {
   -webkit-tap-highlight-color: transparent;
@@ -211,7 +211,7 @@
 .gsyen-model-status-button:active,
 .gsyen-model-option:active,
 .gsyen-pulse-panel-action:active,
-.gsyen-standby-input-footer button:active,
+.gsyen-standby-input-footer > button:active,
 .gsyen-standby-actions button:active,
 .gsyen-system-panel-action:active {
   transform: translateY(0) translateZ(0);
@@ -224,7 +224,7 @@
 .gsyen-model-option:focus-visible,
 .gsyen-model-status-button:focus-visible,
 .gsyen-pulse-panel-action:focus-visible,
-.gsyen-standby-input-footer button:focus-visible,
+.gsyen-standby-input-footer > button:focus-visible,
 .gsyen-standby-actions button:focus-visible,
 .gsyen-system-panel-action:focus-visible {
   outline: 1px solid rgba(196, 162, 93, 0.92);

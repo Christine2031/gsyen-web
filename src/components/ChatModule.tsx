@@ -7,6 +7,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { Sparkles } from 'lucide-react';
+import type { ChatAttachment, ChatDocumentSource, ChatMessage } from '../types/chat';
 
 import { useChatSession } from '../hooks/useChatSession';
 import { useChatOrchestrator } from '../hooks/useChatOrchestrator';
@@ -29,6 +30,7 @@ import { ChatSavePrompt, useChatSavePrompt } from './ChatSavePrompt';
 import { ChatInputBar } from './ChatInputBar';
 import { ChatPendingQueue } from './ChatPendingQueue';
 import { ChatCommandDeck } from './ChatCommandDeck';
+import { isCanvasCodeAsk, prepareCanvasCodeAsk } from './canvasCodeAskCommand';
 
 interface ChatModuleProps { lang: 'zh' | 'en'; onTeamChange?: (active: boolean) => void }
 
@@ -49,11 +51,11 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
   const { teams } = useTeams();
   const { selectedTeam, showPanel, members, selectTeam, clearTeam } = useTeamPanel(onTeamChange);
   const { modelScrollRef, onMsDragStart, onMsDragMove, onMsDragEnd } = useModelScroll();
-  const { messages, sessions, currentSessionId, currentTeamId, setMessages, saveChat, loadSession, deleteSession, newChat, openTeamSession } =
+  const { messages, sessions, currentSessionId, currentTeamId, sourceDocuments, removeSourceDocument, setMessages, saveChat, loadSession, deleteSession, newChat, openTeamSession } =
     useChatSession(lang);
   const { show: savePrompt, dismiss: dismissSavePrompt } = useChatSavePrompt(messages);
   const { inputVal, setInputVal, handleSend, clearQueue, queuedPrompts, isLoading, hasStreamingAssistant, cancel } =
-    useChatOrchestrator({ lang, selectedModel, messages, setMessages, saveChat, currentTeamId, showToast });
+    useChatOrchestrator({ lang, selectedModel, messages, setMessages, saveChat, currentTeamId, sourceDocuments, showToast });
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
@@ -78,6 +80,39 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
     canvasStore.add(doc);
     setCreativeDocId(doc.id);
   }, []);
+
+  const handleSendWithCanvasCommand = useCallback(async (text: string, attachments: Array<ChatAttachment | ChatDocumentSource> = []) => {
+    if (attachments.length === 0 && isCanvasCodeAsk(text)) {
+      setInputVal('');
+      cancel();
+      clearQueue();
+      const sessionId = newChat(selectedModel);
+      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const localMessages: ChatMessage[] = [
+        { id: `user-${Date.now()}`, role: 'user', content: text, timestamp: time },
+      ];
+      saveChat(localMessages, selectedModel);
+      const pending = await prepareCanvasCodeAsk(text, sessionId);
+      setCreativeDocId(pending.docId);
+      window.setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('gsyen-canvas-ask', { detail: pending }));
+      }, 320);
+      showToast(lang === 'zh' ? '已打开本地代码画布' : 'Local code map opened');
+      return;
+    }
+    handleSend(text, attachments);
+  }, [cancel, clearQueue, handleSend, lang, newChat, saveChat, selectedModel, setInputVal, showToast]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ sessionId?: string; messages?: ChatMessage[] }>).detail;
+      const activeSessionId = currentSessionId ?? localStorage.getItem('gsyen_current_session_id');
+      if (!detail?.sessionId || detail.sessionId !== activeSessionId || !detail.messages) return;
+      setMessages(detail.messages);
+    };
+    window.addEventListener('gsyen-chat-session-mutated', handler);
+    return () => window.removeEventListener('gsyen-chat-session-mutated', handler);
+  }, [currentSessionId, setMessages]);
 
   const handleLoadSession = useCallback((s: Parameters<typeof loadSession>[0]) => {
     cancel();
@@ -185,7 +220,7 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
               isAtBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
             }} className="gsyen-chat-scroll flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
               {messages.length === 0 && !isLoading && (
-                <ChatEmptyState lang={lang} inputVal={inputVal} setInputVal={setInputVal} onSend={handleSend} />
+                <ChatEmptyState lang={lang} inputVal={inputVal} setInputVal={setInputVal} onSend={handleSendWithCanvasCommand} />
               )}
 
               <AnimatePresence initial={false}>
@@ -216,7 +251,8 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
 
             <ChatPendingQueue lang={lang} prompts={queuedPrompts} />
             <ChatInputBar lang={lang} inputVal={inputVal} hidden={messages.length === 0}
-              onInputChange={setInputVal} onSend={handleSend}
+              onInputChange={setInputVal} onSend={handleSendWithCanvasCommand}
+              sourceDocuments={sourceDocuments} onRemoveSource={removeSourceDocument}
               onClear={() => { if (window.confirm(lang === 'zh' ? '确定清空所有聊天记录？' : 'Wipe all history?')) handleNewChat(); }} />
           </div>
 

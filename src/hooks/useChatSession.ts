@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, Dispatch, SetStateAction } from 'react';
-import { ChatMessage, StoredSession } from '../types/chat';
+import { ChatDocumentSource, ChatMessage, StoredSession } from '../types/chat';
 import { chatSessionStore } from '../stores/chatSessionStore';
+import { chatDocumentStore } from '../stores/chatDocumentStore';
 import { ModelId } from '../config/models';
 
 interface UseChatSessionReturn {
@@ -8,11 +9,13 @@ interface UseChatSessionReturn {
   sessions: StoredSession[];
   currentSessionId: string | null;
   currentTeamId: string | null;
+  sourceDocuments: ChatDocumentSource[];
+  removeSourceDocument: (id: string) => void;
   setMessages: Dispatch<SetStateAction<ChatMessage[]>>;
-  saveChat: (msgs: ChatMessage[], model: ModelId) => void;
+  saveChat: (msgs: ChatMessage[], model: ModelId, newDocuments?: ChatDocumentSource[]) => void;
   loadSession: (session: StoredSession) => void;
   deleteSession: (id: string) => void;
-  newChat: (model: ModelId) => void;
+  newChat: (model: ModelId) => string;
   openTeamSession: (teamId: string) => void;
 }
 
@@ -21,9 +24,11 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
   const [sessions, setSessions] = useState<StoredSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [currentTeamId, setCurrentTeamId] = useState<string | null>(null);
+  const [sourceDocuments, setSourceDocuments] = useState<ChatDocumentSource[]>([]);
 
   const sessionIdRef  = useRef<string | null>(null);
   const teamIdRef     = useRef<string | null>(null);
+  const sourceDocumentsRef = useRef<ChatDocumentSource[]>([]);
 
   useEffect(() => {
     const allSessions = chatSessionStore.loadAll();
@@ -46,10 +51,15 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
         teamIdRef.current    = match.teamId ?? null;
         setCurrentSessionId(match.id);
         setCurrentTeamId(match.teamId ?? null);
+        const documents = chatDocumentStore.load(match.id);
+        sourceDocumentsRef.current = documents;
+        setSourceDocuments(documents);
       }
     } else {
       setMessagesState([]);
       chatSessionStore.clearCurrentChat();
+      sourceDocumentsRef.current = [];
+      setSourceDocuments([]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lang]);
@@ -64,7 +74,7 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     (msgs) => setMessagesState(msgs), []
   );
 
-  const saveChat = useCallback((msgs: ChatMessage[], model: ModelId) => {
+  const saveChat = useCallback((msgs: ChatMessage[], model: ModelId, newDocuments: ChatDocumentSource[] = []) => {
     setMessagesState(msgs);
     chatSessionStore.saveCurrentChat(msgs);
     if (msgs.some(m => m.role === 'user')) {
@@ -77,6 +87,12 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
         sessionIdRef.current, msgs, model, teamIdRef.current ?? undefined
       );
       setSessions(updated);
+      if (newDocuments.length) {
+        const nextDocuments = mergeDocuments(sourceDocumentsRef.current, newDocuments);
+        sourceDocumentsRef.current = nextDocuments;
+        setSourceDocuments(nextDocuments);
+        chatDocumentStore.save(sessionIdRef.current, nextDocuments);
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -86,6 +102,9 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     teamIdRef.current    = session.teamId ?? null;
     setCurrentSessionId(session.id);
     setCurrentTeamId(session.teamId ?? null);
+    const documents = chatDocumentStore.load(session.id);
+    sourceDocumentsRef.current = documents;
+    setSourceDocuments(documents);
     setMessagesState(isLegacyGreetingOnly(session.messages) ? [] : session.messages);
     chatSessionStore.saveCurrentChat(isLegacyGreetingOnly(session.messages) ? [] : session.messages);
     localStorage.setItem('gsyen_current_session_id', session.id);
@@ -93,12 +112,15 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
 
   const deleteSession = useCallback((id: string) => {
     const updated = chatSessionStore.delete(id);
+    chatDocumentStore.remove(id);
     setSessions(updated);
     if (sessionIdRef.current === id) {
       sessionIdRef.current = null;
       teamIdRef.current    = null;
       setCurrentSessionId(null);
       setCurrentTeamId(null);
+      sourceDocumentsRef.current = [];
+      setSourceDocuments([]);
       setMessagesState([]);
       chatSessionStore.clearCurrentChat();
       localStorage.removeItem('gsyen_current_session_id');
@@ -111,11 +133,23 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
     teamIdRef.current    = null;
     setCurrentSessionId(id);
     setCurrentTeamId(null);
+    sourceDocumentsRef.current = [];
+    setSourceDocuments([]);
     setMessagesState([]);
     chatSessionStore.clearCurrentChat();
     localStorage.setItem('gsyen_current_session_id', id);
     const updated = chatSessionStore.upsert(id, [], model);
     setSessions(updated);
+    return id;
+  }, []);
+
+  const removeSourceDocument = useCallback((id: string) => {
+    const nextDocuments = sourceDocumentsRef.current.filter(source => source.id !== id);
+    sourceDocumentsRef.current = nextDocuments;
+    setSourceDocuments(nextDocuments);
+    if (!sessionIdRef.current) return;
+    if (nextDocuments.length) chatDocumentStore.save(sessionIdRef.current, nextDocuments);
+    else chatDocumentStore.remove(sessionIdRef.current);
   }, []);
 
   const openTeamSession = useCallback((teamId: string) => {
@@ -125,6 +159,9 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
       teamIdRef.current    = teamId;
       setCurrentSessionId(existing.id);
       setCurrentTeamId(teamId);
+      const documents = chatDocumentStore.load(existing.id);
+      sourceDocumentsRef.current = documents;
+      setSourceDocuments(documents);
       const msgs = isLegacyGreetingOnly(existing.messages) ? [] : existing.messages;
       setMessagesState(msgs);
       chatSessionStore.saveCurrentChat(msgs);
@@ -133,15 +170,23 @@ export function useChatSession(lang: 'zh' | 'en'): UseChatSessionReturn {
       teamIdRef.current    = teamId;
       setCurrentSessionId(null);
       setCurrentTeamId(teamId);
+      sourceDocumentsRef.current = [];
+      setSourceDocuments([]);
       setMessagesState([]);
       chatSessionStore.clearCurrentChat();
     }
   }, []);
 
   return {
-    messages, sessions, currentSessionId, currentTeamId,
+    messages, sessions, currentSessionId, currentTeamId, sourceDocuments, removeSourceDocument,
     setMessages, saveChat, loadSession, deleteSession, newChat, openTeamSession,
   };
+}
+
+function mergeDocuments(current: ChatDocumentSource[], incoming: ChatDocumentSource[]): ChatDocumentSource[] {
+  const byId = new Map(current.map(source => [source.id, source]));
+  incoming.forEach(source => byId.set(source.id, source));
+  return [...byId.values()].slice(-4);
 }
 
 function isLegacyGreetingOnly(messages: ChatMessage[]): boolean {

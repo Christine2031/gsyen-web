@@ -11,7 +11,7 @@ export interface ActionCard {
                        // 不是所有卡片都有——纯查询类（如"今日日程"汇总卡）就没有单一对应记录。
 }
 
-export interface ChatAttachment {
+export interface ChatImageAttachment {
   id:       string;
   type:     'image';
   name:     string;
@@ -19,10 +19,39 @@ export interface ChatAttachment {
   dataUrl:  string;
 }
 
+export type ChatDocumentKind = 'pdf' | 'word' | 'spreadsheet' | 'text';
+export type ChatDocumentStatus = 'ready' | 'partial' | 'empty';
+
+export interface ChatDocumentAttachment {
+  id:             string;
+  type:           'document';
+  name:           string;
+  mimeType:       string;
+  documentKind:   ChatDocumentKind;
+  status:         ChatDocumentStatus;
+  size:           number;
+  extractedChars: number;
+  pageCount?:     number;
+  sheetCount?:    number;
+}
+
+export interface ChatDocumentChunk {
+  id:       string;
+  location: string;
+  text:     string;
+}
+
+/** Local-only parsed document source. Never add this to synced chat messages. */
+export interface ChatDocumentSource extends ChatDocumentAttachment {
+  chunks: ChatDocumentChunk[];
+}
+
+export type ChatAttachment = ChatImageAttachment | ChatDocumentAttachment;
+
 export interface ChatQueuedPrompt {
   id:          string;
   text:        string;
-  attachments: ChatAttachment[];
+  attachments: Array<ChatAttachment | ChatDocumentSource>;
   timestamp:   string;
 }
 
@@ -33,6 +62,8 @@ export interface ChatMessage {
   timestamp: string;
   card?:     ActionCard;   // 神机百炼操作卡片（可选）
   attachments?: ChatAttachment[];
+  /** Request-only retrieved document excerpts. Not persisted with chat history. */
+  documentContext?: string;
   streaming?: boolean;
 }
 

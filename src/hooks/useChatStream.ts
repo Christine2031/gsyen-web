@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import { ChatMessage, ActionCard, ChatAttachment } from '../types/chat';
+import { ChatMessage, ActionCard, ChatAttachment, ChatDocumentSource } from '../types/chat';
 import { ModelId } from '../config/models';
 import { ChatGptBridgeUnavailableError, sendToGateway, readSSEStream } from '../services/chatService';
 import { askPredictionExpert } from '../services/predictService';
@@ -8,6 +8,7 @@ import { DomainHandler, DomainActionResult } from '../domains/types';
 import { resolveHandler } from '../domains/resolveHandler';
 import { isConfirmation, isDenial } from '../utils/confirmWords';
 import { streamWithTypewriter, typewrite } from './chatTypewriter';
+import { buildDocumentContext } from '../utils/chatDocumentContext';
 
 // Models that return application/json with {text, action, event} instead of SSE.
 const STRUCTURED_MODELS = new Set<ModelId>(['ethan', 'fast'] as ModelId[]);
@@ -20,6 +21,7 @@ interface UseChatStreamReturn {
   send: (opts: {
     text: string;
     attachments?: ChatAttachment[];
+    documents?: ChatDocumentSource[];
     model: ModelId;
     history: ChatMessage[];
     lang: 'zh' | 'en';
@@ -51,7 +53,7 @@ export function useChatStream(): UseChatStreamReturn {
   }, []);
 
   const send = useCallback(async ({
-    text, attachments = [], model, history, lang,
+    text, attachments = [], documents = [], model, history, lang,
     onToken, onDone, onError, onScheduleAction, onActionCard,
   }: Parameters<UseChatStreamReturn['send']>[0]) => {
     activeRequest.current?.abort();
@@ -125,7 +127,8 @@ export function useChatStream(): UseChatStreamReturn {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         attachments,
       };
-      const apiMessages = [...history, { ...userMsg, content: enrichedText }];
+      const documentContext = buildDocumentContext(text, documents, lang);
+      const apiMessages = [...history, { ...userMsg, content: enrichedText, documentContext }];
 
       // 5. 结构化模型带域上下文（首个提供上下文的 handler 生效）
       const eventsCtx = isStructured

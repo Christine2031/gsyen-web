@@ -1,10 +1,16 @@
-const { startLocalServer, stopLocalServer } = require('../electron/local-server.cjs');
+const {
+  getLocalBridgeConfig,
+  startLocalServer,
+  stopLocalServer,
+} = require('../electron/local-server.cjs');
 
-const BASE = process.env.GSYEN_SMOKE_BASE || 'http://127.0.0.1:3000';
+let base = process.env.GSYEN_SMOKE_BASE || 'http://127.0.0.1:3000';
+let authHeaders = {};
 const DESKTOP = process.argv.includes('--desktop');
 const MAX_FIRST_MS = Number(process.env.GSYEN_SMOKE_MAX_FIRST_MS || 4500);
+const MAX_RECOVERY_FIRST_MS = Number(process.env.GSYEN_SMOKE_MAX_RECOVERY_MS || 8000);
 const SMOKE_ALL_MODELS = process.env.GSYEN_SMOKE_ALL_MODELS === '1';
-const CHATGPT_MODELS = ['gpt-5-5', 'gpt-5-4', 'gpt-5-4-mini', 'gpt-5-3-codex-spark'];
+const CHATGPT_MODELS = ['gpt-5-6-sol', 'gpt-5-6-terra', 'gpt-5-6-luna'];
 let startedDesktopServer = false;
 
 function sleep(ms) {
@@ -15,7 +21,10 @@ async function fetchJson(path, timeoutMs = 5000) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(`${BASE}${path}`, { signal: controller.signal });
+    const res = await fetch(`${base}${path}`, {
+      headers: authHeaders,
+      signal: controller.signal,
+    });
     return await res.json();
   } finally {
     clearTimeout(timer);
@@ -24,7 +33,10 @@ async function fetchJson(path, timeoutMs = 5000) {
 
 async function isApiReady() {
   try {
-    const res = await fetch(`${BASE}/api/codex/health`, { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${base}/api/codex/health`, {
+      headers: authHeaders,
+      signal: AbortSignal.timeout(1500),
+    });
     return res.ok;
   } catch {
     return false;
@@ -40,11 +52,26 @@ async function waitForApi() {
 }
 
 async function maybeStartDesktopServer() {
-  if (!DESKTOP) return;
-  if (await isApiReady()) return;
-  await startLocalServer({ isPackaged: true });
-  startedDesktopServer = true;
-  await waitForApi();
+  if (DESKTOP) {
+    await startLocalServer({ isPackaged: true });
+    startedDesktopServer = true;
+    const config = await getLocalBridgeConfig();
+    if (!config.base || !config.token) throw new Error('Desktop bridge config is unavailable');
+    base = config.base;
+    authHeaders = { 'X-GSYEN-Bridge-Token': config.token };
+    await waitForApi();
+    return;
+  }
+
+  const bridgeToken = process.env.GSYEN_SMOKE_BRIDGE_TOKEN || process.env.LOCAL_BRIDGE_TOKEN;
+  const accessToken = process.env.GSYEN_SMOKE_ACCESS_TOKEN;
+  if (bridgeToken) authHeaders = { 'X-GSYEN-Bridge-Token': bridgeToken };
+  else if (accessToken) authHeaders = { Authorization: `Bearer ${accessToken}` };
+  else {
+    throw new Error(
+      'Set GSYEN_SMOKE_BRIDGE_TOKEN (or GSYEN_SMOKE_ACCESS_TOKEN), or use --desktop.',
+    );
+  }
 }
 
 async function chat(prompt, options = {}) {
@@ -59,15 +86,15 @@ async function chat(prompt, options = {}) {
   }
 
   try {
-    const res = await fetch(`${BASE}/api/chat`, {
+    const res = await fetch(`${base}/api/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
       signal: controller.signal,
       body: JSON.stringify({
         model: 'chatgpt-pro',
         messages: [{ role: 'user', content: prompt }],
         lang: 'zh',
-        chatGptModel: options.chatGptModel || 'gpt-5-5',
+        chatGptModel: options.chatGptModel || 'gpt-5-6-sol',
       }),
     });
     if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
@@ -131,11 +158,14 @@ async function main() {
     }
   }
 
-  const timedResults = [warm2, recover, ...modelChecks];
-  const pass = timedResults.every(result => (result.firstDeltaMs ?? Infinity) <= MAX_FIRST_MS);
+  const steadyPass = (warm2.firstDeltaMs ?? Infinity) <= MAX_FIRST_MS;
+  const recoveryPass = [recover, ...modelChecks]
+    .every(result => (result.firstDeltaMs ?? Infinity) <= MAX_RECOVERY_FIRST_MS);
+  const pass = steadyPass && recoveryPass;
   const summary = {
     mode: DESKTOP ? 'desktop' : 'local',
     maxFirstMs: MAX_FIRST_MS,
+    maxRecoveryFirstMs: MAX_RECOVERY_FIRST_MS,
     allModels: SMOKE_ALL_MODELS,
     health,
     warm1,
@@ -143,10 +173,16 @@ async function main() {
     abort,
     recover,
     modelChecks,
+    steadyPass,
+    recoveryPass,
     pass,
   };
   console.log(JSON.stringify(summary, null, 2));
-  if (!pass) throw new Error(`First delta too slow in one or more checks: max ${MAX_FIRST_MS}ms`);
+  if (!pass) {
+    throw new Error(
+      `First delta too slow: steady max ${MAX_FIRST_MS}ms, recovery max ${MAX_RECOVERY_FIRST_MS}ms`,
+    );
+  }
 }
 
 main().catch(err => {

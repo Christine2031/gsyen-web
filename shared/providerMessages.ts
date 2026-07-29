@@ -9,6 +9,7 @@ export interface ProviderChatMessage {
   role: string;
   content?: string;
   attachments?: ProviderAttachment[];
+  documentContext?: string;
 }
 
 export function imageAttachments(message: ProviderChatMessage): ProviderAttachment[] {
@@ -29,10 +30,19 @@ export function imageAttachmentNote(message: ProviderChatMessage): string {
   return `\n[用户附图：${images.map(a => a.name || a.mimeType || 'image').join('、')}]`;
 }
 
+export function documentContextNote(message: ProviderChatMessage): string {
+  const context = message.documentContext?.trim();
+  return context ? `\n\n${context}` : '';
+}
+
+export function providerText(message: ProviderChatMessage): string {
+  return `${message.content?.trim() || ''}${documentContextNote(message)}`.trim();
+}
+
 export function toOpenAiMessages(messages: ProviderChatMessage[], includeImages: boolean): any[] {
   return messages.map(message => {
     const role = message.role === 'model' ? 'assistant' : 'user';
-    const content = message.content?.trim() || '';
+    const content = providerText(message);
     const images = includeImages && role === 'user' ? imageAttachments(message) : [];
     if (!images.length) {
       const note = includeImages ? '' : imageAttachmentNote(message);

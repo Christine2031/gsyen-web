@@ -52,7 +52,7 @@ export function CanvasRightControls({ dark }: { dark: boolean }) {
           }}
         />
         {btn(() => zoomIn({ duration: 200 }), 'Zoom In',
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.15" strokeLinecap="square">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="4.5" x2="12" y2="19.5" vectorEffect="non-scaling-stroke"/>
             <line x1="4.5" y1="12" x2="19.5" y2="12" vectorEffect="non-scaling-stroke"/>
           </svg>)}
@@ -61,15 +61,15 @@ export function CanvasRightControls({ dark }: { dark: boolean }) {
             <path
               d="M4.5 10V4.5H10M14 4.5H19.5V10M19.5 14V19.5H14M10 19.5H4.5V14"
               stroke="currentColor"
-              strokeWidth="1.65"
-              strokeLinecap="square"
-              strokeLinejoin="miter"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
             />
             <circle cx="12" cy="12" r="1.35" fill="currentColor" opacity="0.78"/>
           </svg>)}
         {btn(() => zoomOut({ duration: 200 }), 'Zoom Out',
-          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.15" strokeLinecap="square">
+          <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="4.5" y1="12" x2="19.5" y2="12" vectorEffect="non-scaling-stroke"/>
           </svg>)}
       </div>

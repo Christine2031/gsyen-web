@@ -37,9 +37,11 @@ export const ACCENT_HEX: Record<string, { border: string; bg: string; ink: strin
   blue: { border: 'rgba(77, 137, 220, 0.38)', bg: 'rgba(235, 243, 255, 0.96)', ink: '#1F4F8E', muted: 'rgba(31,79,142,0.52)' },
   green: { border: 'rgba(87, 157, 112, 0.38)', bg: 'rgba(236, 249, 241, 0.96)', ink: '#22663B', muted: 'rgba(34,102,59,0.52)' },
   amber: { border: 'rgba(188, 150, 57, 0.38)', bg: 'rgba(255, 248, 224, 0.96)', ink: '#795914', muted: 'rgba(121,89,20,0.52)' },
+  yellow: { border: 'rgba(210, 173, 45, 0.38)', bg: 'rgba(255, 251, 226, 0.96)', ink: '#765D08', muted: 'rgba(118,93,8,0.52)' },
   red: { border: 'rgba(195, 86, 92, 0.38)', bg: 'rgba(255, 238, 240, 0.96)', ink: '#8C2D32', muted: 'rgba(140,45,50,0.52)' },
   purple: { border: 'rgba(145, 101, 205, 0.38)', bg: 'rgba(244, 237, 255, 0.96)', ink: '#5A3894', muted: 'rgba(90,56,148,0.52)' },
   cyan: { border: 'rgba(67, 151, 169, 0.38)', bg: 'rgba(235, 249, 252, 0.96)', ink: '#236B78', muted: 'rgba(35,107,120,0.52)' },
+  gray: { border: 'rgba(107, 114, 128, 0.32)', bg: 'rgba(247, 248, 250, 0.96)', ink: '#374151', muted: 'rgba(55,65,81,0.50)' },
   black: { border: 'rgba(38, 42, 48, 0.28)', bg: 'rgba(248, 248, 249, 0.96)', ink: '#22262E', muted: 'rgba(34,38,46,0.48)' },
 };
 

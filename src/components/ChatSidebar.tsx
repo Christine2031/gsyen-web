@@ -4,12 +4,12 @@
  * 底部状态/更新卡逻辑见 ChatUpdaterCard.tsx。
  */
 import { useState } from 'react';
-import { Archive, MessageSquare, X, Plus, Users, User } from 'lucide-react';
 import { StoredSession } from '../types/chat';
 import { joinTeam, TeamItem } from '../hooks/useTeams';
 import { useAuth } from '../auth/useAuth';
 import { ChatUpdaterCard } from './ChatUpdaterCard';
 import { ChatVaultCard } from './ChatVaultCard';
+import { ArchiveIcon, CloseIcon, MessageIcon, PlusIcon, UserIcon, UsersIcon } from '../gsyen-designer';
 
 interface ChatSidebarProps {
   lang: 'zh' | 'en';
@@ -57,7 +57,7 @@ export function ChatSidebar({
             <p className="gsyen-archive-title">{lang === 'zh' ? '档案库' : 'Archive'}</p>
           </div>
           <div className="gsyen-archive-counter">
-            <Archive className="w-3 h-3" strokeWidth={1.5} />
+            <ArchiveIcon className="w-3 h-3" />
             <span>{sessions.length + teams.length}</span>
           </div>
         </div>
@@ -74,7 +74,7 @@ export function ChatSidebar({
           <div className={`gsyen-archive-list transition-all duration-200 ${recentsOpen ? '' : 'hidden'}`}>
             {sessions.length === 0 ? (
               <div className="gsyen-archive-empty">
-                <MessageSquare className="w-6 h-6 text-[#1A1A1A]/14 mx-auto" strokeWidth={1.4} />
+                <MessageIcon className="w-6 h-6 text-[#1A1A1A]/14 mx-auto" />
                 <p>{lang === 'zh' ? '暂无记录' : 'No history yet'}</p>
                 <span>{lang === 'zh' ? '等待第一条往来写入' : 'waiting for first thread'}</span>
               </div>
@@ -92,7 +92,7 @@ export function ChatSidebar({
                   </div>
                 </div>
                 <button onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }} className="opacity-0 group-hover:opacity-100 shrink-0 p-0.5 hover:text-red-500 text-[#1A1A1A]/30 transition-all">
-                  <X className="w-3 h-3" />
+                  <CloseIcon className="w-3 h-3" />
                 </button>
               </div>
             ))}
@@ -111,7 +111,7 @@ export function ChatSidebar({
                 return (
                   <button key={t.id} onClick={() => onSelectTeam?.(t)}
                     className={`gsyen-archive-team group ${active ? 'is-active' : ''}`}>
-                    <Users className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${active ? 'text-[#1A1A1A]/70' : 'text-[#1A1A1A]/25 group-hover:text-[#1A1A1A]/50'}`} strokeWidth={1.5} />
+                    <UsersIcon className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${active ? 'text-[#1A1A1A]/70' : 'text-[#1A1A1A]/25 group-hover:text-[#1A1A1A]/50'}`} />
                     <span className="fs-md font-sans text-[#1A1A1A]/80 leading-snug line-clamp-2 flex-1">{t.name}</span>
                   </button>
                 );
@@ -119,13 +119,13 @@ export function ChatSidebar({
               <div className="flex gap-1 mt-1">
                 <button onClick={() => onCreateTeam?.()}
                   className="flex items-center gap-1.5 flex-1 px-3 py-2 fs-sm font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition-all text-[#1A1A1A]/40 rounded-none">
-                  <Plus className="w-3 h-3" />
+                  <PlusIcon className="w-3 h-3" />
                   {lang === 'zh' ? '开团' : 'New'}
                 </button>
                 <button onClick={() => { setJoinOpen(true); setJoinCode(''); setJoinError(''); }}
                   disabled={!user}
                   className="flex items-center gap-1.5 flex-1 px-3 py-2 fs-sm font-mono font-bold tracking-widest uppercase border border-[#1A1A1A]/12 hover:bg-[#1A1A1A] hover:text-[#F9F8F6] transition-all text-[#1A1A1A]/40 rounded-none disabled:opacity-30 disabled:pointer-events-none">
-                  <User className="w-3 h-3" />
+                  <UserIcon className="w-3 h-3" />
                   {lang === 'zh' ? '加入' : 'Join'}
                 </button>
               </div>

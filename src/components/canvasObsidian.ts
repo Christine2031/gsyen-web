@@ -40,6 +40,10 @@ export function fromObsidian(raw: any): SavedGraph {
       width: n.width ?? 250, height: n.height ?? 100,
       cardType:      'solid',
       cardSize:      n.cardSize,
+      childIds:      Array.isArray(n.childIds) ? n.childIds : undefined,
+      parentPortalId:n.parentPortalId,
+      portalExpanded:Boolean(n.portalExpanded),
+      sourcePath:    n.sourcePath,
       entityName:    n.entityName,
       entitySub:     n.entitySub,
       connectorName: n.connectorName,
@@ -104,6 +108,10 @@ export function toObsidian(nodes: Node[], edges: Edge[]) {
       if (d.color)         obj.color         = d.color;
       obj.cardType = 'solid';
       if (d.cardSize)      obj.cardSize      = d.cardSize;
+      if (Array.isArray(d.childIds) && d.childIds.length) obj.childIds = d.childIds;
+      if (d.parentPortalId)obj.parentPortalId= d.parentPortalId;
+      if (d.portalExpanded)obj.portalExpanded= d.portalExpanded;
+      if (d.sourcePath)    obj.sourcePath    = d.sourcePath;
       if (d.entityName)    obj.entityName    = d.entityName;
       if (d.entitySub)     obj.entitySub     = d.entitySub;
       if (d.connectorName) obj.connectorName = d.connectorName;

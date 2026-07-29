@@ -1,0 +1,14 @@
+/* GSYEN Designer — one line-icon language for every application surface. */
+svg.gsyen-icon,
+svg.lucide {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
+
+/* Lucide writes its default stroke width as an SVG presentation attribute.
+   This selector is intentionally more specific so imported icons cannot drift to 2px. */
+svg.lucide {
+  stroke-width: 1.5 !important;
+}

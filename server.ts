@@ -11,11 +11,16 @@ import dotenv from 'dotenv';
 import { SYSTEM_PROMPT } from './shared/systemPrompt';
 import { MODEL_ROUTES } from './shared/chatConfig';
 import { runOllamaStructuredChat, hitsInjection, INJECTION_REPLY } from './shared/structuredChat';
-import { getCodexBridgeHealth } from './server/codexBridge';
 import { streamCodexChatResponse } from './server/codexChatStream';
 import { registerCodexRoutes } from './server/codexRoutes';
 import { registerLocalBridgeCors } from './server/localBridgeCors';
 import { toOpenAiMessages } from './shared/providerMessages';
+import { chatAccessHeaders, enforceChatAccess } from './shared/chatAccess';
+import {
+  requireLocalBridgeToken,
+  resolveChatAccessMode,
+} from './server/localBridgeAuth';
+import { validateChatRequestBody } from './shared/chatRequest';
 
 dotenv.config();
 
@@ -40,7 +45,7 @@ async function startServer() {
     }
 
     if (modelId === 'chatgpt-pro') {
-      const result = await getCodexBridgeHealth();
+      const result = { available: false, error: 'LOCAL BRIDGE AUTH REQUIRED' };
       healthCache[modelId] = { ...result, timestamp: now };
       return result;
     } else if (modelId === 'ethan' || modelId === 'fast') {
@@ -109,14 +114,37 @@ async function startServer() {
   // Chat proxy — model-agnostic
   app.post('/api/chat', async (req, res) => {
     try {
-      const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null, chatGptModel = null } = req.body;
-      if (!messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'Missing or invalid messages array' });
+      const validation = validateChatRequestBody(req.body);
+      if (validation.ok === false) {
+        return res.status(validation.status).json({
+          error: validation.message,
+          code: validation.code,
+        });
       }
+      const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null, chatGptModel = null } = req.body;
 
       const route = MODEL_ROUTES[model];
       if (!route) {
         return res.status(400).json({ error: `Unknown model: ${model}` });
+      }
+
+      const accessMode = resolveChatAccessMode(
+        model,
+        req.headers['x-gsyen-bridge-token'],
+      );
+      if (accessMode === 'reject') {
+        if (!requireLocalBridgeToken(req, res)) return;
+      } else if (accessMode === 'cloud') {
+        const requestHeaders = new Headers();
+        if (typeof req.headers.authorization === 'string') {
+          requestHeaders.set('Authorization', req.headers.authorization);
+        }
+        const access = await enforceChatAccess(requestHeaders);
+        const quotaHeaders = chatAccessHeaders(access);
+        Object.entries(quotaHeaders).forEach(([name, value]) => res.setHeader(name, value));
+        if (access.ok === false) {
+          return res.status(access.status).json({ error: access.message, code: access.code });
+        }
       }
 
       // 服务端注入过滤（与 api/chat.ts 同源；此前只有 Vercel 版有）
@@ -200,8 +228,11 @@ async function startServer() {
     app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Atelier Full-Stack server is actively running on http://localhost:${PORT}`);
+  const server = app.listen(PORT, '127.0.0.1', () => {
+    const address = server.address();
+    const actualPort = typeof address === 'object' && address ? address.port : PORT;
+    process.send?.({ type: 'gsyen-api-ready', port: actualPort });
+    console.log(`Atelier Full-Stack server is actively running on http://127.0.0.1:${actualPort}`);
   });
 }
 

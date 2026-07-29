@@ -5,29 +5,64 @@ import { SYSTEM_PROMPT } from '../shared/systemPrompt';
 import { MODEL_ROUTES } from '../shared/chatConfig';
 import { runOllamaStructuredChat, hitsInjection, INJECTION_REPLY } from '../shared/structuredChat';
 import { toOpenAiMessages } from '../shared/providerMessages';
+import {
+  authenticateChatAccess,
+  chatAccessHeaders,
+  consumeChatQuota,
+} from '../shared/chatAccess';
+import { validateChatRequestBody } from '../shared/chatRequest';
 
-const sse = (content: string) =>
+const sse = (content: string, extraHeaders: Record<string, string> = {}) =>
   new Response(
     `data: ${JSON.stringify({ choices: [{ delta: { content } }] })}\n\ndata: [DONE]\n\n`,
-    { headers: { 'Content-Type': 'text/event-stream' } }
+    { headers: { 'Content-Type': 'text/event-stream', ...extraHeaders } }
   );
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+const json = (body: unknown, status = 200, extraHeaders: Record<string, string> = {}) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
+  });
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
   try {
-    const body = await req.json();
-    const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null } = body;
-
-    if (!messages || !Array.isArray(messages)) {
-      return json({ error: 'Missing or invalid messages array' }, 400);
+    const identity = await authenticateChatAccess(req.headers);
+    if (identity.ok === false) {
+      return json(
+        { error: identity.message, code: identity.code },
+        identity.status,
+        chatAccessHeaders(identity),
+      );
     }
+
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return json(
+        { error: 'Chat request body must be valid JSON.', code: 'INVALID_CHAT_REQUEST' },
+        400,
+      );
+    }
+    const validation = validateChatRequestBody(body);
+    if (validation.ok === false) {
+      return json(
+        { error: validation.message, code: validation.code },
+        validation.status,
+      );
+    }
+
+    const access = await consumeChatQuota(identity);
+    const quotaHeaders = chatAccessHeaders(access);
+    if (access.ok === false) {
+      return json({ error: access.message, code: access.code }, access.status, quotaHeaders);
+    }
+    const { messages, model = 'kimi', events = [], clientDate, scheduleIntent = null, domain = null } = body;
 
     // 服务端注入过滤（规则在 shared/structuredChat.ts，与 server.ts 同源）
     if (hitsInjection(messages)) {
-      return sse(INJECTION_REPLY);
+      return sse(INJECTION_REPLY, quotaHeaders);
     }
 
     if (model === 'chatgpt-pro') {
@@ -35,11 +70,11 @@ export default async function handler(req: Request): Promise<Response> {
         text: 'CHATGPT 是本机 Codex 订阅桥接模型，只能在本地桌面服务中运行。网页版请使用 KIMI、DEEPSEEK 或 疆域·思。',
         action: 'none',
         event: null,
-      });
+      }, 200, quotaHeaders);
     }
 
     const route = MODEL_ROUTES[model];
-    if (!route) return json({ error: `Unknown model: ${model}` }, 400);
+    if (!route) return json({ error: `Unknown model: ${model}` }, 400, quotaHeaders);
 
     // ── Ollama JSON mode (ethan / fast)：先于密钥检查——OLLAMA_BASE_URL
     // 有 localhost 兜底，不设也能跑，不该被"缺密钥"短路。
@@ -48,12 +83,12 @@ export default async function handler(req: Request): Promise<Response> {
         model, modelId: route.modelId, systemPrompt: SYSTEM_PROMPT,
         messages, events, clientDate, scheduleIntent, domain,
       });
-      return json(body, status);
+      return json(body, status, quotaHeaders);
     }
 
     const apiKey = process.env[route.envKey];
     if (!apiKey) {
-      return sse(`后台未检测到 \`${route.envKey}\` 密钥，请在 Vercel 环境变量中配置后重新部署。`);
+      return sse(`后台未检测到 \`${route.envKey}\` 密钥，请在 Vercel 环境变量中配置后重新部署。`, quotaHeaders);
     }
 
     // ── All other models: SSE streaming ───────────────────────────────
@@ -80,6 +115,7 @@ export default async function handler(req: Request): Promise<Response> {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'X-Accel-Buffering': 'no',
+        ...quotaHeaders,
       },
     });
 

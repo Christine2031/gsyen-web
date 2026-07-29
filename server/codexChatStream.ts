@@ -20,6 +20,32 @@ function canFallback(message = ''): boolean {
   return /APP SERVER|CODEX SESSION|NOT READY|UNAVAILABLE|WS ERROR|WS TIMEOUT|FIRST DELTA/i.test(message);
 }
 
+export function bindClientDisconnect(
+  req: Pick<Request, 'aborted' | 'once' | 'removeListener'>,
+  res: Pick<Response, 'destroyed' | 'writableEnded' | 'once' | 'removeListener'>,
+  onDisconnect: () => void,
+): () => void {
+  let active = true;
+  const disconnect = () => {
+    if (!active) return;
+    active = false;
+    onDisconnect();
+  };
+  const onResponseClose = () => {
+    if (!res.writableEnded) disconnect();
+  };
+
+  req.once('aborted', disconnect);
+  res.once('close', onResponseClose);
+  if (req.aborted || res.destroyed) disconnect();
+
+  return () => {
+    active = false;
+    req.removeListener('aborted', disconnect);
+    res.removeListener('close', onResponseClose);
+  };
+}
+
 export async function streamCodexChatResponse(req: Request, res: Response, input: CodexBridgeInput) {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -38,7 +64,7 @@ export async function streamCodexChatResponse(req: Request, res: Response, input
     }
   }, FIRST_DELTA_TIMEOUT_MS);
 
-  req.on('close', () => {
+  const unbindClientDisconnect = bindClientDisconnect(req, res, () => {
     clientClosed = true;
     if (!finished) appController.abort(new Error('CLIENT CLOSED'));
   });
@@ -49,7 +75,8 @@ export async function streamCodexChatResponse(req: Request, res: Response, input
       clearTimeout(firstDeltaTimer);
       writeSse(res, delta);
     }, { signal: appController.signal });
-    if (!text.trim()) writeSse(res, '我在，但这次没有生成有效回复。');
+    const unsentText = unsentCompletionText(text, wroteAny);
+    if (unsentText) writeSse(res, unsentText);
   } catch (err: any) {
     console.error('Codex app-server stream failed:', err);
     if (!clientClosed && !wroteAny && !hasImages && canFallback(err?.message)) {
@@ -66,6 +93,12 @@ export async function streamCodexChatResponse(req: Request, res: Response, input
     clearInterval(keepAlive);
     clearTimeout(firstDeltaTimer);
     finished = true;
+    unbindClientDisconnect();
     if (!res.destroyed && !res.writableEnded) res.end('data: [DONE]\n\n');
   }
+}
+
+export function unsentCompletionText(text: string, wroteAny: boolean): string | null {
+  if (wroteAny) return null;
+  return text.trim() || '我在，但这次没有生成有效回复。';
 }

@@ -165,7 +165,7 @@
     opacity var(--gsyen-medium) var(--gsyen-motion);
 }
 
-.gsyen-standby-input-footer button:not(:disabled):hover {
+.gsyen-standby-input-footer > button:not(:disabled):hover {
   box-shadow:
     inset 0 1px 0 rgba(255,255,255,0.11),
     0 0 0 1px rgba(196,162,93,0.12);

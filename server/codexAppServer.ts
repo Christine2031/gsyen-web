@@ -1,167 +1,113 @@
-import { spawn, type ChildProcess } from 'node:child_process';
-import { setTimeout as delay } from 'node:timers/promises';
-import { getCodexBridgeHealth, resolveCodexCliPath, type CodexBridgeInput } from './codexBridge';
+import { getCodexBridgeHealth, type CodexBridgeInput } from './codexBridge';
+import {
+  ensureCodexAppServerProcess,
+  sendCodexAppServerMessage,
+  subscribeCodexAppServerMessages,
+} from './codexAppServerProcess';
 import { chatGptModelName } from './codexModelMap';
 import { buildCodexTurnInput } from './codexTurnInput';
-type PendingRpc = { resolve: (value: any) => void; reject: (error: Error) => void; timer: ReturnType<typeof setTimeout> };
+
+type PendingRpc = {
+  resolve: (value: any) => void;
+  reject: (error: Error) => void;
+  timer: ReturnType<typeof setTimeout>;
+};
 interface CodexSession {
-  ws: WebSocket;
-  pending: Map<string, PendingRpc>;
   model: string;
   threadId: string;
   busy: boolean;
   stale: boolean;
+  closeHandlers: Set<(error: Error) => void>;
 }
 interface StreamOptions { signal?: AbortSignal }
-const PORT = Number(process.env.CODEX_APP_SERVER_PORT || 37139);
-const HTTP_BASE = `http://127.0.0.1:${PORT}`;
-const WS_URL = `ws://127.0.0.1:${PORT}`;
+
 const TURN_TIMEOUT_MS = 90_000;
-let child: ChildProcess | null = null;
-let booting: Promise<void> | null = null;
 const sessions = new Map<string, CodexSession>();
 const creating = new Map<string, Promise<CodexSession>>();
-async function isReady(): Promise<boolean> {
-  try {
-    const res = await fetch(`${HTTP_BASE}/readyz`, { signal: AbortSignal.timeout(1500) });
-    return res.ok;
-  } catch {
-    return false;
+const pendingRpc = new Map<string, PendingRpc>();
+const notificationHandlers = new Set<(message: any) => void>();
+let initializePromise: Promise<void> | null = null;
+
+subscribeCodexAppServerMessages(message => {
+  if (message?.id && pendingRpc.has(String(message.id))) {
+    const call = pendingRpc.get(String(message.id))!;
+    pendingRpc.delete(String(message.id));
+    clearTimeout(call.timer);
+    if (message.error) call.reject(new Error(JSON.stringify(message.error)));
+    else call.resolve(message.result);
+    return;
   }
-}
-async function waitUntilReady(): Promise<void> {
-  for (let i = 0; i < 50; i++) {
-    if (await isReady()) return;
-    await delay(100);
-  }
-  throw new Error('CODEX APP SERVER NOT READY');
-}
+  for (const handler of notificationHandlers) handler(message);
+});
 
 function clearSession(session: CodexSession) {
+  if (session.stale) return;
   session.stale = true;
   if (sessions.get(session.model) === session) sessions.delete(session.model);
-  for (const call of session.pending.values()) {
-    clearTimeout(call.timer);
-    call.reject(new Error('CODEX SESSION CLOSED'));
-  }
-  session.pending.clear();
-  try { session.ws.close(); } catch {}
+  const error = new Error('CODEX SESSION CLOSED');
+  for (const handler of session.closeHandlers) handler(error);
+  session.closeHandlers.clear();
 }
+
 function clearAllSessions() {
+  initializePromise = null;
   for (const session of sessions.values()) clearSession(session);
   sessions.clear();
+  for (const call of pendingRpc.values()) {
+    clearTimeout(call.timer);
+    call.reject(new Error('CODEX APP SERVER TRANSPORT CLOSED'));
+  }
+  pendingRpc.clear();
 }
 
 export async function ensureCodexAppServer(forceRestart = false): Promise<void> {
-  if (!forceRestart && await isReady()) return;
-  if (booting) return booting;
-
-  booting = (async () => {
-    if (forceRestart) {
-      clearAllSessions();
-      child?.kill();
-      child = null;
-      await delay(250);
-    }
-
-    const codexPath = resolveCodexCliPath();
-    if (!codexPath) throw new Error('CODEX CLI MISSING');
-
-    child = spawn(codexPath, [
-      'app-server',
-      '--listen', WS_URL,
-      '-c', 'service_tier="default"',
-    ], {
-      env: { ...process.env, NO_COLOR: '1' },
-      windowsHide: true,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    child.on('exit', () => {
-      child = null;
-      clearAllSessions();
-    });
-    child.stderr?.on('data', chunk => {
-      const text = String(chunk);
-      if (/ERROR|WARN/.test(text)) process.stderr.write(text);
-    });
-
-    await waitUntilReady();
-  })().finally(() => {
-    booting = null;
-  });
-
-  return booting;
+  return ensureCodexAppServerProcess(forceRestart, clearAllSessions);
 }
 
-function connect(): Promise<WebSocket> {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(WS_URL);
-    const timer = setTimeout(() => {
-      try { ws.close(); } catch {}
-      reject(new Error('APP SERVER WS TIMEOUT'));
-    }, 5000);
-    ws.onopen = () => {
-      clearTimeout(timer);
-      resolve(ws);
-    };
-    ws.onerror = () => {
-      clearTimeout(timer);
-      reject(new Error('APP SERVER WS ERROR'));
-    };
-  });
-}
-
-function rpc(session: CodexSession, method: string, params: any, timeoutMs = 20_000): Promise<any> {
+function rpc(method: string, params: any, timeoutMs = 20_000): Promise<any> {
   const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  session.ws.send(JSON.stringify({ jsonrpc: '2.0', id, method, params }));
-  return new Promise((resolve, reject) => {
+  const promise = new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
-      session.pending.delete(id);
+      pendingRpc.delete(id);
       reject(new Error(`${method} timeout`));
     }, timeoutMs);
-    session.pending.set(id, { resolve, reject, timer });
+    pendingRpc.set(id, { resolve, reject, timer });
   });
+  try {
+    sendCodexAppServerMessage({ jsonrpc: '2.0', id, method, params });
+  } catch (error) {
+    const call = pendingRpc.get(id);
+    if (call) clearTimeout(call.timer);
+    pendingRpc.delete(id);
+    return Promise.reject(error);
+  }
+  return promise;
 }
 
-function readMessageData(event: MessageEvent): string {
-  const data = event.data as any;
-  if (typeof data === 'string') return data;
-  if (data instanceof Buffer) return data.toString('utf8');
-  return String(data);
-}
-
-function handleRpcMessage(session: CodexSession, msg: any): boolean {
-  if (!msg.id || !session.pending.has(String(msg.id))) return false;
-  const call = session.pending.get(String(msg.id))!;
-  session.pending.delete(String(msg.id));
-  clearTimeout(call.timer);
-  if (msg.error) call.reject(new Error(JSON.stringify(msg.error)));
-  else call.resolve(msg.result);
-  return true;
-}
-
-function attachIdleHandlers(session: CodexSession) {
-  session.ws.onerror = () => clearSession(session);
-  session.ws.onclose = () => clearSession(session);
-  session.ws.onmessage = event => {
-    try { handleRpcMessage(session, JSON.parse(readMessageData(event))); }
-    catch (err) { console.error('Codex app-server message parse failed:', err); }
-  };
+async function ensureInitialized(): Promise<void> {
+  await ensureCodexAppServer();
+  if (!initializePromise) {
+    initializePromise = rpc('initialize', {
+      clientInfo: { name: 'gsyen-web', title: 'GSYEN', version: '1.0.0' },
+      capabilities: null,
+    }).then(() => undefined).catch(error => {
+      initializePromise = null;
+      throw error;
+    });
+  }
+  return initializePromise;
 }
 
 async function createSession(model: string): Promise<CodexSession> {
-  await ensureCodexAppServer();
-  const ws = await connect();
-  const session: CodexSession = { ws, pending: new Map(), model, threadId: '', busy: false, stale: false };
-  attachIdleHandlers(session);
-
-  await rpc(session, 'initialize', {
-    clientInfo: { name: 'gsyen-web', title: 'GSYEN', version: '1.0.0' },
-    capabilities: null,
-  });
-
-  const thread = await rpc(session, 'thread/start', {
+  await ensureInitialized();
+  const session: CodexSession = {
+    model,
+    threadId: '',
+    busy: false,
+    stale: false,
+    closeHandlers: new Set(),
+  };
+  const thread = await rpc('thread/start', {
     model,
     serviceTier: 'default',
     cwd: process.cwd(),
@@ -188,17 +134,17 @@ async function getSession(model: string): Promise<CodexSession> {
   return task;
 }
 
-export function warmCodexAppServer(modelHint = 'gpt-5-5'): void {
+export function warmCodexAppServer(modelHint = 'gpt-5-6-sol'): void {
   const model = chatGptModelName(modelHint);
   if (sessions.has(model) || creating.has(model)) return;
   getCodexBridgeHealth()
     .then(health => health.available ? getSession(model) : null)
-    .catch(err => console.warn('Codex warm-up skipped:', err?.message || err));
+    .catch(error => console.warn('Codex warm-up skipped:', error?.message || error));
 }
 
 async function interruptTurn(session: CodexSession, turnId: string | null) {
   if (!turnId || session.stale) return;
-  await rpc(session, 'turn/interrupt', { threadId: session.threadId, turnId }, 3000).catch(() => {});
+  await rpc('turn/interrupt', { threadId: session.threadId, turnId }, 3000).catch(() => {});
 }
 
 async function runTurn(
@@ -210,53 +156,59 @@ async function runTurn(
   let fullText = '';
   let turnId: string | null = null;
   let lastError = '';
+  let cleanupWait = () => {};
 
   const completed = new Promise<string>((resolve, reject) => {
+    const finish = (callback: () => void) => {
+      cleanupWait();
+      callback();
+    };
     const timeout = setTimeout(async () => {
       await interruptTurn(session, turnId);
-      reject(new Error('CODEX APP SERVER TIMEOUT'));
+      finish(() => reject(new Error('CODEX APP SERVER TIMEOUT')));
     }, input.timeoutMs ?? TURN_TIMEOUT_MS);
-
     const abort = async () => {
-      clearTimeout(timeout);
       await interruptTurn(session, turnId);
       const reason = signal?.reason;
-      const message = reason instanceof Error ? reason.message : typeof reason === 'string' ? reason : 'CLIENT ABORTED';
-      reject(new Error(message));
+      const message = reason instanceof Error ? reason.message
+        : typeof reason === 'string' ? reason : 'CLIENT ABORTED';
+      finish(() => reject(new Error(message)));
     };
-    signal?.addEventListener('abort', abort, { once: true });
-
-    session.ws.onmessage = event => {
-      const msg = JSON.parse(readMessageData(event));
-      if (handleRpcMessage(session, msg)) return;
-
-      if (msg.method === 'item/agentMessage/delta') {
-        const delta = msg.params?.delta || '';
+    const onClose = (error: Error) => finish(() => reject(error));
+    const onMessage = (message: any) => {
+      if (message?.params?.threadId !== session.threadId) return;
+      if (message.method === 'item/agentMessage/delta') {
+        const delta = message.params?.delta || '';
         fullText += delta;
         if (delta) onDelta(delta);
-      } else if (msg.method === 'error') {
-        lastError = msg.params?.error?.message || 'CODEX APP SERVER ERROR';
-      } else if (msg.method === 'turn/completed') {
-        clearTimeout(timeout);
-        signal?.removeEventListener('abort', abort);
-        const status = msg.params?.turn?.status;
+      } else if (message.method === 'error') {
+        lastError = message.params?.error?.message || 'CODEX APP SERVER ERROR';
+      } else if (message.method === 'turn/completed') {
+        const status = message.params?.turn?.status;
         if ((status === 'failed' || status === 'interrupted') && !fullText.trim()) {
-          reject(new Error(lastError || msg.params?.turn?.error?.message || 'CODEX TURN FAILED'));
+          finish(() => reject(new Error(
+            lastError || message.params?.turn?.error?.message || 'CODEX TURN FAILED',
+          )));
         } else {
-          resolve(fullText.trim());
+          finish(() => resolve(fullText.trim()));
         }
       }
     };
-    session.ws.onerror = () => {
-      clearSession(session);
-      reject(new Error('APP SERVER WS ERROR'));
+    cleanupWait = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', abort);
+      notificationHandlers.delete(onMessage);
+      session.closeHandlers.delete(onClose);
     };
-    session.ws.onclose = () => reject(new Error('APP SERVER WS CLOSED'));
+    signal?.addEventListener('abort', abort, { once: true });
+    notificationHandlers.add(onMessage);
+    session.closeHandlers.add(onClose);
+    if (signal?.aborted) void abort();
   });
 
   const payload = buildCodexTurnInput(input);
   try {
-    const turn = await rpc(session, 'turn/start', {
+    const turn = await rpc('turn/start', {
       threadId: session.threadId,
       input: payload.parts,
       approvalPolicy: 'never',
@@ -266,8 +218,10 @@ async function runTurn(
       personality: 'pragmatic',
     });
     turnId = turn.turn.id;
-
     return await completed;
+  } catch (error) {
+    cleanupWait();
+    throw error;
   } finally {
     payload.cleanup();
   }
@@ -287,11 +241,10 @@ export async function streamCodexAppServer(
     session.busy = true;
     try {
       const text = await runTurn(session, input, onDelta, options.signal);
-      attachIdleHandlers(session);
       return text || '我在，但这次没有生成有效回复。';
-    } catch (err) {
+    } catch (error) {
       clearSession(session);
-      if (options.signal?.aborted || attempt === 1) throw err;
+      if (options.signal?.aborted || attempt === 1) throw error;
       await ensureCodexAppServer(true);
     } finally {
       session.busy = false;

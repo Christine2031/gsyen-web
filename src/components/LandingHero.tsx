@@ -40,8 +40,8 @@ const AndroidIcon = () => (
     <path d="M4 4.5V3a2 2 0 014 0v1.5"/>
     <circle cx="4" cy="7.5" r=".8"/>
     <circle cx="8" cy="7.5" r=".8"/>
-    <line x1="3" y1="2" x2="1.5" y2="4" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-    <line x1="9" y1="2" x2="10.5" y2="4" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+    <line x1="3" y1="2" x2="1.5" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+    <line x1="9" y1="2" x2="10.5" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
     <rect x="0" y="5.5" width="1" height="3" rx=".5"/>
     <rect x="11" y="5.5" width="1" height="3" rx=".5"/>
     <rect x="3.5" y="11.5" width="1" height="1.5" rx=".5"/>

@@ -1,6 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import type { KeyboardEvent, MouseEvent } from 'react';
-import { Handle, useReactFlow } from '@xyflow/react';
+import { useReactFlow } from '@xyflow/react';
 import type { CardData, CardSize, StatusColor } from './CanvasCardData';
 import { STATUS_COLORS } from './CanvasCardData';
 import { CanvasCardPanel } from './CanvasCardPanel';
@@ -8,22 +8,33 @@ import {
   ACCENT_HEX,
   BODY_SIZE,
   EMPTY_BULLETS,
-  HANDLE_HIT_SIZE,
   HANDLE_NEAR_PX,
-  HANDLE_SIZE,
   LATIN_FONT,
   SCRINTAL_DEFAULT,
-  SIDES,
   SIZE_H,
   SIZE_W,
   TITLE_SIZE,
   UI_FONT,
   type HandleSide,
-  visualHandlePosition,
 } from './CanvasCardSolidTokens';
 import { buildHeaderTags, normalizeContentType, renderLines, splitDashedLeadHeading } from './CanvasCardSolidContent';
+import { CanvasCardSolidHandles } from './CanvasCardSolidHandles';
+import { openSourceCode } from './CanvasSourceCodeViewer';
 
 export interface SolidCardProps { id: string; data: CardData; selected: boolean }
+
+function sourcePathFrom(data: CardData) {
+  if (typeof data.sourcePath === 'string' && data.sourcePath.trim()) return data.sourcePath.trim();
+  return '';
+}
+
+function lineRangeFrom(status?: string) {
+  const match = String(status ?? '').match(/^L(\d+)(?:-L?(\d+))?$/);
+  if (!match) return {};
+  const lineStart = Number(match[1]);
+  const lineEnd = Number(match[2] ?? match[1]);
+  return { lineStart, lineEnd };
+}
 
 export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) => {
   const { updateNodeData } = useReactFlow();
@@ -39,6 +50,12 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
   const title = rawTitle || '未命名';
   const hasExplicitTitle = rawTitle.length > 0;
   const text = typeof d.text === 'string' ? d.text : '';
+  const childIds = Array.isArray(d.childIds) ? d.childIds.filter(Boolean) : [];
+  const isPortal = childIds.length > 0;
+  const portalActive = Boolean(d.portalFocusActive);
+  const onPortalToggle = typeof d.onPortalToggle === 'function' ? d.onPortalToggle as (id: string) => void : null;
+  const sourcePath = sourcePathFrom(d);
+  const isSourceFile = sourcePath.length > 0;
   const [titleDraft, setTitleDraft] = useState(title);
   const [bodyDraft, setBodyDraft] = useState(text);
 
@@ -48,6 +65,18 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
   const openPanel = (e: MouseEvent) => {
     e.stopPropagation();
     setPanelOpen(true);
+  };
+
+  const togglePortal = (e: MouseEvent) => {
+    if (!isPortal || !onPortalToggle) return;
+    e.stopPropagation();
+    onPortalToggle(id);
+  };
+
+  const openSource = (e: MouseEvent) => {
+    if (!isSourceFile) return;
+    e.stopPropagation();
+    openSourceCode({ path: sourcePath, title, ...lineRangeFrom(d.status) });
   };
 
   const updateActiveHandleSide = (e: MouseEvent<HTMLDivElement>) => {
@@ -88,7 +117,7 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
   };
 
   const contentType = normalizeContentType(d);
-  const tone = d.cardAccent ? ACCENT_HEX[d.cardAccent] : SCRINTAL_DEFAULT;
+  const tone = d.cardAccent ? ACCENT_HEX[d.cardAccent] ?? SCRINTAL_DEFAULT : SCRINTAL_DEFAULT;
   const isDashed = d.cardBorder === 'dashed';
   const isFrosted = d.cardOpacity === 'frosted';
   const isFade = d.cardState === 'fade';
@@ -116,6 +145,8 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
   const displayHasBody = displayText.trim().length > 0;
   const shadow = selected
     ? '0 5px 12px rgba(53,39,78,0.085), 0 1px 2px rgba(53,39,78,0.05)'
+    : portalActive
+      ? '0 0 0 2px rgba(255,255,255,0.74), 0 7px 18px rgba(53,39,78,0.12)'
     : (hovered || isFloat)
       ? '0 5px 12px rgba(53,39,78,0.08), 0 1px 2px rgba(53,39,78,0.05)'
       : '0 3px 8px rgba(53,39,78,0.06), 0 1px 2px rgba(53,39,78,0.035)';
@@ -124,7 +155,9 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
     <div style={{ position: 'relative', opacity: isFade ? 0.42 : 1, transition: 'opacity 0.16s' }}
       onMouseEnter={() => setHovered(true)}
       onMouseMove={updateActiveHandleSide}
-      onMouseLeave={() => { setHovered(false); setActiveHandleSide(null); }}>
+      onMouseLeave={() => { setHovered(false); setActiveHandleSide(null); }}
+      onClick={isSourceFile ? openSource : undefined}
+      onDoubleClick={isSourceFile ? openSource : togglePortal}>
 
       {panelOpen && (
         <CanvasCardPanel nodeId={id} data={{ ...d, cardType: 'solid', contentType }} anchorRef={cardRef}
@@ -137,7 +170,7 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
         background: isFrosted ? `${cardBg.replace('0.96', '0.74')}` : cardBg,
         backdropFilter: isFrosted ? 'blur(18px)' : undefined,
         WebkitBackdropFilter: isFrosted ? 'blur(18px)' : undefined,
-        border: `1.5px ${isDashed ? 'dashed' : 'solid'} ${borderColor}`,
+        border: `1.5px ${isPortal ? 'solid' : isDashed ? 'dashed' : 'solid'} ${portalActive ? tone.ink : borderColor}`,
         backgroundClip: 'padding-box',
         borderRadius: cornerR, boxShadow: shadow,
         transition: 'box-shadow 0.14s, border-color 0.14s, background 0.14s, opacity 0.14s',
@@ -158,6 +191,19 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
           </svg>
         </button>
 
+        {isPortal && (
+          <span className="nodrag nopan" onDoubleClick={togglePortal}
+            style={{ position: 'absolute', top: 10, right: 40, height: 22,
+              display: 'inline-flex', alignItems: 'center', padding: '0 7px',
+              borderRadius: 7, border: `1px solid ${tone.border}`,
+              background: 'rgba(255,255,255,0.46)', color: tone.muted,
+              fontFamily: LATIN_FONT, fontSize: 9.5, fontWeight: 650,
+              boxShadow: '0 4px 9px rgba(53,39,78,0.035)', zIndex: 3,
+              cursor: 'zoom-in', userSelect: 'none' }}>
+            {portalActive ? 'open' : 'folder'} · {childIds.length}
+          </span>
+        )}
+
         <div style={{
           margin: headerBg ? `-${padY}px -${padX}px 0` : undefined,
           padding: headerBg ? `${padY}px ${padX}px 10px` : undefined,
@@ -166,7 +212,7 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
           position: 'relative',
           zIndex: 1,
         }}>
-          <div style={{ paddingRight: 30 }}>
+          <div style={{ paddingRight: isPortal ? 112 : 30 }}>
             {editingTitle ? (
               <input autoFocus value={titleDraft} className="nodrag nopan"
                 onChange={e => setTitleDraft(e.target.value)} onBlur={commitTitle} onKeyDown={onTitleKey}
@@ -174,9 +220,10 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
                   padding: 0, fontFamily: UI_FONT, fontSize: titleSize, fontWeight: 720,
                   lineHeight: 1.18, color: tone.ink }} />
             ) : (
-              <div onDoubleClick={e => { e.stopPropagation(); setEditingTitle(true); }}
+              <div onDoubleClick={e => { if (isPortal) togglePortal(e); else if (isSourceFile) openSource(e); else { e.stopPropagation(); setEditingTitle(true); } }}
                 style={{ fontSize: titleSize, fontWeight: hasExplicitTitle ? 720 : 680, lineHeight: 1.18,
-                  color: hasExplicitTitle ? tone.ink : 'rgba(32,35,43,0.74)', letterSpacing: 0, overflowWrap: 'anywhere' }}>
+                  color: hasExplicitTitle ? tone.ink : 'rgba(32,35,43,0.74)', letterSpacing: 0, overflowWrap: 'anywhere',
+                  cursor: isPortal || isSourceFile ? 'zoom-in' : 'text' }}>
                 {title}
               </div>
             )}
@@ -194,9 +241,10 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
           )}
         </div>
 
-        <div onDoubleClick={e => { e.stopPropagation(); setEditingBody(true); }}
+        <div onDoubleClick={e => { if (isPortal) togglePortal(e); else if (isSourceFile) openSource(e); else { e.stopPropagation(); setEditingBody(true); } }}
           style={{ flex: '1 1 auto', minHeight: 0, overflow: 'hidden', marginTop: dashedSplit.leadHeading ? 0 : 13,
-            fontSize: bodySize, lineHeight: 1.42, color: 'rgba(34,39,52,0.72)', position: 'relative', zIndex: 1 }}>
+            fontSize: bodySize, lineHeight: 1.42, color: 'rgba(34,39,52,0.72)', position: 'relative', zIndex: 1,
+            cursor: isPortal || isSourceFile ? 'zoom-in' : 'text' }}>
           {editingBody ? (
             <textarea autoFocus value={bodyDraft} className="nodrag nopan"
               onChange={e => setBodyDraft(e.target.value)} onBlur={commitBody} onKeyDown={onBodyKey}
@@ -227,44 +275,7 @@ export const CanvasCardSolid = memo(({ id, data: d, selected }: SolidCardProps) 
         </div>
       </div>
 
-      {SIDES.map(({ id: hid }) => {
-        const active = activeHandleSide === hid;
-        return (
-          <span key={`visual-${hid}`} aria-hidden
-            style={{
-              ...visualHandlePosition(hid, SIZE_W[sz], SIZE_H[sz]),
-              position: 'absolute',
-              width: HANDLE_SIZE,
-              height: HANDLE_SIZE,
-              borderRadius: '50%',
-              background: tone.muted,
-              border: '2px solid rgba(255,255,255,0.78)',
-              boxSizing: 'border-box',
-              opacity: active ? 0.72 : 0,
-              scale: active ? 1.04 : 0.92,
-              boxShadow: active
-                ? '0 1px 5px rgba(47,37,71,0.10), 0 0 0 1px rgba(255,255,255,0.26)'
-                : '0 1px 3px rgba(47,37,71,0.06)',
-              pointerEvents: 'none',
-              zIndex: 4,
-              transition: 'opacity 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, scale 0.18s ease',
-            }} />
-        );
-      })}
-      {SIDES.map(({ pos, id: hid }) => (
-        <Handle key={hid} className="gsyen-side-aware-handle" id={`src-${hid}`} type="source" position={pos}
-          style={{
-            opacity: 0,
-            width: HANDLE_HIT_SIZE,
-            height: HANDLE_HIT_SIZE,
-            background: 'transparent',
-            border: 'none',
-          }} />
-      ))}
-      {SIDES.map(({ pos, id: hid }) => (
-        <Handle key={`t-${hid}`} id={`tgt-${hid}`} type="target" position={pos}
-          style={{ opacity: 0, width: HANDLE_HIT_SIZE, height: HANDLE_HIT_SIZE, background: 'transparent', border: 'none' }} />
-      ))}
+      <CanvasCardSolidHandles activeHandleSide={activeHandleSide} muted={tone.muted} size={sz} />
     </div>
   );
 });

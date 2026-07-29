@@ -1,6 +1,5 @@
 import type { ComponentType } from 'react';
-import { Mail, Sparkles } from 'lucide-react';
-import { KanbanIcon } from '../gsyen-designer';
+import { KanbanIcon, MailIcon, MuseIcon } from '../gsyen-designer';
 
 interface GsIconProps { className?: string; strokeWidth?: number }
 
@@ -148,8 +147,8 @@ export interface SpaceTab {
 }
 
 export const SPACES: SpaceTab[] = [
-  { value: 'chat', Icon: Sparkles, iconClass: 'text-amber-500 animate-pulse', zh: '疆域灵阁', en: 'GSYEN Muse', shortZh: '灵阁', shortEn: 'Muse', subtitle: '' },
-  { value: 'mail', Icon: Mail, BrandIcon: MailBrandIcon, iconClass: 'scale-90', zh: '工作邮件', en: 'Mailbox', shortZh: '邮件', shortEn: 'Mail', subtitle: 'Hermes · 极雅私密邮件信道' },
+  { value: 'chat', Icon: MuseIcon, iconClass: 'animate-pulse', zh: '疆域灵阁', en: 'GSYEN Muse', shortZh: '灵阁', shortEn: 'Muse', subtitle: '' },
+  { value: 'mail', Icon: MailIcon, BrandIcon: MailBrandIcon, iconClass: 'scale-90', zh: '工作邮件', en: 'Mailbox', shortZh: '邮件', shortEn: 'Mail', subtitle: 'Hermes · 极雅私密邮件信道' },
   { value: 'schedule', Icon: KanbanIcon, BrandIcon: FlowBrandIcon, iconClass: 'animate-pulse scale-[1.3]', zh: '项目看板', en: 'Kanban', shortZh: '看板', shortEn: 'Kanban', subtitle: 'Flow · 信息流转看板工作系统' },
   { value: 'calendar', Icon: CalendarDateIcon, BrandIcon: CalendarBrandIcon, iconClass: 'scale-90', zh: '日程日历', en: 'Calendar', shortZh: '日历', shortEn: 'Cal', subtitle: 'Chronos · 极速格栅日程空间' },
   { value: 'finance', Icon: ReportMoneyIcon, BrandIcon: LedgerBrandIcon, iconClass: '', zh: '复试账簿', en: 'Atelier Ledger', shortZh: '账簿', shortEn: 'Ledger', subtitle: 'Atelier Ledger · 奢雅资产复式记账账簿' },

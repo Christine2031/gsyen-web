@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import { ChatAttachment, ChatQueuedPrompt } from '../types/chat';
+import { ChatAttachment, ChatDocumentSource, ChatQueuedPrompt } from '../types/chat';
 
 export function useChatPromptQueue() {
   const [queuedPrompts, setQueuedPrompts] = useState<ChatQueuedPrompt[]>([]);
@@ -10,7 +10,7 @@ export function useChatPromptQueue() {
     setQueuedPrompts(next);
   }, []);
 
-  const enqueuePrompt = useCallback((text: string, attachments: ChatAttachment[] = []) => {
+  const enqueuePrompt = useCallback((text: string, attachments: Array<ChatAttachment | ChatDocumentSource> = []) => {
     const prompt: ChatQueuedPrompt = {
       id: `queued-${Date.now()}-${queuedRef.current.length}`,
       text,

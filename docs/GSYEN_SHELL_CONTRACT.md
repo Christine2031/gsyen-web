@@ -22,9 +22,10 @@ This file locks the shell rules that must not drift between releases.
 
 ## Height
 
-- Module toolbar and command deck default height: `42px`.
-- Do not raise the shell to `52px` as a global default.
+- Module toolbar and command deck standard height: `42px`.
+- `52px` is an outdated design-spec value and must not be used as the shared shell toolbar standard.
 - Inner controls should stay around `28-30px`.
+- Top AppHeader navigation may keep its own compact internal height, but it must not redefine the shared module toolbar rail.
 - If a module needs a taller local tool surface, that belongs inside the module body, not the shared shell rail.
 
 ## Surfaces
