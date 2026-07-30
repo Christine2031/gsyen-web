@@ -12,11 +12,11 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
 
@@ -40,11 +40,11 @@ jobs:
     needs: verify
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
 
@@ -72,13 +72,20 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_GSYEN_API_URL: ${{ secrets.VITE_GSYEN_API_URL }}
 
+      - name: Prepare Windows release files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release-stage | Out-Null
+          Copy-Item ../gsyen-dist/GSYEN-Setup-Windows.exe release-stage/
+          Copy-Item ../gsyen-dist/latest.yml release-stage/
+
       - name: Stage Windows release files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: release-windows
           path: |
-            ../gsyen-dist/GSYEN-Setup-*.exe
-            ../gsyen-dist/latest.yml
+            release-stage/GSYEN-Setup-Windows.exe
+            release-stage/latest.yml
           if-no-files-found: error
           retention-days: 3
 
@@ -86,11 +93,11 @@ jobs:
     needs: verify
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '22'
 
@@ -104,13 +111,19 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_GSYEN_API_URL: ${{ secrets.VITE_GSYEN_API_URL }}
 
+      - name: Prepare Mac release files
+        run: |
+          mkdir -p release-stage
+          cp ../gsyen-dist/GSYEN-Setup-Mac-*.dmg release-stage/
+          cp ../gsyen-dist/latest-mac.yml release-stage/
+
       - name: Stage Mac release files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: release-mac
           path: |
-            ../gsyen-dist/GSYEN-Setup-Mac-*.dmg
-            ../gsyen-dist/latest-mac.yml
+            release-stage/GSYEN-Setup-Mac-*.dmg
+            release-stage/latest-mac.yml
           if-no-files-found: error
           retention-days: 3
 
@@ -119,7 +132,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download verified platform artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
           pattern: release-*
           path: release-assets
@@ -160,7 +173,7 @@ jobs:
           AWS_DEFAULT_REGION: auto
 
       - name: Publish complete GitHub Release
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@c12583777ecdfd3be55c69cf75464299dc01057e # v3
         with:
           files: release-assets/*
           body: |
