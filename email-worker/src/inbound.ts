@@ -1,7 +1,10 @@
 import PostalMime, { type Address, type Email } from "postal-mime";
 import { getMailboxByAddress } from "./repository";
 import type { AttachmentInput, MailEnv, MailboxRecord } from "./types";
-import { canonicalInboundAddress } from "./validation";
+import {
+  canonicalInboundAddress,
+  MAX_RFC_MESSAGE_ID_LENGTH,
+} from "./validation";
 
 function flattenAddresses(values: Address[] | undefined): string[] {
   if (!values) return [];
@@ -27,7 +30,7 @@ function byteLength(value: ArrayBuffer | Uint8Array | string): number {
 }
 
 async function stableInboundId(parsed: Email, raw: ArrayBuffer): Promise<string> {
-  if (parsed.messageId) return parsed.messageId.slice(0, 2_048);
+  if (parsed.messageId) return parsed.messageId.slice(0, MAX_RFC_MESSAGE_ID_LENGTH);
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", raw));
   const hex = [...digest].map((value) => value.toString(16).padStart(2, "0")).join("");
   return `sha256:${hex}`;
@@ -140,8 +143,14 @@ async function persistInbound(
       (parsed.text ?? "").slice(0, 250_000),
       objects.htmlKey,
       objects.rawKey,
-      parsed.inReplyTo?.slice(0, 2_048) ?? null,
-      JSON.stringify((parsed.references ?? "").split(/\s+/).filter(Boolean).slice(0, 100)),
+      parsed.inReplyTo?.slice(0, MAX_RFC_MESSAGE_ID_LENGTH) ?? null,
+      JSON.stringify(
+        (parsed.references ?? "")
+          .split(/\s+/)
+          .filter(Boolean)
+          .slice(0, 100)
+          .map((value) => value.slice(0, MAX_RFC_MESSAGE_ID_LENGTH)),
+      ),
       now,
       now,
     ),

@@ -8,6 +8,7 @@ import { parseMessageCursor, serializeMessageCursor } from "../src/messageCursor
 import {
   createMailbox,
   listMessages,
+  updateMessagesState,
   updateMessageState,
 } from "../src/repository";
 import type { MailEnv } from "../src/types";
@@ -90,5 +91,52 @@ describe("message state", () => {
     expect(first).toHaveLength(50);
     expect(second).toHaveLength(1);
     expect(new Set([...first, ...second].map((message) => message.id)).size).toBe(51);
+  });
+
+  it("updates a bounded batch without crossing mailbox ownership", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "batch-state-owner",
+      localPart: "batch-state",
+      displayName: "Batch State",
+    });
+    const other = await createMailbox(testEnv, {
+      ownerId: "batch-state-other",
+      localPart: "batch-state-other",
+      displayName: "Other",
+    });
+    const now = new Date().toISOString();
+    const insert = (id: string, mailboxId: string) => testEnv.DB.prepare(
+      `INSERT INTO messages
+        (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+         subject, text_body, references_json, status, created_at, received_at)
+       VALUES (?, ?, 'inbound', 'inbox', ?, '[]', '[]', 'Batch', 'Body',
+         '[]', 'received', ?, ?)`,
+    ).bind(id, mailboxId, "sender@example.com", now, now);
+    const firstId = "00000000-0000-4000-8000-000000000101";
+    const secondId = "00000000-0000-4000-8000-000000000102";
+    const foreignId = "00000000-0000-4000-8000-000000000103";
+    await testEnv.DB.batch([
+      insert(firstId, mailbox.id),
+      insert(secondId, mailbox.id),
+      insert(foreignId, other.id),
+    ]);
+
+    const updated = await updateMessagesState(
+      testEnv,
+      mailbox.id,
+      [firstId, secondId],
+      { isStarred: true },
+    );
+    expect(updated).toHaveLength(2);
+    await expect(updateMessagesState(
+      testEnv,
+      mailbox.id,
+      [firstId, foreignId],
+      { isImportant: true },
+    )).rejects.toMatchObject({ status: 404 });
+    const first = await testEnv.DB.prepare(
+      "SELECT is_important FROM messages WHERE id = ?",
+    ).bind(firstId).first<{ is_important: number }>();
+    expect(first?.is_important).toBe(0);
   });
 });

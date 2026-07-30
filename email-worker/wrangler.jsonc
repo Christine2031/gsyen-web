@@ -9,6 +9,9 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "vars": {
     "MAIL_DOMAIN": "gsyen.com",
     "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
@@ -52,6 +55,9 @@
   "env": {
     "development": {
       "name": "gsyen-mail-development",
+      "triggers": {
+        "crons": ["*/15 * * * *"]
+      },
       "vars": {
         "MAIL_DOMAIN": "gsyen.com",
         "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
@@ -95,6 +101,9 @@
     },
     "production": {
       "name": "gsyen-mail-production",
+      "triggers": {
+        "crons": ["*/15 * * * *"]
+      },
       "workers_dev": false,
       "routes": [
         {
@@ -145,4 +154,3 @@
     }
   }
 }
-

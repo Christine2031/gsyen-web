@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  getResendInternetMessageId,
   MailProviderError,
   sendWithResend,
   type ResendMessage,
@@ -73,5 +74,32 @@ describe("Resend provider", () => {
         retryAfterSeconds: 12,
       });
     }
+  });
+
+  it("retrieves and validates the RFC Message-ID for a sent email", async () => {
+    const fetcher = vi.fn<Fetcher>(async () => Response.json({
+      id: "provider-123",
+      message_id: "<provider-123@resend.example>",
+    }));
+    await expect(getResendInternetMessageId(env, "provider-123", fetcher))
+      .resolves.toBe("<provider-123@resend.example>");
+    expect(fetcher).toHaveBeenCalledWith(
+      "https://api.resend.com/emails/provider-123",
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it("treats unavailable or malformed sent Message-IDs as best effort", async () => {
+    const unavailable = vi.fn<Fetcher>(async () => {
+      throw new Error("temporary network failure");
+    });
+    const malformed = vi.fn<Fetcher>(async () => Response.json({
+      id: "provider-123",
+      message_id: "not-an-rfc-message-id",
+    }));
+    await expect(getResendInternetMessageId(env, "provider-123", unavailable))
+      .resolves.toBeNull();
+    await expect(getResendInternetMessageId(env, "provider-123", malformed))
+      .resolves.toBeNull();
   });
 });

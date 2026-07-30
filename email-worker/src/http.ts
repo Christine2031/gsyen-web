@@ -13,7 +13,7 @@ export class ApiError extends Error {
 export function corsHeaders(request: Request, env: MailEnv): Headers {
   const headers = new Headers({
     "Access-Control-Allow-Headers": "Authorization, Content-Type, Idempotency-Key",
-    "Access-Control-Allow-Methods": "GET, POST, PATCH, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
     "Content-Type": "application/json; charset=utf-8",
     Vary: "Origin",
   });

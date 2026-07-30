@@ -17,7 +17,12 @@ interface MailModuleProps {
 export default function MailModule({ lang }: MailModuleProps) {
   const store = useMailStore(lang);
   const compose = useMailCompose({
-    lang, emails: store.emails, saveEmails: store.saveEmails, showToast: store.showToast,
+    lang,
+    identityKey: store.identityKey,
+    sendMessage: store.sendMessage,
+    cancelMessage: store.cancelMessage,
+    contacts: store.emails,
+    showToast: store.showToast,
   });
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -140,7 +145,7 @@ export default function MailModule({ lang }: MailModuleProps) {
                 onSelectId={id => store.setSelectedIds(prev => ({ ...prev, [id]: !prev[id] }))}
                 onBulkArchive={store.handleBulkArchive} onBulkDelete={store.handleBulkDelete}
                 onBulkMarkRead={store.handleBulkMarkRead}
-                onRefresh={() => store.showToast(lang === 'zh' ? '刷新系统信道，获取最新同步...' : 'Hermes cache synchronized')}
+                onRefresh={store.handleRefresh}
                 getIsAllSelected={store.getIsAllSelected}
                 onOpenCompose={() => compose.setComposeState('window')}
               />

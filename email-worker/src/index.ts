@@ -2,6 +2,12 @@ import { errorResponse } from "./http";
 import { receiveEmail } from "./inbound";
 import { consumeOutbound } from "./outbound";
 import { routeRequest } from "./routes";
+import {
+  cleanupObjectDeletionJobs,
+  requeueStaleOutboundMessages,
+  settleTrashedQueuedMessages,
+} from "./repository";
+import { replayDeliveryReceipts } from "./deliveryReceipts";
 import type { MailEnv, OutboundJob } from "./types";
 
 export default {
@@ -29,5 +35,23 @@ export default {
   async queue(batch, env): Promise<void> {
     await consumeOutbound(batch, env);
   },
-} satisfies ExportedHandler<MailEnv, OutboundJob>;
 
+  async scheduled(_controller, env): Promise<void> {
+    const results = await Promise.allSettled([
+      cleanupObjectDeletionJobs(env),
+      replayDeliveryReceipts(env),
+      requeueStaleOutboundMessages(env),
+      settleTrashedQueuedMessages(env),
+    ]);
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error(JSON.stringify({
+          event: "mail_scheduled_maintenance_failed",
+          error: result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+        }));
+      }
+    }
+  },
+} satisfies ExportedHandler<MailEnv, OutboundJob>;

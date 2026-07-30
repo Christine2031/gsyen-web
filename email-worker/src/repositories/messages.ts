@@ -3,11 +3,13 @@ import type { MessageCursor } from "../messageCursor";
 import type { MailEnv, MailFolder, MessageSummary } from "../types";
 
 const MESSAGE_COLUMNS = `
-  m.id, m.direction, m.folder, m.from_address, m.envelope_from_address,
+  m.id, m.direction, m.folder, m.provider_message_id, m.internet_message_id,
+  m.from_address, m.envelope_from_address,
   m.to_json, m.cc_json, m.subject, m.text_body, m.in_reply_to,
   m.references_json, m.status, m.error_code, m.created_at, m.received_at,
   m.sent_at, m.is_read, m.is_starred, m.is_important, m.archived_at,
   m.snoozed_until, m.spam_at, m.trashed_at,
+  m.category,
   (SELECT count(*) FROM attachments a WHERE a.message_id = m.id) AS attachment_count
 `;
 
@@ -31,11 +33,47 @@ export type AttachmentRecord = {
   object_key: string;
 };
 
-function folderFilter(folder: MailFolder, now: string): {
+function stateValues(patch: MessageStatePatch): Map<string, unknown> {
+  const values = new Map<string, unknown>();
+  const now = new Date().toISOString();
+  if (patch.isRead !== undefined) values.set("is_read", patch.isRead ? 1 : 0);
+  if (patch.isStarred !== undefined) values.set("is_starred", patch.isStarred ? 1 : 0);
+  if (patch.isImportant !== undefined) values.set("is_important", patch.isImportant ? 1 : 0);
+  if (patch.archived !== undefined) {
+    values.set("archived_at", patch.archived ? now : null);
+    if (patch.archived) values.set("snoozed_until", null);
+  }
+  if (patch.snoozedUntil !== undefined) {
+    values.set("snoozed_until", patch.snoozedUntil);
+    if (patch.snoozedUntil) values.set("archived_at", null);
+  }
+  if (patch.spam !== undefined) {
+    values.set("spam_at", patch.spam ? now : null);
+    if (patch.spam) {
+      values.set("archived_at", null);
+      values.set("snoozed_until", null);
+    }
+  }
+  if (patch.trashed !== undefined) {
+    values.set("trashed_at", patch.trashed ? now : null);
+    if (patch.trashed) {
+      values.set("archived_at", null);
+      values.set("snoozed_until", null);
+    }
+  }
+  if (values.size === 0) {
+    throw new ApiError(400, "empty_update", "No message state was provided");
+  }
+  return values;
+}
+
+function folderFilter(folder: MailFolder | "all", now: string): {
   clause: string;
   values: unknown[];
 } {
   switch (folder) {
+    case "all":
+      return { clause: "1 = 1", values: [] };
     case "inbox":
       return {
         clause: `m.direction = 'inbound' AND m.archived_at IS NULL
@@ -65,9 +103,11 @@ function folderFilter(folder: MailFolder, now: string): {
 export async function listMessages(
   env: MailEnv,
   mailboxId: string,
-  folder: MailFolder,
+  folder: MailFolder | "all",
   before?: MessageCursor,
+  limit = 50,
 ): Promise<MessageSummary[]> {
+  const safeLimit = Math.max(1, Math.min(51, Math.trunc(limit)));
   const filter = folderFilter(folder, new Date().toISOString());
   const cursorClause = before
     ? "AND (m.created_at < ? OR (m.created_at = ? AND m.id < ?))"
@@ -78,8 +118,8 @@ export async function listMessages(
     `SELECT ${MESSAGE_COLUMNS}
        FROM messages m
       WHERE m.mailbox_id = ? AND ${filter.clause} ${cursorClause}
-      ORDER BY m.created_at DESC, m.id DESC LIMIT 50`,
-  ).bind(...values).all<MessageSummary>();
+      ORDER BY m.created_at DESC, m.id DESC LIMIT ?`,
+  ).bind(...values, safeLimit).all<MessageSummary>();
   return result.results;
 }
 
@@ -101,38 +141,7 @@ export async function updateMessageState(
   messageId: string,
   patch: MessageStatePatch,
 ): Promise<MessageSummary> {
-  const values = new Map<string, unknown>();
-  const now = new Date().toISOString();
-  if (patch.isRead !== undefined) values.set("is_read", patch.isRead ? 1 : 0);
-  if (patch.isStarred !== undefined) values.set("is_starred", patch.isStarred ? 1 : 0);
-  if (patch.isImportant !== undefined) {
-    values.set("is_important", patch.isImportant ? 1 : 0);
-  }
-  if (patch.archived !== undefined) {
-    values.set("archived_at", patch.archived ? now : null);
-    if (patch.archived) values.set("snoozed_until", null);
-  }
-  if (patch.snoozedUntil !== undefined) {
-    values.set("snoozed_until", patch.snoozedUntil);
-    if (patch.snoozedUntil) values.set("archived_at", null);
-  }
-  if (patch.spam !== undefined) {
-    values.set("spam_at", patch.spam ? now : null);
-    if (patch.spam) {
-      values.set("archived_at", null);
-      values.set("snoozed_until", null);
-    }
-  }
-  if (patch.trashed !== undefined) {
-    values.set("trashed_at", patch.trashed ? now : null);
-    if (patch.trashed) {
-      values.set("archived_at", null);
-      values.set("snoozed_until", null);
-    }
-  }
-  if (values.size === 0) {
-    throw new ApiError(400, "empty_update", "No message state was provided");
-  }
+  const values = stateValues(patch);
   const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
   const result = await env.DB.prepare(
     `UPDATE messages SET ${assignments} WHERE id = ? AND mailbox_id = ?`,
@@ -145,6 +154,42 @@ export async function updateMessageState(
     throw new ApiError(404, "message_not_found", "Message was not found");
   }
   return message;
+}
+
+export async function updateMessagesState(
+  env: MailEnv,
+  mailboxId: string,
+  messageIds: string[],
+  patch: MessageStatePatch,
+): Promise<MessageSummary[]> {
+  const ids = [...new Set(messageIds)];
+  if (ids.length === 0 || ids.length > 50) {
+    throw new ApiError(400, "invalid_message_ids", "Use 1 to 50 unique message IDs");
+  }
+  const values = stateValues(patch);
+  const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
+  const placeholders = ids.map(() => "?").join(", ");
+  const result = await env.DB.prepare(
+    `UPDATE messages SET ${assignments}
+      WHERE mailbox_id = ? AND id IN (${placeholders})
+        AND (SELECT count(*) FROM messages
+              WHERE mailbox_id = ? AND id IN (${placeholders})) = ?`,
+  ).bind(
+    ...values.values(),
+    mailboxId,
+    ...ids,
+    mailboxId,
+    ...ids,
+    ids.length,
+  ).run();
+  if (result.meta.changes !== ids.length) {
+    throw new ApiError(404, "message_not_found", "One or more messages were not found");
+  }
+  const selected = await env.DB.prepare(
+    `SELECT ${MESSAGE_COLUMNS} FROM messages m
+      WHERE m.mailbox_id = ? AND m.id IN (${placeholders})`,
+  ).bind(mailboxId, ...ids).all<MessageSummary>();
+  return selected.results;
 }
 
 export async function listMessageAttachments(

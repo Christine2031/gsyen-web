@@ -1,8 +1,10 @@
 import type { MailEnv } from "../types";
+import { MAX_RFC_MESSAGE_ID_LENGTH } from "../validation";
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 const MAX_RESPONSE_BYTES = 32_768;
 const SEND_TIMEOUT_MS = 15_000;
+const LOOKUP_TIMEOUT_MS = 5_000;
 
 export type ResendMessage = {
   id: string;
@@ -133,4 +135,39 @@ export async function sendWithResend(
     throw new MailProviderError("resend_missing_message_id", false);
   }
   return { messageId: payload.id };
+}
+
+export async function getResendInternetMessageId(
+  env: MailEnv,
+  providerMessageId: string,
+  fetcher: Fetcher = fetch,
+): Promise<string | null> {
+  if (!providerMessageId || providerMessageId.length > 200) return null;
+  try {
+    const response = await fetcher(
+      `${RESEND_ENDPOINT}/${encodeURIComponent(providerMessageId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${env.RESEND_API_KEY}`,
+          "User-Agent": "gsyen-mail-worker/0.1",
+        },
+        signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
+      },
+    );
+    const payload = await readBoundedJson(response);
+    const value = payload.message_id;
+    if (
+      !response.ok
+      || typeof value !== "string"
+      || value.length > MAX_RFC_MESSAGE_ID_LENGTH
+      || /[\r\n]/.test(value)
+      || !/^<[^<>\s@]+@[^<>\s@]+>$/.test(value)
+    ) {
+      return null;
+    }
+    return value;
+  } catch {
+    return null;
+  }
 }
