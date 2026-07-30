@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { useAuth } from '../auth/useAuth';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'; import { useAuth } from '../auth/useAuth';
 import {
   mailApiToEmailItem, mailItemFolder, mailMessageIds, mailMessageTime,
   mailThreadMessage, type EmailItem, type MailFolder,
@@ -10,10 +9,7 @@ import {
   type ApiMailFolder, type MailApiMessage, type MailMessagePatch, type MailSendInput,
 } from '../services/mailApi';
 const MAX_PAGES_PER_FOLDER = 100;
-export function mapMailMessages(
-  messages: MailApiMessage[],
-  lang: 'zh' | 'en',
-): EmailItem[] {
+export function mapMailMessages(messages: MailApiMessage[], lang: 'zh' | 'en'): EmailItem[] {
   const unique = [...new Map(messages.map(message => [message.id, message])).values()];
   const byInternetId = new Map(unique.flatMap(message => (message.internetMessageId
     ? [[message.internetMessageId, message.id]] : [])));
@@ -65,22 +61,11 @@ export function mapMailMessages(
     Date.parse(b.createdAt ?? '') - Date.parse(a.createdAt ?? '')
   ));
 }
-const mutationGroup = (key: string) => (
-  ['archived', 'snoozedUntil', 'spam', 'trashed'].includes(key) ? 'folder' : key
-);
-const mutationGroups = (patch: MailMessagePatch) => (
-  [...new Set(Object.keys(patch).map(mutationGroup))]
-);
-type SaveEmails = (
-  update: EmailItem[] | ((current: EmailItem[]) => EmailItem[]),
-) => void;
-interface MailMutationOptions {
-  emails: EmailItem[];
-  identityKey: string;
-  saveEmails: SaveEmails;
-  onSyncFailure: () => void;
-  showToast: (message: string, undo?: () => void | Promise<void>) => void;
-}
+const mutationGroup = (key: string) => ['archived', 'snoozedUntil', 'spam', 'trashed'].includes(key) ? 'folder' : key;
+const mutationGroups = (patch: MailMessagePatch) => [...new Set(Object.keys(patch).map(mutationGroup))];
+type SaveEmails = (update: EmailItem[] | ((current: EmailItem[]) => EmailItem[])) => void;
+interface MailMutationOptions { emails: EmailItem[]; identityKey: string; saveEmails: SaveEmails;
+  onSyncFailure: () => void; showToast: (message: string, undo?: () => void | Promise<void>) => void; }
 export function useMailMutations({
   emails, identityKey, saveEmails, onSyncFailure, showToast,
 }: MailMutationOptions) {
@@ -166,12 +151,23 @@ async function loadFolder(folder: ApiMailFolder): Promise<MailApiMessage[]> {
   }
   throw new MailApiError(413, 'mail_sync_limit', 'Mailbox is too large to synchronize safely');
 }
+const CACHE_TTL_MS = 5 * 60_000; const CACHE_LIMIT = 8;
+type MailSyncCacheEntry = { emails: EmailItem[]; mailboxAddress: string; at: number };
+const mailSyncCache = new Map<string, MailSyncCacheEntry>();
+const permanentMailError = (error: unknown) => error instanceof MailApiError && [401, 403, 404].includes(error.status);
+function readMailSyncCache(key: string) { const hit = key ? mailSyncCache.get(key) : undefined;
+  if (!hit) return undefined; if (Date.now() - hit.at <= CACHE_TTL_MS) return hit; mailSyncCache.delete(key); return undefined; }
+function writeMailSyncCache(key: string, emails: EmailItem[], mailboxAddress: string) { if (!key) return;
+  mailSyncCache.set(key, { emails, mailboxAddress, at: Date.now() }); while (mailSyncCache.size > CACHE_LIMIT) mailSyncCache.delete(mailSyncCache.keys().next().value); }
+export function __resetMailSyncCacheForTest() { mailSyncCache.clear(); }
 export function useMailSync(lang: 'zh' | 'en') {
   const { user, loading: authLoading } = useAuth();
   const identityKey = user?.id ?? '';
-  const [emails, setEmails] = useState<EmailItem[]>([]);
-  const [mailboxAddress, setMailboxAddress] = useState('');
-  const [dataOwnerId, setDataOwnerId] = useState('');
+  const syncCacheKey = identityKey ? `${identityKey}\u0000${lang}` : '';
+  const cached = readMailSyncCache(syncCacheKey);
+  const [emails, setEmails] = useState<EmailItem[]>(cached?.emails ?? []);
+  const [mailboxAddress, setMailboxAddress] = useState(cached?.mailboxAddress ?? '');
+  const [dataOwnerId, setDataOwnerId] = useState(cached ? identityKey : '');
   const [statusOwnerId, setStatusOwnerId] = useState('');
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -181,8 +177,7 @@ export function useMailSync(lang: 'zh' | 'en') {
   const inFlight = useRef<{ userId: string; request: Promise<void> } | null>(null);
   const lastSuccessfulSync = useRef(0);
   const settleTimer = useRef<number | null>(null);
-  activeIdentity.current = identityKey;
-  dataOwner.current = dataOwnerId;
+  activeIdentity.current = identityKey; dataOwner.current = dataOwnerId;
   const runRefresh = useCallback(async () => {
     const userId = user?.id;
     if (!userId) throw new MailApiError(401, 'auth_required', 'Login is required');
@@ -190,9 +185,7 @@ export function useMailSync(lang: 'zh' | 'en') {
     setStatusOwnerId(userId);
     setIsSyncing(true);
     setSyncError(null);
-    const isCurrent = () => (
-      version === requestVersion.current && activeIdentity.current === userId
-    );
+    const isCurrent = () => version === requestVersion.current && activeIdentity.current === userId;
     try {
       const mailbox = await getMailbox();
       if (!mailbox) throw new MailApiError(404, 'mailbox_not_found', 'Mailbox is not registered');
@@ -201,28 +194,30 @@ export function useMailSync(lang: 'zh' | 'en') {
       }
       const messages = await loadFolder('all');
       if (!isCurrent()) return;
+      const nextEmails = mapMailMessages(messages, lang);
       dataOwner.current = userId;
       setDataOwnerId(userId);
       setMailboxAddress(mailbox.address);
-      setEmails(mapMailMessages(messages, lang));
+      setEmails(nextEmails);
+      writeMailSyncCache(syncCacheKey, nextEmails, mailbox.address);
       lastSuccessfulSync.current = Date.now();
     } catch (error) {
       if (isCurrent()) {
         setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
+        if (permanentMailError(error)) { mailSyncCache.delete(syncCacheKey); dataOwner.current = '';
+          setDataOwnerId(''); setMailboxAddress(''); setEmails([]); setStatusOwnerId(''); }
       }
       throw error;
     } finally {
       if (isCurrent()) setIsSyncing(false);
     }
-  }, [lang, user?.id]);
+  }, [lang, syncCacheKey, user?.id]);
   const refreshMessages = useCallback((): Promise<void> => {
     if (!user?.id) return Promise.reject(
       new MailApiError(401, 'auth_required', 'Login is required'),
     );
     if (inFlight.current?.userId === user.id) return inFlight.current.request;
-    const request = runRefresh().finally(() => {
-      if (inFlight.current?.request === request) inFlight.current = null;
-    });
+    const request = runRefresh().finally(() => { if (inFlight.current?.request === request) inFlight.current = null; });
     inFlight.current = { userId: user.id, request };
     return request;
   }, [runRefresh, user?.id]);
@@ -230,9 +225,13 @@ export function useMailSync(lang: 'zh' | 'en') {
     requestVersion.current += 1;
     if (settleTimer.current) { window.clearTimeout(settleTimer.current); settleTimer.current = null; }
     inFlight.current = null; lastSuccessfulSync.current = 0; dataOwner.current = '';
-    setEmails([]); setMailboxAddress(''); setDataOwnerId(''); setStatusOwnerId('');
+    if (!identityKey) mailSyncCache.clear();
+    const snapshot = readMailSyncCache(syncCacheKey);
+    if (identityKey && snapshot) { dataOwner.current = identityKey; setEmails(snapshot.emails);
+      setMailboxAddress(snapshot.mailboxAddress); setDataOwnerId(identityKey); setStatusOwnerId(''); }
+    else { setEmails([]); setMailboxAddress(''); setDataOwnerId(''); setStatusOwnerId(''); }
     setIsSyncing(false); setSyncError(null);
-  }, [identityKey]);
+  }, [identityKey, syncCacheKey]);
   useEffect(() => {
     if (authLoading || !identityKey) return;
     void refreshMessages().catch(() => {});
@@ -249,10 +248,8 @@ export function useMailSync(lang: 'zh' | 'en') {
     };
     window.addEventListener('focus', refreshIfStale);
     document.addEventListener('visibilitychange', refreshIfStale);
-    return () => {
-      window.removeEventListener('focus', refreshIfStale);
-      document.removeEventListener('visibilitychange', refreshIfStale);
-    };
+    return () => { window.removeEventListener('focus', refreshIfStale);
+      document.removeEventListener('visibilitychange', refreshIfStale); };
   }, [refreshMessages]);
   useEffect(() => () => {
     if (settleTimer.current) window.clearTimeout(settleTimer.current);
@@ -280,21 +277,16 @@ export function useMailSync(lang: 'zh' | 'en') {
     await refreshMessages().catch(() => {});
     return result;
   }, [refreshMessages]);
-  const saveEmails = useCallback((
-    update: EmailItem[] | ((current: EmailItem[]) => EmailItem[]),
-  ) => {
+  const saveEmails = useCallback((update: EmailItem[] | ((current: EmailItem[]) => EmailItem[])) => {
     if (!activeIdentity.current || dataOwner.current !== activeIdentity.current) return;
-    setEmails(current => typeof update === 'function' ? update(current) : update);
-  }, []);
+    setEmails(current => { const next = typeof update === 'function' ? update(current) : update;
+      if (syncCacheKey && mailboxAddress) writeMailSyncCache(syncCacheKey, next, mailboxAddress);
+      return next; });
+  }, [mailboxAddress, syncCacheKey]);
   const ownsData = !authLoading && dataOwnerId === identityKey && Boolean(identityKey);
   const ownsStatus = !authLoading && statusOwnerId === identityKey && Boolean(identityKey);
-  return {
-    emails: ownsData ? emails : [], saveEmails,
+  return { emails: ownsData ? emails : [], saveEmails,
     mailboxAddress: ownsData ? mailboxAddress : (!authLoading ? user?.email ?? '' : ''),
-    identityKey, isSyncing: ownsStatus && isSyncing,
-    syncError: ownsStatus ? syncError : null, refreshMessages,
-    sendMessage,
-    cancelMessage,
-    deleteMessage,
-  };
+    identityKey, isSyncing: ownsStatus && isSyncing, syncError: ownsStatus ? syncError : null,
+    refreshMessages, sendMessage, cancelMessage, deleteMessage };
 }

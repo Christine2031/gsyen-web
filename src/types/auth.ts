@@ -33,4 +33,5 @@ export interface AuthResult {
   error?: AuthError;
   user?: User;
   session?: Session;
+  mailboxAddress?: string | null;
 }

@@ -15,7 +15,18 @@ export interface AuthProxyResult {
   expires_at?: number;
   error?: string;
   needsVerification?: boolean;
+  mailboxAddress?: string | null;
 }
+
+type AuthProxyJson = {
+  error?: unknown;
+  user?: unknown;
+  access_token?: unknown;
+  refresh_token?: unknown;
+  expires_at?: unknown;
+  needsVerification?: unknown;
+  mailboxAddress?: unknown;
+};
 
 async function post(path: string, body?: object): Promise<Response> {
   return fetch(`${BASE}${path}`, {
@@ -30,31 +41,33 @@ export const authProxy = {
   async login(email: string, password: string): Promise<AuthProxyResult> {
     try {
       const r = await post('/api/auth/login', { email, password });
-      const json = await r.json();
+      const json = await r.json() as AuthProxyJson;
       if (!r.ok) return { ok: false, error: String(json.error ?? 'login failed') };
       return {
         ok: true,
         user: json.user,
-        access_token: json.access_token,
-        refresh_token: json.refresh_token,
-        expires_at: json.expires_at,
+        access_token: typeof json.access_token === 'string' ? json.access_token : undefined,
+        refresh_token: typeof json.refresh_token === 'string' ? json.refresh_token : undefined,
+        expires_at: typeof json.expires_at === 'number' ? json.expires_at : undefined,
       };
     } catch {
       return { ok: false, error: '网络错误，请检查连接' };
     }
   },
 
-  async signup(email: string, password: string): Promise<AuthProxyResult> {
+  async signup(email: string, password: string, username?: string): Promise<AuthProxyResult> {
     try {
-      const r = await post('/api/auth/signup', { email, password });
-      const json = await r.json();
+      const r = await post('/api/auth/signup', { email, password, username });
+      const json = await r.json() as AuthProxyJson;
       if (!r.ok) return { ok: false, error: String(json.error ?? 'signup failed') };
       return {
         ok: true,
         user: json.user,
-        access_token: json.access_token,
-        refresh_token: json.refresh_token,
-        needsVerification: !!json.needsVerification,
+        access_token: typeof json.access_token === 'string' ? json.access_token : undefined,
+        refresh_token: typeof json.refresh_token === 'string' ? json.refresh_token : undefined,
+        expires_at: typeof json.expires_at === 'number' ? json.expires_at : undefined,
+        needsVerification: json.needsVerification === true,
+        mailboxAddress: typeof json.mailboxAddress === 'string' ? json.mailboxAddress : null,
       };
     } catch {
       return { ok: false, error: '网络错误，请检查连接' };
@@ -69,13 +82,13 @@ export const authProxy = {
     try {
       const r = await fetch(`${BASE}/api/auth/me`, { credentials: 'include' });
       if (!r.ok) return { ok: false, status: r.status };
-      const json = await r.json();
+      const json = await r.json() as AuthProxyJson;
       return {
         ok: true, status: 200,
         user: json.user,
-        access_token: json.access_token,
-        refresh_token: json.refresh_token,
-        expires_at: json.expires_at,
+        access_token: typeof json.access_token === 'string' ? json.access_token : undefined,
+        refresh_token: typeof json.refresh_token === 'string' ? json.refresh_token : undefined,
+        expires_at: typeof json.expires_at === 'number' ? json.expires_at : undefined,
       };
     } catch {
       return { ok: false, status: 0 }; // 0 = 网络错误
