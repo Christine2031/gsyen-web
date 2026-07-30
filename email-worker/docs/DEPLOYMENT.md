@@ -34,6 +34,8 @@ npx wrangler queues create gsyen-mail-outbound-development
 npx wrangler queues create gsyen-mail-outbound-production
 npx wrangler queues create gsyen-mail-outbound-dlq-development
 npx wrangler queues create gsyen-mail-outbound-dlq-production
+npx wrangler queues create gsyen-mail-outbound-dlq-terminal-development
+npx wrangler queues create gsyen-mail-outbound-dlq-terminal-production
 ```
 
 把两个 D1 命令返回的真实 UUID 写入 `wrangler.jsonc` 对应环境。文件中的

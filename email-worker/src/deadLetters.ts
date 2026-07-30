@@ -1,9 +1,11 @@
 import { ApiError } from "./http";
-import { markOutboundDispatched } from "./repository";
 import type { MailEnv, OutboundJob } from "./types";
 
 type DeadLetterKind = "send" | "reconcile" | "invalid";
 type DeadLetterStatus = "pending" | "replayed" | "resolved";
+const MAX_PROVIDER_ID_LENGTH = 512;
+const MAX_INTERNET_MESSAGE_ID_LENGTH = 998;
+const MAX_SENT_AT_LENGTH = 64;
 
 function parseJob(value: unknown): {
   job: OutboundJob | null;
@@ -22,11 +24,19 @@ function parseJob(value: unknown): {
   if (!messageId) return { job: null, kind: "invalid", messageId: null };
   if (body.kind === "reconcile") {
     const providerMessageId = typeof body.providerMessageId === "string"
+      && body.providerMessageId.length > 0
+      && body.providerMessageId.length <= MAX_PROVIDER_ID_LENGTH
       ? body.providerMessageId
       : null;
-    const sentAt = typeof body.sentAt === "string" ? body.sentAt : null;
+    const sentAt = typeof body.sentAt === "string"
+      && body.sentAt.length > 0
+      && body.sentAt.length <= MAX_SENT_AT_LENGTH
+      && Number.isFinite(Date.parse(body.sentAt))
+      ? body.sentAt
+      : null;
     const internetMessageId = body.internetMessageId === null
-      || typeof body.internetMessageId === "string"
+      || (typeof body.internetMessageId === "string"
+        && body.internetMessageId.length <= MAX_INTERNET_MESSAGE_ID_LENGTH)
       ? body.internetMessageId as string | null
       : null;
     if (!providerMessageId || !sentAt) {
@@ -50,7 +60,11 @@ function parseJob(value: unknown): {
   return { job: null, kind: "invalid", messageId };
 }
 
-function safePayload(value: unknown): string {
+function safePayload(
+  value: unknown,
+  parsed: ReturnType<typeof parseJob>,
+): string {
+  if (parsed.job) return JSON.stringify(parsed.job);
   try {
     return JSON.stringify(value).slice(0, 2_048);
   } catch {
@@ -78,7 +92,7 @@ async function recordDeadLetter(
     queue,
     parsed.kind,
     parsed.messageId,
-    safePayload(message.body),
+    safePayload(message.body, parsed),
     Math.max(0, message.attempts),
     now,
     now,
@@ -151,31 +165,49 @@ export async function replayDeadLetter(
     await reopenDeadLetter(env, deadLetterId);
     throw new ApiError(409, "dead_letter_invalid", "Dead letter payload cannot be replayed");
   }
+  let dispatchLease: string | null = null;
   if (parsed.kind === "send") {
-    const state = await env.DB.prepare(
-      `SELECT status, trashed_at FROM messages
-        WHERE id = ? AND direction = 'outbound'`,
-    ).bind(parsed.messageId).first<{ status: string; trashed_at: string | null }>();
-    if (!state || state.status === "sent" || state.trashed_at) {
-      const resolution = !state ? "message_missing"
-        : state.status === "sent" ? "already_sent" : "cancelled_trashed";
-      await resolveDeadLetter(env, deadLetterId, resolution);
-      return { replayed: false, resolution, messageId: parsed.messageId };
-    }
-    if (state.status === "sending") {
+    const messageId = parsed.messageId;
+    if (!messageId) {
       await reopenDeadLetter(env, deadLetterId);
-      throw new ApiError(409, "message_in_flight", "Message is currently being sent");
+      throw new ApiError(409, "dead_letter_invalid", "Dead letter has no message ID");
     }
-    await env.DB.prepare(
+    dispatchLease = new Date().toISOString();
+    const messageClaim = await env.DB.prepare(
       `UPDATE messages SET status = 'queued', error_code = NULL,
-          queue_dispatched_at = NULL WHERE id = ?`,
-    ).bind(parsed.messageId).run();
+          queue_dispatched_at = ?
+        WHERE id = ? AND direction = 'outbound' AND status = 'failed'
+          AND trashed_at IS NULL`,
+    ).bind(dispatchLease, messageId).run();
+    if (messageClaim.meta.changes !== 1) {
+      return resolveCompetingMessageState(env, deadLetterId, messageId);
+    }
   }
   try {
     await env.OUTBOUND_QUEUE.send(parsed.job, { delaySeconds: 5 });
-    if (parsed.messageId) await markOutboundDispatched(env, parsed.messageId);
   } catch (error) {
-    await reopenDeadLetter(env, deadLetterId);
+    const recovery: Promise<unknown>[] = [
+      reopenDeadLetter(env, deadLetterId),
+    ];
+    if (parsed.kind === "send" && parsed.messageId && dispatchLease) {
+      recovery.push(releaseMessageReplayClaim(
+        env,
+        parsed.messageId,
+        dispatchLease,
+      ));
+    }
+    const recoveryResults = await Promise.allSettled(recovery);
+    for (const result of recoveryResults) {
+      if (result.status === "rejected") {
+        console.error(JSON.stringify({
+          event: "mail_dead_letter_replay_recovery_failed",
+          deadLetterId,
+          error: result.reason instanceof Error
+            ? result.reason.message
+            : String(result.reason),
+        }));
+      }
+    }
     throw error;
   }
   const replayedAt = new Date().toISOString();
@@ -185,6 +217,39 @@ export async function replayDeadLetter(
         replay_claimed_at = NULL WHERE id = ?`,
   ).bind(replayedAt, deadLetterId).run();
   return { replayed: true, messageId: parsed.messageId };
+}
+
+async function resolveCompetingMessageState(
+  env: MailEnv,
+  deadLetterId: string,
+  messageId: string,
+): Promise<{ replayed: false; resolution: string; messageId: string }> {
+  const state = await env.DB.prepare(
+    `SELECT status, trashed_at FROM messages
+      WHERE id = ? AND direction = 'outbound'`,
+  ).bind(messageId).first<{ status: string; trashed_at: string | null }>();
+  const resolution = !state ? "message_missing"
+    : state.trashed_at ? "cancelled_trashed"
+      : state.status === "sent" ? "already_sent"
+        : state.status === "sending" ? "already_sending"
+          : state.status === "queued" ? "already_queued"
+            : "message_state_changed";
+  await resolveDeadLetter(env, deadLetterId, resolution);
+  return { replayed: false, resolution, messageId };
+}
+
+async function releaseMessageReplayClaim(
+  env: MailEnv,
+  messageId: string,
+  dispatchLease: string,
+): Promise<void> {
+  await env.DB.prepare(
+    `UPDATE messages SET status = 'failed',
+        error_code = 'dead_letter_replay_enqueue_failed',
+        queue_dispatched_at = NULL
+      WHERE id = ? AND direction = 'outbound' AND status = 'queued'
+        AND queue_dispatched_at = ?`,
+  ).bind(messageId, dispatchLease).run();
 }
 
 async function reopenDeadLetter(env: MailEnv, deadLetterId: string): Promise<void> {

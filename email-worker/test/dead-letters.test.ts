@@ -269,5 +269,13 @@ describe("dead-letter recovery", () => {
     await expect(testEnv.DB.prepare(
       "SELECT status FROM dead_letter_events WHERE id = ?",
     ).bind(message.id).first()).resolves.toEqual({ status: "pending" });
+    await expect(testEnv.DB.prepare(
+      `SELECT status, queue_dispatched_at, error_code
+         FROM messages WHERE id = ?`,
+    ).bind("queue-failure-message").first()).resolves.toEqual({
+      status: "failed",
+      queue_dispatched_at: null,
+      error_code: "dead_letter_replay_enqueue_failed",
+    });
   });
 });
