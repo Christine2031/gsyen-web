@@ -1,6 +1,10 @@
 import { errorResponse } from "./http";
 import { receiveEmail } from "./inbound";
 import { consumeOutbound } from "./outbound";
+import {
+  consumeDeadLetters,
+} from "./deadLetters";
+import { refreshOperationalIncidents } from "./operations";
 import { routeRequest } from "./routes";
 import {
   cleanupObjectDeletionJobs,
@@ -33,6 +37,10 @@ export default {
   },
 
   async queue(batch, env): Promise<void> {
+    if (batch.queue.includes("outbound-dlq")) {
+      await consumeDeadLetters(batch, env);
+      return;
+    }
     await consumeOutbound(batch, env);
   },
 
@@ -42,6 +50,7 @@ export default {
       replayDeliveryReceipts(env),
       requeueStaleOutboundMessages(env),
       settleTrashedQueuedMessages(env),
+      refreshOperationalIncidents(env),
     ]);
     for (const result of results) {
       if (result.status === "rejected") {

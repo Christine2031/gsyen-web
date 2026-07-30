@@ -44,6 +44,8 @@ flowchart LR
   I --> J["Cloudflare Queue"]
   J --> K["Resend API"]
   K --> L["外部收件人"]
+  J --> N["DLQ Consumer"]
+  N --> O["D1：死信/事故/受控重放"]
   M["HalfSphere Supabase Auth"] --> D
 ```
 
@@ -70,6 +72,12 @@ flowchart LR
 - 地址、显示名和回复头禁止 CR/LF，阻断邮件头注入。
 - Bearer Token 仅在 Worker 内交给 Supabase Auth 验证。
 - 发件经队列处理；永久错误停止重试，临时错误有限重试并进入 DLQ。
+- DLQ 事件先持久化到 D1 再确认；只保存任务标识和错误元数据，不保存正文。
+- 管理员重放先原子认领死信，并用 `failed -> queued` 条件更新原子认领邮件；
+  竞争中的已排队、已发送、已删除或正在发送邮件只关闭旧死信，不会重复入队。
+- DLQ 持久化连续失败超过重试预算时进入独立 terminal queue，保留最终人工恢复入口。
+- 定时巡检把未处理死信、卡住的发送和 24 小时失败量保存为可恢复事故记录，
+  同时输出结构化 Worker 日志。
 - 每个邮箱、Message-ID 和对象路径均使用服务端生成的标识。
 - 所有管理员操作和发件入队均有审计记录。
 

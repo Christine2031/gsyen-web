@@ -34,6 +34,8 @@ npx wrangler queues create gsyen-mail-outbound-development
 npx wrangler queues create gsyen-mail-outbound-production
 npx wrangler queues create gsyen-mail-outbound-dlq-development
 npx wrangler queues create gsyen-mail-outbound-dlq-production
+npx wrangler queues create gsyen-mail-outbound-dlq-terminal-development
+npx wrangler queues create gsyen-mail-outbound-dlq-terminal-production
 ```
 
 把两个 D1 命令返回的真实 UUID 写入 `wrangler.jsonc` 对应环境。文件中的
@@ -74,8 +76,21 @@ DNS 通常 5–15 分钟生效，全球传播最长可能达到 24 小时。
 ```powershell
 npm run check
 npx wrangler deploy --dry-run --env production --outdir dist
+npx wrangler d1 migrations apply gsyen-mail-production --remote --env production
 npm run deploy
 ```
+
+部署后必须确认两个消费者都存在：
+
+```powershell
+npx wrangler queues consumer list gsyen-mail-outbound-production
+npx wrangler queues consumer list gsyen-mail-outbound-dlq-production
+```
+
+主队列负责有限重试，耗尽后进入 DLQ；DLQ 消费者只有在 D1 已成功保存
+脱敏事件后才确认消息。管理员通过 `GET /v1/admin/operations` 查看未处理
+死信、24 小时失败量、卡住的发送任务与持久化事故记录，再通过
+`POST /v1/admin/dead-letters/{event-id}/replay` 单项重放。禁止批量盲重放。
 
 ## 管理员与用户注册
 
@@ -110,6 +125,9 @@ Content-Type: application/json
 9. 检查 Queue、DLQ、Resend、Worker 与 D1 日志。
 10. 确认 `mail.gsyen.com` 无 MX、无 Email Routing 规则，同时根域收件与 Resend
     发件仍各自通过一次真实邮件测试。
+11. 确认生产 DLQ 有消费者，并验证一次“持久化后确认、队列不可用时保持
+    pending、已发送邮件不重复发送”的自动测试。
+12. 使用管理员令牌读取 `/v1/admin/operations`，确认无未处理死信或卡住任务。
 
 ## 回滚
 
@@ -118,3 +136,4 @@ Content-Type: application/json
 3. 回滚 Worker 版本；D1 迁移只做向前兼容修复。
 4. 保留 R2 原始邮件，确认导出后才能按保留策略删除。
 5. 不恢复已退役的 `mail.gsyen.com` 邮件子域。
+6. 回滚期间保留 DLQ 消费者与 `dead_letter_events`，不要删除事故证据。

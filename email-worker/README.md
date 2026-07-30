@@ -24,6 +24,8 @@ integrated with the existing Mail UI only after a separate frontend approval.
 - D1 stores mailbox, message, quota, and audit metadata.
 - R2 stores raw MIME, quarantined HTML, and attachments.
 - Cloudflare Queues retries transient outbound delivery failures.
+- A dedicated DLQ consumer persists exhausted jobs in D1 before acknowledging
+  them; operators can inspect and safely replay them without exposing bodies.
 - Resend API delivers outbound mail with a stable provider idempotency key.
 - HalfSphere Supabase Auth validates the existing GSYEN bearer token.
 
@@ -45,6 +47,8 @@ characters so a client retry cannot produce a duplicate email.
 | `GET` | `/v1/messages/:id` | Read a message's safe plain-text view |
 | `POST` | `/v1/messages/send` | Queue a plain-text message |
 | `POST` | `/v1/admin/mailboxes/:id/status` | Activate or suspend a mailbox |
+| `GET` | `/v1/admin/operations` | Read redacted incidents and DLQ status |
+| `POST` | `/v1/admin/dead-letters/:id/replay` | Safely replay one pending job |
 
 An administrator must have `app_metadata.mail_admin=true` in Supabase Auth.
 
