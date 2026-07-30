@@ -48,6 +48,18 @@ function _clearSnap()             { try { localStorage.removeItem(SNAP_KEY); }  
 interface AuthStore extends AuthState { justVerified: boolean; }
 
 const _snap = _readSnap();
+export function resolveCachedTier(
+  cached: TierCache | null,
+  snap: UserSnap | null,
+  uid: string,
+): TierCache | null {
+  if (cached) return cached;
+  if (snap?.uid === uid && snap.tier) return { tier: snap.tier, ev: snap.ev };
+  return null;
+}
+function readCachedTier(uid: string): TierCache | null {
+  return resolveCachedTier(readTier(uid), _snap, uid);
+}
 let _store: AuthStore = {
   ...DEFAULT_AUTH_STATE,
   justVerified: false,
@@ -160,7 +172,7 @@ function _initListener() {
       return;
     }
 
-    const cached = readTier(user.id);
+    const cached = readCachedTier(user.id);
     _set({
       user, session,
       tier: cached?.tier ?? null,
@@ -214,7 +226,7 @@ function _boot() {
       const { data: { session: local } } = await supabase.auth.getSession();
 
       if (local?.user && local.access_token) {
-        const cached = readTier(local.user.id);
+        const cached = readCachedTier(local.user.id);
         _currentUid = local.user.id;
         _set({
           user: local.user, session: local,

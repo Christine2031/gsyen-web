@@ -22,6 +22,26 @@ function addSyncedId(id: string) {
   localStorage.setItem(SYNCED_KEY, JSON.stringify([...ids]));
 }
 
+function hasRecoverableCurrentChat(currentChat: string | null): boolean {
+  if (!currentChat?.trim()) return false;
+  try {
+    const parsed = JSON.parse(currentChat);
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch { return false; }
+}
+
+export function shouldKeepLocalChatOnEmptyPull(
+  local: Pick<StoredSession, 'messages'>[],
+  currentChat: string | null,
+): boolean {
+  return hasRecoverableCurrentChat(currentChat)
+    || local.some(session => (session.messages?.length ?? 0) > 0);
+}
+
+function hasRecoverableLocalChat(local: StoredSession[]): boolean {
+  return shouldKeepLocalChatOnEmptyPull(local, localStorage.getItem(CURRENT_CHAT_KEY));
+}
+
 // ── Supabase 双写 ─────────────────────────────────────────────────────────────
 let _uid: string | null = null;
 
@@ -56,6 +76,10 @@ async function _pull(userId: string) {
   }));
 
   const local      = chatSessionStore.loadAll();
+  if (remote.length === 0 && hasRecoverableLocalChat(local)) {
+    console.warn('[sync] Empty remote chat pull ignored; keeping local session snapshot');
+    return;
+  }
   const remIds     = new Set(remote.map(s => s.id));
   const UUID_RE    = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const syncedIds  = getSyncedIds();
@@ -173,3 +197,4 @@ export const chatSessionStore = {
     localStorage.removeItem(CURRENT_CHAT_KEY);
   },
 };
+
