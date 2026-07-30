@@ -7,14 +7,14 @@
 推荐采用“GSYEN 应用邮箱 + 可插拔外部邮箱连接器”的双层架构：
 
 1. 第一层现在实现：用户通过现有 HalfSphere / Supabase 身份申请
-   `name@mail.gsyen.com`，在 GSYEN 内收发邮件。
+   `name@gsyen.com`，在 GSYEN 内收发邮件。
 2. 第二层以后实现：用户授权连接 Gmail 或 Outlook，把已有邮箱纳入
    GSYEN 归纳与搜索。
 3. 如果未来要求 Thunderbird、Apple Mail、Outlook 原生登录，再引入
    Stalwart 作为 IMAP/JMAP/SMTP 邮箱核心；当前不自建公网 SMTP。
 
-这个选择不会改变 `gsyen.com` 根域现有 Google MX，避免 Ethan 当前邮箱
-停收。邮件子域拥有独立 MX，可以单独迁移或替换供应商。
+根域收件由 Cloudflare Email Routing 处理，用户始终只看到 `@gsyen.com`。
+内部 API 使用 `mail-api.gsyen.com`，但它不参与邮箱地址或 MX。
 
 ## 为什么需要数据库
 
@@ -33,7 +33,7 @@ MIME 不进入会员库，防止会员数据与私人通信混在一起。
 
 ```mermaid
 flowchart LR
-  A["外部发件人"] --> B["mail.gsyen.com MX"]
+  A["外部发件人"] --> B["gsyen.com MX"]
   B --> C["Cloudflare Email Routing"]
   C --> D["GSYEN Mail Worker"]
   D --> E["D1：邮箱/索引/配额"]
@@ -125,6 +125,5 @@ $0.35 / 1,000 封。官方文档：
 - 每月百万级且有 AWS 运维能力：评估 SES。
 - 必须支持第三方邮件客户端和独立密码：部署 Stalwart。
 
-当前代码通过 Resend provider 边界与独立子域控制迁移成本，未来替换发件供应商时
-无需迁移 HalfSphere 用户身份，也不会触碰根域 Google Workspace。
-
+当前代码通过 Resend provider 边界控制迁移成本，未来替换发件供应商时
+无需迁移 HalfSphere 用户身份，用户邮箱地址也保持为 `@gsyen.com`。

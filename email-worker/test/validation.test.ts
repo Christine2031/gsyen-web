@@ -159,19 +159,27 @@ describe("send idempotency", () => {
 });
 
 describe("inbound routing", () => {
-  it("maps plus addressing on the test subdomain to the primary domain", () => {
+  it("maps plus addressing on the primary domain", () => {
     expect(canonicalInboundAddress(
-      "ethan+receipt@mail.gsyen.com",
+      "ethan+receipt@gsyen.com",
       "gsyen.com",
-      "gsyen.com,mail.gsyen.com",
+      "gsyen.com",
     )).toBe("ethan@gsyen.com");
+  });
+
+  it("rejects the retired mail subdomain", () => {
+    expect(canonicalInboundAddress(
+      "ethan@mail.gsyen.com",
+      "gsyen.com",
+      "gsyen.com",
+    )).toBeNull();
   });
 
   it("rejects a recipient on another domain", () => {
     expect(canonicalInboundAddress(
       "ethan@evil.example",
       "gsyen.com",
-      "gsyen.com,mail.gsyen.com",
+      "gsyen.com",
     )).toBeNull();
   });
 });

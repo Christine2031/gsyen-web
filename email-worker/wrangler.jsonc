@@ -14,7 +14,7 @@
   },
   "vars": {
     "MAIL_DOMAIN": "gsyen.com",
-    "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+    "INBOUND_DOMAINS": "gsyen.com",
     "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
     "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
     "AUTO_APPROVE_SIGNUPS": "false",
@@ -60,7 +60,7 @@
       },
       "vars": {
         "MAIL_DOMAIN": "gsyen.com",
-        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
         "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
         "AUTO_APPROVE_SIGNUPS": "false",
@@ -113,7 +113,7 @@
       ],
       "vars": {
         "MAIL_DOMAIN": "gsyen.com",
-        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
         "ALLOWED_ORIGINS": "https://gsyen.com",
         "AUTO_APPROVE_SIGNUPS": "false",

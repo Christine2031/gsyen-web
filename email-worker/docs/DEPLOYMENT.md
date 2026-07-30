@@ -1,14 +1,14 @@
 # GSYEN Mail 生产部署
 
-最终邮箱地址使用 `@gsyen.com`。迁移验收期间，`mail.gsyen.com` 仅作为
-隔离的收件测试入口；不要修改 `gsyen.com` 根域现有 Google Workspace MX。
+用户邮箱只使用 `@gsyen.com`。`mail-api.gsyen.com` 仅是内部 HTTPS API
+主机名，不接收邮件，也不作为用户可见邮箱域。
 
 当前生产状态（2026-07-29）：
 
-- `mail.gsyen.com` Email Routing 为 `ready`。
-- 三条 Cloudflare MX 与 SPF 已在公共 DNS 生效。
-- `ethan7586@mail.gsyen.com` 精确路由到 `gsyen-mail-production`。
-- `gsyen.com` 根域 MX 仍为 `smtp.google.com`。
+- `gsyen.com` Email Routing 为 `ready`。
+- 根域三条 Cloudflare MX 与 SPF 已在公共 DNS 生效。
+- `ethan7586@gsyen.com` 精确路由到 `gsyen-mail-production`。
+- 旧的 `mail.gsyen.com` 收件子域已退役。
 - `mail-api.gsyen.com/health` 返回 200。
 - Resend 中 `gsyen.com` 已验证，生产 Worker 使用独立 Sending access API Key。
 
@@ -18,8 +18,8 @@
 2. 任意外部收件人发信通过已验证 `gsyen.com` 的 Resend API。
 3. Cloudflare API Token 只需 Workers、D1、R2、Queues 与 Email Routing 权限。
 4. Resend API Key 必须使用 Sending access，并仅保存为 Worker Secret。
-5. `MAIL_DOMAIN` 保持 `gsyen.com`；`INBOUND_DOMAINS` 同时接受
-   `gsyen.com,mail.gsyen.com`，由 Worker 将测试子域地址规范化到根域邮箱。
+5. `MAIL_DOMAIN` 与 `INBOUND_DOMAINS` 均保持 `gsyen.com`，Worker 拒绝
+   其他域名，包括已经退役的 `mail.gsyen.com`。
 
 ## 资源创建
 
@@ -54,14 +54,13 @@ npx wrangler d1 migrations apply gsyen-mail-production --remote --env production
 
 ## 邮件域配置
 
-隔离收件域已通过 Cloudflare Email Routing API 配置。后续在 Cloudflare
-Dashboard 中：
+根域收件已通过 Cloudflare Email Routing 配置。后续在 Cloudflare Dashboard 中：
 
 1. 在 Resend 保持 `gsyen.com` 为 Verified，保留其 SPF、DKIM 与 bounce 记录。
-2. Resend 发信 DNS 与根域入站 MX 相互独立，不得替换根域 Google MX。
-3. 保留 `mail.gsyen.com` 的 Cloudflare MX。
-4. 只为已存在且已激活的邮箱创建精确 Worker 路由；迁移前不启用 catch-all。
-5. 不删除、不替换 `gsyen.com` 根域的 Google MX，直到双向测试全部通过。
+2. Resend 发信 DNS 与根域入站 MX 相互独立，不得删除有效的 SPF/DKIM。
+3. 不为 `mail.gsyen.com` 创建 MX 或 Email Routing 规则。
+4. 只为已存在且已激活的 `@gsyen.com` 邮箱创建精确 Worker 路由。
+5. 保持 catch-all 关闭，避免不存在地址产生无效访问和存储。
 
 DNS 通常 5–15 分钟生效，全球传播最长可能达到 24 小时。
 
@@ -108,7 +107,7 @@ Content-Type: application/json
 ## 回滚
 
 1. 先暂停注册和发件，不删除数据。
-2. 把 Email Routing 子域规则改为转发至已验证管理邮箱。
+2. 把根域精确 Email Routing 规则改为转发至已验证管理邮箱。
 3. 回滚 Worker 版本；D1 迁移只做向前兼容修复。
 4. 保留 R2 原始邮件，确认导出后才能按保留策略删除。
-5. 根域 Google Workspace MX 在回滚和隔离测试阶段全程不受影响。
+5. 不恢复已退役的 `mail.gsyen.com` 邮件子域。

@@ -9,8 +9,8 @@ integrated with the existing Mail UI only after a separate frontend approval.
 
 ## Safety boundary
 
-- Default address domain: `mail.gsyen.com`.
-- The root `gsyen.com` MX remains with Google Workspace.
+- The only public mailbox domain is `gsyen.com`.
+- `mail-api.gsyen.com` is an internal HTTPS API hostname, not an email domain.
 - HalfSphere Supabase verifies identity only; mail data is stored separately.
 - New registrations are `pending` by default.
 - HTML email is quarantined in R2 and is not returned by the current API.
