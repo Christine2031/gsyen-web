@@ -1,4 +1,7 @@
-import { canonicalizeLocalPart } from "../validation";
+import {
+  canonicalizeLocalPart,
+  canonicalizeLookupLocalPart,
+} from "../validation";
 import { ApiError } from "../http";
 import type {
   MailEnv,
@@ -36,19 +39,16 @@ export async function getMailboxByAddress(
   const at = normalized.indexOf("@");
   if (at < 0) return null;
   const localPart = normalized.slice(0, at);
-  try {
-    const canonicalLocalPart = canonicalizeLocalPart(localPart);
-    return env.DB.prepare(
-      `SELECT b.id, b.owner_id, b.local_part, b.address, b.display_name,
-              b.status, b.created_at, b.approved_at
-         FROM mailbox_addresses a
-         JOIN mailboxes b ON b.id = a.mailbox_id
-        WHERE a.canonical_local_part = ?
-          AND LOWER(substr(a.address, INSTR(a.address, '@') + 1)) = ?`,
-    ).bind(canonicalLocalPart, normalized.slice(at + 1)).first<MailboxRecord>();
-  } catch {
-    return null;
-  }
+  const canonicalLocalPart = canonicalizeLookupLocalPart(localPart);
+  if (!canonicalLocalPart) return null;
+  return env.DB.prepare(
+    `SELECT b.id, b.owner_id, b.local_part, b.address, b.display_name,
+            b.status, b.created_at, b.approved_at
+       FROM mailbox_addresses a
+       JOIN mailboxes b ON b.id = a.mailbox_id
+      WHERE a.canonical_local_part = ?
+        AND LOWER(substr(a.address, INSTR(a.address, '@') + 1)) = ?`,
+  ).bind(canonicalLocalPart, normalized.slice(at + 1)).first<MailboxRecord>();
 }
 
 export async function createMailbox(

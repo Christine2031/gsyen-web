@@ -33,7 +33,28 @@ function firstText(...values: unknown[]): string {
 }
 
 function localPartFromEmail(email: string): string {
-  return email.slice(0, email.indexOf("@")).split("+", 1)[0];
+  const at = email.indexOf("@");
+  return (at >= 0 ? email.slice(0, at) : email).split("+", 1)[0];
+}
+
+function deterministicFallbackLocalPart(ownerId: string): string {
+  const suffix = ownerId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 18);
+  return `user${suffix || "mailbox"}`.slice(0, 30);
+}
+
+function safeLegacyLocalPart(preferred: string, ownerId: string): string {
+  const sanitized = preferred
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ".")
+    .replace(/[^a-z0-9.]/g, "")
+    .replace(/\.+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+  try {
+    return normalizeLocalPart(sanitized);
+  } catch {
+    return normalizeLocalPart(deterministicFallbackLocalPart(ownerId));
+  }
 }
 
 async function createActiveMailboxForUser(env: MailEnv, user: { id: string; email: string; userMetadata: Record<string, unknown> }) {
@@ -46,7 +67,7 @@ async function createActiveMailboxForUser(env: MailEnv, user: { id: string; emai
   );
   const mailbox = await createMailbox(env, {
     ownerId: user.id,
-    localPart: normalizeLocalPart(preferred),
+    localPart: safeLegacyLocalPart(preferred, user.id),
     displayName: firstText(user.userMetadata.gsyen_display_name, user.userMetadata.display_name, preferred),
   });
   return mailbox.status === "active" ? mailbox : updateMailboxStatus(env, mailbox.id, "active");

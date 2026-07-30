@@ -54,6 +54,12 @@ export function canonicalizeLocalPart(value: unknown): string {
   return normalized.replace(/\./g, "");
 }
 
+export function canonicalizeLookupLocalPart(value: string): string | null {
+  const localPart = value.trim().toLowerCase();
+  if (!localPart || /[\r\n\0]/.test(localPart)) return null;
+  return localPart.replace(/\./g, "");
+}
+
 export function normalizeDisplayName(value: unknown): string {
   if (value === undefined || value === null) return "";
   if (typeof value !== "string") {
@@ -169,9 +175,8 @@ export function canonicalInboundAddress(
   if (!allowed.has(recipientDomain)) return null;
 
   const rawLocalPart = normalized.slice(0, at).split("+", 1)[0];
-  try {
-    return `${canonicalizeLocalPart(rawLocalPart)}@${primaryDomain.trim().toLowerCase()}`;
-  } catch {
-    return null;
-  }
+  const canonicalLocalPart = canonicalizeLookupLocalPart(rawLocalPart);
+  return canonicalLocalPart
+    ? `${canonicalLocalPart}@${primaryDomain.trim().toLowerCase()}`
+    : null;
 }

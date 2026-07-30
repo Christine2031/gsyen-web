@@ -177,6 +177,14 @@ describe("inbound routing", () => {
     )).toBe("ethan@gsyen.com");
   });
 
+  it("keeps legacy inbound aliases outside signup validation", () => {
+    expect(canonicalInboundAddress(
+      "old-user_name+receipt@gsyen.com",
+      "gsyen.com",
+      "gsyen.com",
+    )).toBe("old-user_name@gsyen.com");
+  });
+
   it("rejects the retired mail subdomain", () => {
     expect(canonicalInboundAddress(
       "ethan@mail.gsyen.com",

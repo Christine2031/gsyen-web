@@ -1,5 +1,5 @@
 import { SELF, applyD1Migrations, env, type D1Migration } from "cloudflare:test";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
 import { routeRequest } from "../src/routes";
 
@@ -13,6 +13,10 @@ describe("worker", () => {
 
   beforeEach(async () => {
     await applyD1Migrations(testEnv.DB, testEnv.TEST_MIGRATIONS);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("reports health without exposing credentials", async () => {
@@ -108,7 +112,33 @@ describe("worker", () => {
       owner_id: ownerId,
       status: "active",
     });
-    vi.unstubAllGlobals();
+  });
+
+  it("self-provisions legacy users with unsafe email local parts safely", async () => {
+    const ownerId = randomUUID();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      id: ownerId,
+      email: "legacy-user_name+tag@example.com",
+      email_confirmed_at: "2026-07-31T00:00:00.000Z",
+      app_metadata: {},
+      user_metadata: {},
+    }))));
+    const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
+    const request = new Request("https://mail.test/v1/mailboxes/me", {
+      headers: { Authorization: "Bearer valid-token" },
+    });
+
+    const response = await routeRequest(request, env as never, ctx);
+    const payload = await response.json<{
+      mailbox?: { address?: string; status?: string; owner_id?: string };
+    }>();
+
+    expect(response.status).toBe(200);
+    expect(payload.mailbox).toMatchObject({
+      address: "legacy.user.name@gsyen.com",
+      owner_id: ownerId,
+      status: "active",
+    });
   });
 
   it("handles concurrent canonical collisions safely", async () => {
