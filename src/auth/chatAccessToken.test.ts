@@ -63,4 +63,19 @@ describe('chat access token recovery', () => {
 
     await expect(getChatAccessToken()).resolves.toBe('');
   });
+
+  it('fails closed without clearing auth state when recovered tokens cannot be installed', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    me.mockResolvedValue({
+      ok: true,
+      access_token: 'restored-access',
+      refresh_token: 'rotated-refresh',
+    });
+    setSession.mockResolvedValue({
+      data: { session: null },
+      error: { message: 'invalid refresh token' },
+    });
+
+    await expect(getChatAccessToken()).resolves.toBe('');
+  });
 });

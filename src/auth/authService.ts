@@ -94,6 +94,10 @@ export async function signInWithEmail(email: string, password: string): Promise<
   return { success: true, user: data.user, session: data.session };
 }
 
+function signupUsernameFromEmail(email: string): string {
+  return email.trim().toLowerCase().split('@', 1)[0]?.split('+', 1)[0] ?? '';
+}
+
 /**
  * 邮箱 + 密码注册（通过 gsyen-api 代理）
  */
@@ -104,14 +108,14 @@ export async function signUpWithEmail(email: string, password: string): Promise<
 
   console.log(`[Auth] Signing up with email: ${email}`);
 
-  const result = await authProxy.signup(email, password);
+  const result = await authProxy.signup(email, password, signupUsernameFromEmail(email));
   if (!result.ok) {
     return { success: false, error: { message: result.error ?? 'signup failed' } };
   }
 
   // If email verification is required, no session yet
   if (result.needsVerification || !result.access_token) {
-    return { success: true, user: result.user, session: null };
+    return { success: true, user: result.user, session: null, mailboxAddress: result.mailboxAddress ?? null };
   }
 
   // Sync the Supabase client with the session returned by the signup proxy
@@ -123,7 +127,7 @@ export async function signUpWithEmail(email: string, password: string): Promise<
     return { success: false, error: formatAuthError(error, 'setSession') };
   }
 
-  return { success: true, user: data.user, session: data.session };
+  return { success: true, user: data.user, session: data.session, mailboxAddress: result.mailboxAddress ?? null };
 }
 
 /**
