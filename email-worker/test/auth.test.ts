@@ -33,9 +33,10 @@ describe("mail identity", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
       id: "user-2",
       email: "ADMIN@EXAMPLE.COM",
-      email_confirmed_at: "2026-07-29T00:00:00.000Z",
-      app_metadata: { mail_admin: true },
-    }))));
+        email_confirmed_at: "2026-07-29T00:00:00.000Z",
+        app_metadata: { mail_admin: true },
+        user_metadata: { gsyen_username: "Ethan.7586" },
+      }))));
     const request = new Request("https://mail.test/v1/mailboxes/me", {
       headers: { Authorization: "Bearer valid-token" },
     });
@@ -44,6 +45,7 @@ describe("mail identity", () => {
       id: "user-2",
       email: "admin@example.com",
       isAdmin: true,
+      userMetadata: { gsyen_username: "Ethan.7586" },
     });
   });
 });

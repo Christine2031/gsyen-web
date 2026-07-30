@@ -1,6 +1,7 @@
 import { SELF, applyD1Migrations, env, type D1Migration } from "cloudflare:test";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { randomUUID } from "node:crypto";
+import { routeRequest } from "../src/routes";
 
 const testEnv = env as unknown as {
   DB: NonNullable<(typeof env)["DB"]>;
@@ -67,6 +68,7 @@ describe("worker", () => {
       mailbox?: { id?: string; local_part?: string; address?: string };
     }>();
     expect(firstPayload.mailbox?.address).toBe("ethan.smith@gsyen.com");
+    expect((firstPayload.mailbox as { status?: string } | undefined)?.status).toBe("active");
 
     const collisionResponse = await register(ownerB, "ethansmith");
     expect(collisionResponse.status).toBe(409);
@@ -79,6 +81,34 @@ describe("worker", () => {
     }>();
     expect(sameOwner.status).toBe(201);
     expect(samePayload.mailbox?.address).toBe("ethan.smith@gsyen.com");
+  });
+
+  it("self-provisions an active mailbox for a verified legacy user", async () => {
+    const ownerId = randomUUID();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+      id: ownerId,
+      email: "legacy@example.com",
+      email_confirmed_at: "2026-07-31T00:00:00.000Z",
+      app_metadata: {},
+      user_metadata: { gsyen_username: "Ethan.7586" },
+    }))));
+    const ctx = { waitUntil: vi.fn() } as unknown as ExecutionContext;
+    const request = new Request("https://mail.test/v1/mailboxes/me", {
+      headers: { Authorization: "Bearer valid-token" },
+    });
+
+    const response = await routeRequest(request, env as never, ctx);
+    const payload = await response.json<{
+      mailbox?: { address?: string; status?: string; owner_id?: string };
+    }>();
+
+    expect(response.status).toBe(200);
+    expect(payload.mailbox).toMatchObject({
+      address: "ethan.7586@gsyen.com",
+      owner_id: ownerId,
+      status: "active",
+    });
+    vi.unstubAllGlobals();
   });
 
   it("handles concurrent canonical collisions safely", async () => {

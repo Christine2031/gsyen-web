@@ -25,6 +25,33 @@ type InternalRevokeBody = { ownerId?: unknown; reason?: unknown };
 type AdminStatusBody = { status?: unknown };
 type AliasBody = { localPart?: unknown };
 
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function localPartFromEmail(email: string): string {
+  return email.slice(0, email.indexOf("@")).split("+", 1)[0];
+}
+
+async function createActiveMailboxForUser(env: MailEnv, user: { id: string; email: string; userMetadata: Record<string, unknown> }) {
+  const preferred = firstText(
+    user.userMetadata.gsyen_username,
+    user.userMetadata.username,
+    user.userMetadata.preferred_username,
+    user.userMetadata.name,
+    localPartFromEmail(user.email),
+  );
+  const mailbox = await createMailbox(env, {
+    ownerId: user.id,
+    localPart: normalizeLocalPart(preferred),
+    displayName: firstText(user.userMetadata.gsyen_display_name, user.userMetadata.display_name, preferred),
+  });
+  return mailbox.status === "active" ? mailbox : updateMailboxStatus(env, mailbox.id, "active");
+}
+
 async function serializeMailbox(env: MailEnv, mailbox: MailboxRecord | null) {
   if (!mailbox) return null;
   return {
@@ -59,15 +86,18 @@ export async function routeRequest(
       localPart: normalizeLocalPart(body.localPart),
       displayName: normalizeDisplayName(body.displayName),
     });
+    const activeMailbox = mailbox.status === "active"
+      ? mailbox
+      : await updateMailboxStatus(env, mailbox.id, "active");
     ctx.waitUntil(writeAudit(env, {
       ownerId,
       action: "mailbox.register_internal",
-      targetId: mailbox.id,
+      targetId: activeMailbox.id,
       outcome: "allowed",
       metadata: { registrationSource: "internal" },
     }));
     return json(request, env, {
-      mailbox: await serializeMailbox(env, mailbox),
+      mailbox: await serializeMailbox(env, activeMailbox),
       registrationSource: "internal",
     }, 201);
   }
@@ -117,8 +147,10 @@ export async function routeRequest(
   }
 
   if (request.method === "GET" && path === "/v1/mailboxes/me") {
+    const mailbox = await getMailboxByOwner(env, user.id)
+      ?? await createActiveMailboxForUser(env, user);
     return json(request, env, {
-      mailbox: await serializeMailbox(env, await getMailboxByOwner(env, user.id)),
+      mailbox: await serializeMailbox(env, mailbox),
     });
   }
 

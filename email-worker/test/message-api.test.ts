@@ -10,7 +10,7 @@ import type { AuthUser, MailEnv } from "../src/types";
 
 type TestEnv = MailEnv & { TEST_MIGRATIONS: D1Migration[] };
 const testEnv = env as TestEnv;
-const user: AuthUser = { id: "apiowner", email: "api@gsyen.com", isAdmin: false };
+const user: AuthUser = { id: "apiowner", email: "api@gsyen.com", isAdmin: false, userMetadata: {} };
 const ctx = {
   waitUntil: vi.fn(),
   passThroughOnException: vi.fn(),
@@ -76,6 +76,7 @@ describe("message API representation", () => {
       id: "all-apiowner",
       email: "all-api@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: allUser.id,
@@ -127,6 +128,7 @@ describe("message API representation", () => {
       id: "sendretryowner",
       email: "send-retry@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: retryUser.id,
@@ -184,6 +186,7 @@ describe("message API representation", () => {
       id: "batchnullowner",
       email: "batch-null@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: batchUser.id,

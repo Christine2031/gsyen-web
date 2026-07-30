@@ -6,6 +6,7 @@ type SupabaseUser = {
   email?: unknown;
   email_confirmed_at?: unknown;
   app_metadata?: unknown;
+  user_metadata?: unknown;
 };
 
 export async function requireUser(
@@ -37,10 +38,15 @@ export async function requireUser(
     data.app_metadata && typeof data.app_metadata === "object"
       ? data.app_metadata as Record<string, unknown>
       : {};
+  const userMetadata =
+    data.user_metadata && typeof data.user_metadata === "object"
+      ? data.user_metadata as Record<string, unknown>
+      : {};
   return {
     id: data.id,
     email: data.email.toLowerCase(),
     isAdmin: metadata.mail_admin === true,
+    userMetadata,
   };
 }
 
