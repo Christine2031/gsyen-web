@@ -177,7 +177,7 @@ export async function routeMessageRequest(
     });
   }
   if (request.method === "PATCH" && path === "/v1/messages/batch") {
-    const body = await readJson<BatchBody>(request);
+    const body = (await readJson<BatchBody | null>(request)) ?? {};
     const messages = await updateMessagesState(
       env,
       mailbox.id,

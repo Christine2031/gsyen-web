@@ -62,6 +62,21 @@ describe("outbound message validation", () => {
     }
   });
 
+  it("rejects non-string categories without coercion", () => {
+    for (const category of [["primary"], null, 1]) {
+      expect(() => parseSendRequest({
+        to: ["friend@example.com"],
+        subject: "Hello",
+        text: "Message",
+        category,
+      })).toThrow(expect.objectContaining({
+        status: 400,
+        code: "invalid_category",
+        message: "Message category is invalid",
+      }));
+    }
+  });
+
   it("removes duplicate recipients across To and Cc", () => {
     const result = parseSendRequest({
       to: ["friend@example.com", "friend@example.com"],

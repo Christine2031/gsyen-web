@@ -181,7 +181,7 @@ export async function reconcileOutboundSent(
         SET status = 'sent', folder = 'sent', provider_message_id = ?,
             internet_message_id = COALESCE(?, internet_message_id),
             sent_at = COALESCE(sent_at, ?), error_code = NULL
-      WHERE id = ? AND direction = 'outbound'`,
+      WHERE id = ? AND direction = 'outbound' AND trashed_at IS NULL`,
   ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
   return result.meta.changes === 1;
 }

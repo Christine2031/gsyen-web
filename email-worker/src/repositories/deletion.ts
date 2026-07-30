@@ -83,6 +83,7 @@ export async function deleteTrashedMessage(
           AND EXISTS (
             SELECT 1 FROM messages
              WHERE id = ? AND mailbox_id = ? AND status = 'queued'
+               AND trashed_at IS NOT NULL
           )`,
     ).bind(message.owner_id, message.created_at.slice(0, 10), messageId, mailboxId));
   }

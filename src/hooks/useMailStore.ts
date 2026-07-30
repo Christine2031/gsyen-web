@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { MouseEvent } from 'react';
-import { filterMailItems, mailMessageIds, moveMailItem, selectedMailIds, resolveSnooze,
+import { filterMailItems, mailMessageIds, mailSearchToken, moveMailItem,
+  selectedMailIds, resolveSnooze,
   type EmailItem, type MailCategory, type MailFolder, type MailSelection, type SnoozePreset } from '../types/mail';
-import { MailPatchQueue, restoreLocalMailItem, restoreMailPatch, type MailMessagePatch } from '../services/mailApi';
+import type { MailMessagePatch } from '../services/mailApi';
 import { appendMailReply, removeMailReply, sendMailReply, useMailToast } from './useMailCompose';
-import { useMailSync } from './useMailSync';
-const mutationGroup = (key: string) => ['archived', 'snoozedUntil', 'spam', 'trashed'].includes(key) ? 'folder' : key;
-const mutationGroups = (patch: MailMessagePatch) => [...new Set(Object.keys(patch).map(mutationGroup))];
+import { useMailMutations, useMailSync } from './useMailSync';
 export function useMailStore(lang: 'zh' | 'en') {
   const mail = useMailSync(lang);
   const { emails, saveEmails } = mail;
@@ -26,11 +25,7 @@ export function useMailStore(lang: 'zh' | 'en') {
   const inlineReplyTextRef = useRef('');
   const selectedIdRef = useRef<string | null>(null);
   const replySubmission = useRef<{ fingerprint: string; key: string } | null>(null);
-  const identityGeneration = useRef(0);
   const previousIdentity = useRef(mail.identityKey);
-  const patchQueue = useRef(new MailPatchQueue());
-  const mutationSequence = useRef(0);
-  const latestMutation = useRef(new Map<string, number>());
   const shownSyncError = useRef<string | null>(null);
   selectedIdRef.current = selectedEmail?.id ?? null;
   const setInlineReplyText = (value: string) => {
@@ -42,10 +37,13 @@ export function useMailStore(lang: 'zh' | 'en') {
   const syncFailure = useCallback(() => {
     reportSyncFailure(); void mail.refreshMessages().catch(() => {});
   }, [mail, reportSyncFailure]);
+  const { identityGeneration, mutate } = useMailMutations({
+    emails, identityKey: mail.identityKey, saveEmails,
+    onSyncFailure: syncFailure, showToast,
+  });
   useLayoutEffect(() => {
     if (previousIdentity.current === mail.identityKey) return;
-    previousIdentity.current = mail.identityKey; identityGeneration.current += 1;
-    patchQueue.current.clear(); latestMutation.current.clear();
+    previousIdentity.current = mail.identityKey;
     replyInFlight.current = false; replySubmission.current = null;
     setSelectedEmail(null); setInlineReplyText(''); setSelectedIds({});
     setSearchText(''); setFilterFrom(''); setFilterTo(''); setFilterSubject('');
@@ -67,57 +65,6 @@ export function useMailStore(lang: 'zh' | 'en') {
     setSelectedIds(current => Object.fromEntries(Object.entries(current)
       .filter(([id, selected]) => selected && emails.some(item => item.id === id))));
   }, [emails]);
-  const syncPatch = (ids: string[], patch: MailMessagePatch) => {
-    const generation = identityGeneration.current;
-    return patchQueue.current.run(ids, patch, () => (
-      generation === identityGeneration.current
-    )).catch(error => {
-      if (generation !== identityGeneration.current) return;
-      syncFailure();
-      throw error;
-    });
-  };
-  const mutate = (
-    ids: string[],
-    update: (message: EmailItem) => EmailItem,
-    patch: MailMessagePatch,
-    notice?: string,
-  ) => {
-    if (ids.length === 0) return;
-    const targets = new Set(ids);
-    const originals = new Map(emails.filter(item => targets.has(item.id))
-      .map(item => [item.id, item]));
-    const serverIds = [...new Set([...originals.values()].flatMap(mailMessageIds))];
-    const sequence = ++mutationSequence.current;
-    const groups = mutationGroups(patch);
-    ids.forEach(id => groups.forEach(group => latestMutation.current.set(`${id}:${group}`, sequence)));
-    saveEmails(current => current.map(item => targets.has(item.id) ? update(item) : item));
-    const commit = syncPatch(serverIds, patch);
-    void commit.catch(() => saveEmails(current => current.map(item => {
-      const original = originals.get(item.id);
-      if (!original) return item;
-      const active = Object.fromEntries(Object.entries(patch).filter(([key]) => (
-        latestMutation.current.get(`${item.id}:${mutationGroup(key)}`) === sequence
-      ))) as MailMessagePatch;
-      return restoreLocalMailItem(item, original, active);
-    })));
-    if (!notice) return;
-    showToast(notice, async () => {
-      await commit;
-      const groups = new Map<string, { ids: string[]; patch: MailMessagePatch }>();
-      originals.forEach((item, id) => {
-        const restored = restoreMailPatch(item, patch);
-        const key = JSON.stringify(restored);
-        const group = groups.get(key) ?? { ids: [], patch: restored };
-        group.ids.push(...mailMessageIds(item)); groups.set(key, group);
-      });
-      await Promise.all([...groups.values()].map(group => syncPatch(group.ids, group.patch)));
-      saveEmails(current => current.map(item => {
-        const original = originals.get(item.id);
-        return original ? restoreLocalMailItem(item, original, patch) : item;
-      }));
-    });
-  };
   const handleUndo = async () => { try { await runUndo(); } catch { syncFailure(); } };
   const unreadInboxCount = emails.filter(m => m.folder === 'inbox' && !m.read).length; const starredCount = emails.filter(m => m.starred).length;
   const snoozedCount = emails.filter(m => m.folder === 'snoozed').length; const draftsCount = emails.filter(m => m.folder === 'drafts').length;
@@ -175,6 +122,7 @@ export function useMailStore(lang: 'zh' | 'en') {
   };
   const handleArchiveEmail = (id: string, event?: MouseEvent) => {
     event?.stopPropagation();
+    if (!emails.some(message => message.id === id)) return;
     mutate([id], m => moveMailItem(m, 'sent'),
       { archived: true, trashed: false, spam: false, snoozedUntil: null },
       lang === 'zh' ? '信件已封档留底' : 'Letter archived successfully');
@@ -229,8 +177,10 @@ export function useMailStore(lang: 'zh' | 'en') {
       : (lang === 'zh' ? '选中的信件已更新为未读' : 'Batch letters marked as unread'),
   );
   const handleApplyAdvancedFilters = () => {
-    setSearchText([filterFrom.trim() ? `from:${filterFrom}` : '',
-      filterSubject.trim() ? `subject:${filterSubject}` : ''].filter(Boolean).join(' '));
+    setSearchText([
+      mailSearchToken('from', filterFrom),
+      mailSearchToken('subject', filterSubject),
+    ].filter(Boolean).join(' '));
     setShowFilters(false);
   };
   const handleResetFilters = () => {
@@ -240,13 +190,13 @@ export function useMailStore(lang: 'zh' | 'en') {
     if (!inlineReplyText.trim() || !selectedEmail || replyInFlight.current) return;
     replyInFlight.current = true;
     const generation = identityGeneration.current;
-    const original = selectedEmail;
-    const body = inlineReplyText;
-    const fingerprint = `${mail.identityKey}\u0000${original.id}\u0000${body}`;
-    if (replySubmission.current?.fingerprint !== fingerprint) {
-      replySubmission.current = { fingerprint, key: `gsyen:${crypto.randomUUID()}` };
-    }
     try {
+      const original = selectedEmail;
+      const body = inlineReplyText;
+      const fingerprint = `${mail.identityKey}\u0000${original.id}\u0000${body}`;
+      if (replySubmission.current?.fingerprint !== fingerprint) {
+        replySubmission.current = { fingerprint, key: `gsyen:${crypto.randomUUID()}` };
+      }
       const { queued, reply } = await sendMailReply({
         original, body, mailboxAddress: mail.mailboxAddress,
         idempotencyKey: replySubmission.current.key, sendMessage: mail.sendMessage,

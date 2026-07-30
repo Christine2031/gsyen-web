@@ -10,6 +10,7 @@ import {
   claimOutboundRecord,
   createMailbox,
   getOutboundStatus,
+  reconcileOutboundSent,
   settleTrashedQueuedMessages,
 } from "../src/repository";
 import { sendWithResend } from "../src/providers/resend";
@@ -226,6 +227,46 @@ describe("outbound delivery claim", () => {
     });
     expect(usage?.sent_count).toBe(0);
     expect(sendWithResend).not.toHaveBeenCalled();
+  });
+
+  it("does not resurrect a trashed settled message during reconciliation", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "trashed-reconcile-owner",
+      localPart: "trashed-reconcile-owner",
+      displayName: "Trashed Reconcile",
+    });
+    const now = new Date().toISOString();
+    await testEnv.DB.prepare(
+      `INSERT INTO messages
+        (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+         subject, text_body, references_json, status, error_code, created_at,
+         trashed_at)
+       VALUES (?, ?, 'outbound', 'outbox', ?, '[]', '[]', 'Reconcile',
+         'Body', '[]', 'failed', 'cancelled_trashed', ?, ?)`,
+    ).bind(
+      "trashed-reconcile-message",
+      mailbox.id,
+      mailbox.address,
+      now,
+      now,
+    ).run();
+
+    await expect(reconcileOutboundSent(
+      testEnv,
+      "trashed-reconcile-message",
+      "provider-after-cancel",
+      now,
+      "<provider-after-cancel@example.com>",
+    )).resolves.toBe(false);
+    await expect(testEnv.DB.prepare(
+      `SELECT folder, status, error_code, provider_message_id
+         FROM messages WHERE id = ?`,
+    ).bind("trashed-reconcile-message").first()).resolves.toEqual({
+      folder: "outbox",
+      status: "failed",
+      error_code: "cancelled_trashed",
+      provider_message_id: null,
+    });
   });
 
 });

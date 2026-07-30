@@ -1,3 +1,6 @@
+import type { MailApiMessage } from '../services/mailApi';
+import { localDateStr } from '../utils/date';
+
 export type MailFolder   = 'inbox' | 'starred' | 'snoozed' | 'sent' | 'drafts' | 'trash' | 'spam';
 export type MailCategory = 'primary' | 'social' | 'promotions' | 'updates';
 export type MailDirection = 'inbound' | 'outbound';
@@ -44,6 +47,91 @@ export interface EmailItem {
   archivedAt?:         string;
   spamAt?:             string;
   trashedAt?:          string;
+}
+
+function addressParts(raw: string): { name: string; address: string } {
+  const match = raw.trim().match(/^(?:"?([^"]*?)"?\s*)?<([^<>\s]+@[^<>\s]+)>$/);
+  const address = (match?.[2] ?? raw).trim().toLowerCase();
+  const localPart = address.split('@')[0] || address;
+  return {
+    name: match?.[1]?.trim() || localPart.replace(/[._-]+/g, ' '),
+    address,
+  };
+}
+
+export function mailItemFolder(message: MailApiMessage): MailFolder {
+  if (message.trashedAt) return 'trash';
+  if (message.spamAt) return 'spam';
+  if (message.snoozedUntil && Date.parse(message.snoozedUntil) > Date.now()) return 'snoozed';
+  if (message.folder === 'outbox') return 'drafts';
+  if (message.archivedAt || message.folder === 'sent') return 'sent';
+  return 'inbox';
+}
+
+export const mailMessageTime = (message: MailApiMessage) => (
+  message.sentAt ?? message.receivedAt ?? message.createdAt
+);
+
+export function mailThreadMessage(message: MailApiMessage): ThreadMessage {
+  const sender = addressParts(message.fromAddress);
+  const timestamp = new Date(mailMessageTime(message));
+  return {
+    id: message.id,
+    senderName: sender.name,
+    senderAddress: sender.address,
+    body: message.text,
+    date: localDateStr(timestamp),
+    time: timestamp.toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }),
+    isMe: message.direction === 'outbound',
+  };
+}
+
+export function mailApiToEmailItem(
+  message: MailApiMessage,
+  lang: 'zh' | 'en',
+): EmailItem {
+  const correspondent = message.direction === 'outbound'
+    ? addressParts(message.to[0] ?? message.fromAddress)
+    : addressParts(message.fromAddress);
+  const timestamp = new Date(mailMessageTime(message));
+  const body = message.text ?? '';
+  return {
+    id: message.id,
+    senderName: correspondent.name,
+    senderAddress: correspondent.address,
+    subject: message.subject || (lang === 'zh' ? '（无主题）' : '(No subject)'),
+    snippet: body.replace(/\s+/g, ' ').trim().slice(0, 100),
+    body,
+    date: localDateStr(timestamp),
+    time: timestamp.toLocaleTimeString([], {
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }),
+    starred: message.isStarred,
+    important: message.isImportant,
+    read: message.isRead,
+    folder: mailItemFolder(message),
+    category: message.category ?? 'primary',
+    snoozedUntil: message.snoozedUntil
+      ? new Date(message.snoozedUntil).toLocaleString()
+      : undefined,
+    snoozedAt: message.snoozedUntil ?? undefined,
+    threadMessages: [mailThreadMessage(message)],
+    direction: message.direction,
+    recipients: message.to,
+    cc: message.cc,
+    status: message.status,
+    internetMessageId: message.internetMessageId ?? undefined,
+    providerMessageId: message.providerMessageId ?? undefined,
+    inReplyTo: message.inReplyTo ?? undefined,
+    references: message.references,
+    attachmentCount: message.attachmentCount,
+    createdAt: message.createdAt,
+    archivedAt: message.archivedAt ?? undefined,
+    spamAt: message.spamAt ?? undefined,
+    trashedAt: message.trashedAt ?? undefined,
+  };
 }
 
 export type MailSelection =
@@ -104,6 +192,24 @@ export function selectedMailIds(
   return Object.fromEntries(selected.map(item => [item.id, true]));
 }
 
+export const mailSearchToken = (key: 'from' | 'subject', value: string) => {
+  const normalized = value.trim();
+  return normalized ? `${key}:${JSON.stringify(normalized)}` : '';
+};
+
+function advancedSearchValue(
+  doubleQuoted: string | undefined,
+  singleQuoted: string | undefined,
+  bare: string | undefined,
+): string {
+  if (doubleQuoted !== undefined) {
+    try { return String(JSON.parse(`"${doubleQuoted}"`)).trim().toLowerCase(); } catch {
+      return doubleQuoted.trim().toLowerCase();
+    }
+  }
+  return (singleQuoted ?? bare ?? '').replace(/\\(['\\])/g, '$1').trim().toLowerCase();
+}
+
 export function filterMailItems(
   emails: EmailItem[],
   folder: MailFolder,
@@ -113,30 +219,46 @@ export function filterMailItems(
   filterTo: string,
   filterSubject: string,
 ): EmailItem[] {
+  const term = searchText.trim().toLowerCase();
+  const advanced = new Map<string, string>();
+  for (const match of term.matchAll(
+    /\b(from|subject|body):\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|(\S+))/g,
+  )) {
+    const value = advancedSearchValue(match[2], match[3], match[4]);
+    if (value) advanced.set(match[1], value);
+  }
+  const freeText = term.replace(
+    /\b(from|subject|body):\s*(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\S+)/g,
+    ' ',
+  ).replace(/\s+/g, ' ').trim();
+  const filterValues = {
+    from: filterFrom.trim().toLowerCase(),
+    to: filterTo.trim().toLowerCase(),
+    subject: filterSubject.trim().toLowerCase(),
+  };
   return emails.filter(message => {
     if (folder === 'starred' ? (!message.starred || message.folder === 'trash')
       : folder === 'snoozed' ? message.folder !== 'snoozed'
         : message.folder !== folder) return false;
     if (folder === 'inbox' && message.category !== category) return false;
-    const term = searchText.toLowerCase().trim();
     if (term) {
-      const from = term.match(/from:(\S+)/)?.[1];
-      const subject = term.match(/subject:(\S+)/)?.[1];
-      const body = term.match(/body:(\S+)/)?.[1];
+      const from = advanced.get('from');
+      const subject = advanced.get('subject');
+      const body = advanced.get('body');
       const sender = `${message.senderName} ${message.senderAddress}`.toLowerCase();
       if (from && !sender.includes(from)) return false;
       if (subject && !message.subject.toLowerCase().includes(subject)) return false;
       if (body && !message.body.toLowerCase().includes(body)) return false;
-      if (!from && !subject && !body && ![
+      if (freeText && ![
         message.senderName, message.senderAddress, message.subject, message.body,
-      ].some(value => value.toLowerCase().includes(term))) return false;
+      ].some(value => value.toLowerCase().includes(freeText))) return false;
     }
     const sender = `${message.senderName} ${message.senderAddress}`.toLowerCase();
-    if (filterFrom.trim() && !sender.includes(filterFrom.toLowerCase())) return false;
-    if (filterTo.trim() && !(message.recipients ?? []).some(address => (
-      address.toLowerCase().includes(filterTo.toLowerCase())
+    if (filterValues.from && !sender.includes(filterValues.from)) return false;
+    if (filterValues.to && !(message.recipients ?? []).some(address => (
+      address.toLowerCase().includes(filterValues.to)
     ))) return false;
-    return !filterSubject.trim()
-      || message.subject.toLowerCase().includes(filterSubject.toLowerCase());
+    return !filterValues.subject
+      || message.subject.toLowerCase().includes(filterValues.subject);
   });
 }

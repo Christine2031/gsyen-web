@@ -185,4 +185,47 @@ describe("permanent message deletion", () => {
     ).bind(mailbox.owner_id).first<{ sent_count: number }>();
     expect(usage?.sent_count).toBe(0);
   });
+
+  it("does not refund quota if a queued message is untrashed before deletion", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "delete-race-owner",
+      localPart: "delete-race-owner",
+      displayName: "Delete Race",
+    });
+    const messageId = "00000000-0000-4000-8000-000000000204";
+    const now = new Date().toISOString();
+    await testEnv.DB.batch([
+      testEnv.DB.prepare(
+        `INSERT INTO messages
+          (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+           subject, text_body, references_json, status, created_at, trashed_at)
+         VALUES (?, ?, 'outbound', 'outbox', ?, '[]', '[]', 'Delete race',
+           'Body', '[]', 'queued', ?, ?)`,
+      ).bind(messageId, mailbox.id, mailbox.address, now, now),
+      testEnv.DB.prepare(
+        "INSERT INTO send_usage (owner_id, day_key, sent_count) VALUES (?, ?, 1)",
+      ).bind(mailbox.owner_id, now.slice(0, 10)),
+    ]);
+    const raceDb = new Proxy(testEnv.DB, {
+      get(target, property) {
+        if (property !== "batch") return Reflect.get(target, property);
+        return async (statements: D1PreparedStatement[]) => {
+          await target.prepare(
+            "UPDATE messages SET trashed_at = NULL WHERE id = ?",
+          ).bind(messageId).run();
+          return target.batch(statements);
+        };
+      },
+    });
+    const raceEnv = Object.assign(Object.create(testEnv), {
+      DB: raceDb,
+    }) as MailEnv;
+
+    await expect(deleteTrashedMessage(raceEnv, mailbox.id, messageId))
+      .rejects.toMatchObject({ status: 409, code: "message_delete_conflict" });
+    const usage = await testEnv.DB.prepare(
+      "SELECT sent_count FROM send_usage WHERE owner_id = ?",
+    ).bind(mailbox.owner_id).first<{ sent_count: number }>();
+    expect(usage?.sent_count).toBe(1);
+  });
 });

@@ -103,8 +103,16 @@ export function parseSendRequest(value: unknown): SendRequest {
   if (references.length > 100) {
     throw new ApiError(400, "invalid_references", "Use at most 100 References entries");
   }
-  const category = input.category ?? "primary";
-  if (!["primary", "social", "promotions", "updates"].includes(String(category))) {
+  const category = input.category === undefined ? "primary" : input.category;
+  if (
+    typeof category !== "string"
+    || (
+      category !== "primary"
+      && category !== "social"
+      && category !== "promotions"
+      && category !== "updates"
+    )
+  ) {
     throw new ApiError(400, "invalid_category", "Message category is invalid");
   }
   return {
@@ -114,7 +122,7 @@ export function parseSendRequest(value: unknown): SendRequest {
     text: normalizeString(input.text, "text", 100_000),
     inReplyTo: normalizeMessageId(input.inReplyTo, "in_reply_to"),
     references: [...new Set(references)] as string[],
-    category: category as SendRequest["category"],
+    category,
   };
 }
 

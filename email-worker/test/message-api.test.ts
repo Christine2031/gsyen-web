@@ -178,4 +178,37 @@ describe("message API representation", () => {
       duplicate: true,
     });
   });
+
+  it("rejects a null batch body through the 400 validation path", async () => {
+    const batchUser: AuthUser = {
+      id: "batch-null-owner",
+      email: "batch-null@gsyen.com",
+      isAdmin: false,
+    };
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: batchUser.id,
+      localPart: "batch-null-owner",
+      displayName: "Batch Null",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const request = new Request("https://mail.test/v1/messages/batch", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: "null",
+    });
+
+    await expect(routeMessageRequest(
+      request,
+      testEnv,
+      ctx,
+      batchUser,
+      "/v1/messages/batch",
+      new URL(request.url),
+    )).rejects.toMatchObject({
+      status: 400,
+      code: "invalid_message_ids",
+    });
+  });
 });
