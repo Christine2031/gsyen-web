@@ -3,10 +3,12 @@ import {
   env,
   type D1Migration,
 } from "cloudflare:test";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  cancelOutboundMessage,
   createMailbox,
   queueOutboundMessage,
+  requeueStaleOutboundMessages,
 } from "../src/repository";
 import type { MailEnv } from "../src/types";
 
@@ -79,11 +81,25 @@ describe("mailbox repository", () => {
       request,
       "client:20260729:00000001",
     );
+    expect(first.created).toBe(true);
+    expect(second).toEqual({
+      messageId: first.messageId,
+      created: false,
+      status: "queued",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE messages SET status = 'sent' WHERE id = ?",
+    ).bind(first.messageId).run();
+    const completedRetry = await queueOutboundMessage(
+      testEnv,
+      mailbox,
+      request,
+      "client:20260729:00000001",
+    );
+    expect(completedRetry.status).toBe("sent");
     const usage = await testEnv.DB.prepare(
       "SELECT sent_count FROM send_usage WHERE owner_id = ?",
     ).bind("user-2").first<{ sent_count: number }>();
-    expect(first.created).toBe(true);
-    expect(second).toEqual({ messageId: first.messageId, created: false });
     expect(usage?.sent_count).toBe(1);
   });
 
@@ -108,6 +124,133 @@ describe("mailbox repository", () => {
     )).rejects.toMatchObject({
       status: 500,
       code: "config_invalid",
+    });
+  });
+
+  it("delays delivery briefly and refunds quota when a queued send is cancelled", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "cancel-owner",
+      localPart: "cancel-owner",
+      displayName: "Cancel",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const send = vi.fn(async () => undefined);
+    const queueEnv = Object.assign(Object.create(testEnv), {
+      DAILY_SEND_LIMIT: "30",
+      OUTBOUND_QUEUE: { send },
+    }) as MailEnv;
+    const queued = await queueOutboundMessage(
+      queueEnv,
+      { ...mailbox, status: "active" },
+      { to: ["recipient@example.com"], cc: [], subject: "Hello", text: "Body" },
+      "client:20260729:cancel-owner",
+    );
+    expect(send).toHaveBeenCalledWith(
+      { messageId: queued.messageId },
+      { delaySeconds: 20 },
+    );
+
+    await cancelOutboundMessage(queueEnv, mailbox.id, mailbox.owner_id, queued.messageId);
+    const message = await testEnv.DB.prepare(
+      "SELECT id FROM messages WHERE id = ?",
+    ).bind(queued.messageId).first();
+    const usage = await testEnv.DB.prepare(
+      "SELECT sent_count FROM send_usage WHERE owner_id = ?",
+    ).bind(mailbox.owner_id).first<{ sent_count: number }>();
+    expect(message).toBeNull();
+    expect(usage?.sent_count).toBe(0);
+  });
+
+  it("persists an explicit message category", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "category-owner",
+      localPart: "category-owner",
+      displayName: "Category",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const send = vi.fn(async () => undefined);
+    const queueEnv = Object.assign(Object.create(testEnv), {
+      OUTBOUND_QUEUE: { send },
+    }) as MailEnv;
+    const queued = await queueOutboundMessage(
+      queueEnv,
+      { ...mailbox, status: "active" },
+      {
+        to: ["recipient@example.com"],
+        cc: [],
+        subject: "Category",
+        text: "Body",
+        category: "promotions",
+      },
+      "client:20260730:category-owner",
+    );
+    const message = await testEnv.DB.prepare(
+      "SELECT category FROM messages WHERE id = ?",
+    ).bind(queued.messageId).first<{ category: string }>();
+    expect(message?.category).toBe("promotions");
+  });
+
+  it("keeps a durable queued outbox record when the Queue binding is unavailable", async () => {
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: "durable-queue-owner",
+      localPart: "durable-queue-owner",
+      displayName: "Durable Queue",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const failedSend = vi.fn(async () => {
+      throw new Error("queue unavailable");
+    });
+    const failedEnv = Object.assign(Object.create(testEnv), {
+      OUTBOUND_QUEUE: { send: failedSend },
+    }) as MailEnv;
+    const queued = await queueOutboundMessage(
+      failedEnv,
+      { ...mailbox, status: "active" },
+      { to: ["recipient@example.com"], cc: [], subject: "Durable", text: "Body" },
+      "client:20260730:durable-queue",
+    );
+    const persisted = await testEnv.DB.prepare(
+      `SELECT status, queue_dispatched_at FROM messages WHERE id = ?`,
+    ).bind(queued.messageId).first<{
+      status: string;
+      queue_dispatched_at: string | null;
+    }>();
+    const usage = await testEnv.DB.prepare(
+      "SELECT sent_count FROM send_usage WHERE owner_id = ?",
+    ).bind(mailbox.owner_id).first<{ sent_count: number }>();
+    expect(queued).toMatchObject({ created: true, status: "queued" });
+    expect(persisted).toEqual({
+      status: "queued",
+      queue_dispatched_at: null,
+    });
+    expect(usage?.sent_count).toBe(1);
+
+    await testEnv.DB.prepare(
+      "UPDATE messages SET created_at = ? WHERE id = ?",
+    ).bind(
+      new Date(Date.now() - 5 * 60_000).toISOString(),
+      queued.messageId,
+    ).run();
+    const recoveredSend = vi.fn(async () => undefined);
+    const recoveredEnv = Object.assign(Object.create(testEnv), {
+      OUTBOUND_QUEUE: { send: recoveredSend },
+    }) as MailEnv;
+    await expect(requeueStaleOutboundMessages(recoveredEnv)).resolves.toEqual({
+      inspected: 1,
+      enqueued: 1,
+      failed: 0,
+    });
+    expect(recoveredSend).toHaveBeenCalledWith({ messageId: queued.messageId });
+    await expect(requeueStaleOutboundMessages(recoveredEnv)).resolves.toEqual({
+      inspected: 0,
+      enqueued: 0,
+      failed: 0,
     });
   });
 });

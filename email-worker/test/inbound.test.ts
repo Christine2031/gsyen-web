@@ -76,7 +76,7 @@ describe("inbound email", () => {
     ].join("\r\n");
     let rejection = "";
     await receiveEmail(emailMessage(
-      "ethan+test@mail.gsyen.com",
+      "ethan+test@gsyen.com",
       raw,
       (reason) => { rejection = reason; },
     ), testEnv);
@@ -102,17 +102,32 @@ describe("inbound email", () => {
     expect(await testEnv.MAIL_OBJECTS.head(result.results[0].raw_object_key)).not.toBeNull();
   });
 
-  it("rejects an unknown recipient without storing content", async () => {
+  it("rejects the retired mail subdomain without storing content", async () => {
     let rejection = "";
     await receiveEmail(emailMessage(
-      "unknown@mail.gsyen.com",
+      "ethan@mail.gsyen.com",
       "From: sender@example.com\r\n\r\nHello",
       (reason) => { rejection = reason; },
     ), testEnv);
     const count = await testEnv.DB.prepare(
       "SELECT count(*) AS count FROM messages",
     ).first<{ count: number }>();
-    expect(rejection).toContain("does not exist");
+    expect(rejection).toContain("domain is not accepted");
+    expect(count?.count).toBe(0);
+  });
+
+  it("rejects an unknown root-domain recipient without storing content", async () => {
+    let rejection = "";
+    await receiveEmail(emailMessage(
+      "unknown@gsyen.com",
+      "From: sender@example.com\r\n\r\nHello",
+      (reason) => { rejection = reason; },
+    ), testEnv);
+    const count = await testEnv.DB.prepare(
+      "SELECT count(*) AS count FROM messages",
+    ).first<{ count: number }>();
+    expect(rejection).toContain("Mailbox does not exist or is inactive");
+    expect(rejection).not.toContain("domain is not accepted");
     expect(count?.count).toBe(0);
   });
 });

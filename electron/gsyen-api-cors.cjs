@@ -1,12 +1,15 @@
 const API_HOST = 'gsyen-api-776196228503.asia-east1.run.app';
+const MAIL_API_HOST = 'mail-api.gsyen.com';
 const DEV_ORIGIN = 'http://127.0.0.1:5173';
 const PRODUCTION_ORIGIN = 'https://gsyen.com';
-const API_FILTER = { urls: [`https://${API_HOST}/*`] };
+const API_HOSTS = [API_HOST, MAIL_API_HOST];
+const API_ORIGINS = new Set(API_HOSTS.map(host => `https://${host}`));
+const API_FILTER = { urls: API_HOSTS.map(host => `https://${host}/*`) };
 
 function isGsyenApiRequest(rawUrl) {
   try {
     const url = new URL(rawUrl);
-    return url.protocol === 'https:' && url.hostname === API_HOST;
+    return !url.username && !url.password && API_ORIGINS.has(url.origin);
   } catch {
     return false;
   }
@@ -50,7 +53,9 @@ function registerGsyenApiCors(session, isDev) {
 
 module.exports = {
   API_HOST,
+  API_HOSTS,
   DEV_ORIGIN,
+  MAIL_API_HOST,
   PRODUCTION_ORIGIN,
   isGsyenApiRequest,
   registerGsyenApiCors,

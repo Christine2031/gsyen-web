@@ -1,6 +1,6 @@
 import { ApiError } from "../http";
 import type { MailEnv, MailboxRecord, SendRequest } from "../types";
-
+import { markOutboundDispatched } from "./outboundDispatch";
 export type OutboundRecord = {
   id: string;
   from_address: string;
@@ -14,21 +14,21 @@ export type OutboundRecord = {
   display_name: string;
   mailbox_status: "pending" | "active" | "suspended";
 };
-
 export async function queueOutboundMessage(
   env: MailEnv,
   mailbox: MailboxRecord,
   input: SendRequest,
   clientRequestId: string,
-): Promise<{ messageId: string; created: boolean }> {
+): Promise<{ messageId: string; created: boolean; status: OutboundRecord["status"] }> {
   if (mailbox.status !== "active") {
     throw new ApiError(403, "mailbox_inactive", "Mailbox is not active");
   }
   const existing = await env.DB.prepare(
-    `SELECT id FROM messages
+    `SELECT id, status FROM messages
       WHERE mailbox_id = ? AND client_request_id = ? AND direction = 'outbound'`,
-  ).bind(mailbox.id, clientRequestId).first<{ id: string }>();
-  if (existing) return { messageId: existing.id, created: false };
+  ).bind(mailbox.id, clientRequestId)
+    .first<{ id: string; status: OutboundRecord["status"] }>();
+  if (existing) return { messageId: existing.id, created: false, status: existing.status };
   const limitText = env.DAILY_SEND_LIMIT.trim();
   const limit = Number.parseInt(limitText, 10);
   if (!/^[1-9]\d*$/.test(limitText) || !Number.isSafeInteger(limit)) {
@@ -57,8 +57,8 @@ export async function queueOutboundMessage(
       `INSERT INTO messages
         (id, mailbox_id, direction, folder, client_request_id, from_address,
          to_json, cc_json, subject, text_body, in_reply_to, references_json,
-         status, created_at, is_read)
-       VALUES (?, ?, 'outbound', 'outbox', ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, 1)`,
+         status, created_at, is_read, category)
+       VALUES (?, ?, 'outbound', 'outbox', ?, ?, ?, ?, ?, ?, ?, ?, 'queued', ?, 1, ?)`,
     ).bind(
       id,
       mailbox.id,
@@ -71,31 +71,39 @@ export async function queueOutboundMessage(
       input.inReplyTo ?? null,
       JSON.stringify(input.references ?? []),
       now,
+      input.category ?? "primary",
     ).run();
   } catch (error) {
     await refundUsage(env, mailbox.owner_id, dayKey);
     if (String(error).toLowerCase().includes("unique")) {
       const conflict = await env.DB.prepare(
-        `SELECT id FROM messages
+        `SELECT id, status FROM messages
           WHERE mailbox_id = ? AND client_request_id = ? AND direction = 'outbound'`,
-      ).bind(mailbox.id, clientRequestId).first<{ id: string }>();
-      if (conflict) return { messageId: conflict.id, created: false };
+      ).bind(mailbox.id, clientRequestId)
+        .first<{ id: string; status: OutboundRecord["status"] }>();
+      if (conflict) return { messageId: conflict.id, created: false, status: conflict.status };
     }
     throw error;
   }
   try {
-    await env.OUTBOUND_QUEUE.send({ messageId: id });
-  } catch {
-    await env.DB.batch([
-      env.DB.prepare("DELETE FROM messages WHERE id = ?").bind(id),
-      env.DB.prepare(
-        `UPDATE send_usage SET sent_count = MAX(0, sent_count - 1)
-          WHERE owner_id = ? AND day_key = ?`,
-      ).bind(mailbox.owner_id, dayKey),
-    ]);
-    throw new ApiError(503, "queue_unavailable", "Mail queue is temporarily unavailable");
+    await env.OUTBOUND_QUEUE.send({ messageId: id }, { delaySeconds: 20 });
+    try {
+      await markOutboundDispatched(env, id);
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "mail_outbound_dispatch_marker_failed",
+        messageId: id,
+        error: error instanceof Error ? error.message : String(error),
+      }));
+    }
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "mail_outbound_queued_for_recovery",
+      messageId: id,
+      error: error instanceof Error ? error.message : String(error),
+    }));
   }
-  return { messageId: id, created: true };
+  return { messageId: id, created: true, status: "queued" };
 }
 
 async function refundUsage(
@@ -120,6 +128,7 @@ export async function claimOutboundRecord(
         SET status = 'sending', send_attempt_count = send_attempt_count + 1,
             last_attempt_at = ?, error_code = NULL
       WHERE id = ? AND direction = 'outbound'
+        AND trashed_at IS NULL
         AND (status IN ('queued', 'failed')
           OR (status = 'sending' AND last_attempt_at < ?))`,
   ).bind(now.toISOString(), messageId, staleBefore).run();
@@ -134,7 +143,6 @@ export async function claimOutboundRecord(
   ).bind(messageId).first<OutboundRecord>();
 }
 
-
 export async function getOutboundStatus(
   env: MailEnv,
   messageId: string,
@@ -148,13 +156,33 @@ export async function markOutboundSent(
   env: MailEnv,
   messageId: string,
   providerMessageId: string,
+  internetMessageId: string | null = null,
+  sentAt = new Date().toISOString(),
 ): Promise<boolean> {
   const result = await env.DB.prepare(
     `UPDATE messages
         SET status = 'sent', folder = 'sent', provider_message_id = ?,
+            internet_message_id = COALESCE(?, internet_message_id),
             sent_at = ?, error_code = NULL
       WHERE id = ? AND status = 'sending'`,
-  ).bind(providerMessageId, new Date().toISOString(), messageId).run();
+  ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
+  return result.meta.changes === 1;
+}
+
+export async function reconcileOutboundSent(
+  env: MailEnv,
+  messageId: string,
+  providerMessageId: string,
+  sentAt: string,
+  internetMessageId: string | null,
+): Promise<boolean> {
+  const result = await env.DB.prepare(
+    `UPDATE messages
+        SET status = 'sent', folder = 'sent', provider_message_id = ?,
+            internet_message_id = COALESCE(?, internet_message_id),
+            sent_at = COALESCE(sent_at, ?), error_code = NULL
+      WHERE id = ? AND direction = 'outbound' AND trashed_at IS NULL`,
+  ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
   return result.meta.changes === 1;
 }
 

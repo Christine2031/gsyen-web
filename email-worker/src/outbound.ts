@@ -1,17 +1,24 @@
 import {
+  abortClaimedTrashedOutbound,
   claimOutboundRecord,
   getOutboundStatus,
   markOutboundFailed,
-  markOutboundSent,
+  settleTrashedQueuedOutbound,
 } from "./repository";
 import {
+  getResendInternetMessageId,
   MailProviderError,
   sendWithResend,
 } from "./providers/resend";
+import { persistProviderDelivery } from "./deliveryReceipts";
 import type { MailEnv, OutboundJob } from "./types";
 
 class InvalidStoredMessageError extends Error {
   readonly code = "invalid_stored_message";
+}
+
+class DeliveryRecoveryQueueError extends Error {
+  readonly code = "delivery_recovery_queue_unavailable";
 }
 
 function parseArray(value: string): string[] {
@@ -29,43 +36,37 @@ function parseArray(value: string): string[] {
 function errorCode(error: unknown): string {
   if (error instanceof MailProviderError) return error.code;
   if (error instanceof InvalidStoredMessageError) return error.code;
+  if (error instanceof DeliveryRecoveryQueueError) return error.code;
   return "unknown_send_error";
 }
 
-async function persistSentState(
+async function reconcileAcceptedDelivery(
+  queueMessage: Message<OutboundJob>,
   env: MailEnv,
-  messageId: string,
-  providerMessageId: string,
-): Promise<boolean> {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    try {
-      if (await markOutboundSent(env, messageId, providerMessageId)) return true;
-    } catch (error) {
-      console.error(JSON.stringify({
-        event: "mail_sent_state_update_retry",
-        messageId,
-        attempt: attempt + 1,
-        error: error instanceof Error ? error.message : String(error),
-      }));
-    }
-  }
+): Promise<void> {
+  const job = queueMessage.body;
+  if (job.kind !== "reconcile") return;
   try {
-    await env.MAIL_OBJECTS.put(
-      `delivery-receipts/${messageId}.json`,
-      JSON.stringify({ messageId, providerMessageId, sentAt: new Date().toISOString() }),
-      {
-        httpMetadata: { contentType: "application/json; charset=utf-8" },
-        customMetadata: { reconciliation: "required" },
-      },
+    const persistence = await persistProviderDelivery(
+      env,
+      job.messageId,
+      job.providerMessageId,
+      job.internetMessageId,
+      job.sentAt,
     );
+    if (persistence.statePersisted || persistence.receiptRecorded) {
+      queueMessage.ack();
+    } else {
+      queueMessage.retry();
+    }
   } catch (error) {
     console.error(JSON.stringify({
-      event: "mail_delivery_receipt_fallback_failed",
-      messageId,
+      event: "mail_delivery_reconciliation_failed",
+      messageId: job.messageId,
       error: error instanceof Error ? error.message : String(error),
     }));
+    queueMessage.retry();
   }
-  return false;
 }
 
 export async function consumeOutbound(
@@ -73,8 +74,16 @@ export async function consumeOutbound(
   env: MailEnv,
 ): Promise<void> {
   for (const queueMessage of batch.messages) {
+    if (queueMessage.body.kind === "reconcile") {
+      await reconcileAcceptedDelivery(queueMessage, env);
+      continue;
+    }
     const messageId = queueMessage.body.messageId;
     try {
+      if (await settleTrashedQueuedOutbound(env, messageId)) {
+        queueMessage.ack();
+        continue;
+      }
       const record = await claimOutboundRecord(env, messageId);
       if (!record) {
         const status = await getOutboundStatus(env, messageId);
@@ -93,6 +102,10 @@ export async function consumeOutbound(
       };
       if (record.in_reply_to) headers["In-Reply-To"] = record.in_reply_to;
       if (references.length > 0) headers.References = references.join(" ");
+      if (await abortClaimedTrashedOutbound(env, record.id)) {
+        queueMessage.ack();
+        continue;
+      }
       const result = await sendWithResend(env, {
         id: record.id,
         to: parseArray(record.to_json),
@@ -104,10 +117,41 @@ export async function consumeOutbound(
         text: record.text_body,
         headers,
       });
-      const persisted = await persistSentState(env, record.id, result.messageId);
-      if (!persisted) {
-        console.error(JSON.stringify({
-          event: "mail_sent_state_update_failed",
+      const internetMessageId = await getResendInternetMessageId(
+        env,
+        result.messageId,
+      );
+      const sentAt = new Date().toISOString();
+      const persistence = await persistProviderDelivery(
+        env,
+        record.id,
+        result.messageId,
+        internetMessageId,
+        sentAt,
+      );
+      if (!persistence.statePersisted && !persistence.receiptRecorded) {
+        try {
+          await env.OUTBOUND_QUEUE.send({
+            kind: "reconcile",
+            messageId: record.id,
+            providerMessageId: result.messageId,
+            internetMessageId,
+            sentAt,
+          }, { delaySeconds: 60 });
+        } catch {
+          throw new DeliveryRecoveryQueueError(
+            "Accepted delivery could not be queued for reconciliation",
+          );
+        }
+        console.warn(JSON.stringify({
+          event: "mail_delivery_reconciliation_queued",
+          messageId: record.id,
+          providerMessageId: result.messageId,
+        }));
+      }
+      if (!persistence.statePersisted && persistence.receiptRecorded) {
+        console.warn(JSON.stringify({
+          event: "mail_sent_state_deferred_to_receipt",
           messageId: record.id,
           providerMessageId: result.messageId,
         }));
@@ -115,14 +159,16 @@ export async function consumeOutbound(
       queueMessage.ack();
     } catch (error) {
       const code = errorCode(error);
-      try {
-        await markOutboundFailed(env, messageId, code);
-      } catch (stateError) {
-        console.error(JSON.stringify({
-          event: "mail_failed_state_update_failed",
-          messageId,
-          error: stateError instanceof Error ? stateError.message : String(stateError),
-        }));
+      if (!(error instanceof DeliveryRecoveryQueueError)) {
+        try {
+          await markOutboundFailed(env, messageId, code);
+        } catch (stateError) {
+          console.error(JSON.stringify({
+            event: "mail_failed_state_update_failed",
+            messageId,
+            error: stateError instanceof Error ? stateError.message : String(stateError),
+          }));
+        }
       }
       console.error(JSON.stringify({
         event: "mail_send_failed",

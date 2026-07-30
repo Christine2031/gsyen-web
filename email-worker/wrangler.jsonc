@@ -9,9 +9,12 @@
     "enabled": true,
     "head_sampling_rate": 1
   },
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
   "vars": {
     "MAIL_DOMAIN": "gsyen.com",
-    "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+    "INBOUND_DOMAINS": "gsyen.com",
     "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
     "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
     "AUTO_APPROVE_SIGNUPS": "false",
@@ -52,9 +55,12 @@
   "env": {
     "development": {
       "name": "gsyen-mail-development",
+      "triggers": {
+        "crons": ["*/15 * * * *"]
+      },
       "vars": {
         "MAIL_DOMAIN": "gsyen.com",
-        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
         "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
         "AUTO_APPROVE_SIGNUPS": "false",
@@ -95,6 +101,9 @@
     },
     "production": {
       "name": "gsyen-mail-production",
+      "triggers": {
+        "crons": ["*/15 * * * *"]
+      },
       "workers_dev": false,
       "routes": [
         {
@@ -104,7 +113,7 @@
       ],
       "vars": {
         "MAIL_DOMAIN": "gsyen.com",
-        "INBOUND_DOMAINS": "gsyen.com,mail.gsyen.com",
+        "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
         "ALLOWED_ORIGINS": "https://gsyen.com",
         "AUTO_APPROVE_SIGNUPS": "false",
@@ -145,4 +154,3 @@
     }
   }
 }
-

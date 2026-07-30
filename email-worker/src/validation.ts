@@ -21,6 +21,8 @@ const RESERVED_LOCAL_PARTS = new Set([
 
 const ADDRESS_PATTERN =
   /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
+const MESSAGE_ID_PATTERN = /^<[^<>\s@]+@[^<>\s@]+>$/;
+export const MAX_RFC_MESSAGE_ID_LENGTH = 998;
 
 export function normalizeLocalPart(value: unknown): string {
   if (typeof value !== "string") {
@@ -73,11 +75,11 @@ function normalizeString(value: unknown, name: string, maxLength: number): strin
   return output;
 }
 
-function normalizeHeader(value: unknown, name: string): string | undefined {
+function normalizeMessageId(value: unknown, name: string): string | undefined {
   if (value === undefined || value === null || value === "") return undefined;
-  const output = normalizeString(value, name, 2_048);
-  if (/[\r\n]/.test(output)) {
-    throw new ApiError(400, `invalid_${name}`, `${name} contains invalid characters`);
+  const output = normalizeString(value, name, MAX_RFC_MESSAGE_ID_LENGTH);
+  if (/[\r\n]/.test(output) || !MESSAGE_ID_PATTERN.test(output)) {
+    throw new ApiError(400, `invalid_${name}`, `${name} must be an RFC Message-ID`);
   }
   return output;
 }
@@ -96,15 +98,31 @@ export function parseSendRequest(value: unknown): SendRequest {
     throw new ApiError(400, "invalid_recipients", "Use 1 to 10 unique recipients");
   }
   const references = Array.isArray(input.references)
-    ? input.references.map((item) => normalizeHeader(item, "references")).filter(Boolean)
+    ? input.references.map((item) => normalizeMessageId(item, "references")).filter(Boolean)
     : [];
+  if (references.length > 100) {
+    throw new ApiError(400, "invalid_references", "Use at most 100 References entries");
+  }
+  const category = input.category === undefined ? "primary" : input.category;
+  if (
+    typeof category !== "string"
+    || (
+      category !== "primary"
+      && category !== "social"
+      && category !== "promotions"
+      && category !== "updates"
+    )
+  ) {
+    throw new ApiError(400, "invalid_category", "Message category is invalid");
+  }
   return {
     to: uniqueTo,
     cc,
     subject: normalizeString(input.subject, "subject", 200),
     text: normalizeString(input.text, "text", 100_000),
-    inReplyTo: normalizeHeader(input.inReplyTo, "in_reply_to"),
-    references: references as string[],
+    inReplyTo: normalizeMessageId(input.inReplyTo, "in_reply_to"),
+    references: [...new Set(references)] as string[],
+    category,
   };
 }
 

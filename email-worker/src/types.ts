@@ -44,6 +44,8 @@ export type MessageSummary = {
   id: string;
   direction: "inbound" | "outbound";
   folder: "inbox" | "sent" | "outbox";
+  provider_message_id: string | null;
+  internet_message_id: string | null;
   from_address: string;
   envelope_from_address: string | null;
   is_read: number;
@@ -54,6 +56,7 @@ export type MessageSummary = {
   spam_at: string | null;
   trashed_at: string | null;
   attachment_count: number;
+  category: "primary" | "social" | "promotions" | "updates";
   to_json: string;
   cc_json: string;
   subject: string;
@@ -67,9 +70,20 @@ export type MessageSummary = {
   sent_at: string | null;
 };
 
-export type OutboundJob = {
+export type OutboundSendJob = {
   messageId: string;
+  kind?: "send";
 };
+
+export type OutboundReconciliationJob = {
+  kind: "reconcile";
+  messageId: string;
+  providerMessageId: string;
+  internetMessageId: string | null;
+  sentAt: string;
+};
+
+export type OutboundJob = OutboundSendJob | OutboundReconciliationJob;
 
 export type SendRequest = {
   to: string[];
@@ -78,6 +92,7 @@ export type SendRequest = {
   text: string;
   inReplyTo?: string;
   references?: string[];
+  category?: "primary" | "social" | "promotions" | "updates";
 };
 
 export type AttachmentInput = {
