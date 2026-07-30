@@ -71,8 +71,8 @@ async function insertOutbound(
   status: "queued" | "sent" | "failed",
 ): Promise<void> {
   const mailbox = await createMailbox(testEnv, {
-    ownerId: `owner-${id}`,
-    localPart: `owner-${id}`,
+    ownerId: `owner${id}`,
+    localPart: `owner${id}`.replace(/[^a-z0-9.]/g, ""),
     displayName: "DLQ",
   });
   await testEnv.DB.prepare(

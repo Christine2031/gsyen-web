@@ -40,8 +40,8 @@ beforeEach(async () => {
 describe("outbound delivery claim", () => {
   it("allows only one active claim for a queued message", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "claim-owner",
-      localPart: "claim-owner",
+      ownerId: "claimowner",
+      localPart: "claimowner",
       displayName: "Claim",
     });
     await testEnv.DB.prepare(
@@ -72,8 +72,8 @@ describe("outbound delivery claim", () => {
 
   it("isolates a malformed message and continues the same queue batch", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "batch-owner",
-      localPart: "batch-owner",
+      ownerId: "batchowner",
+      localPart: "batchowner",
       displayName: "Batch",
     });
     await testEnv.DB.prepare(
@@ -108,8 +108,8 @@ describe("outbound delivery claim", () => {
 
   it("settles a trashed queued message without sending or retrying", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "trashed-queue-owner",
-      localPart: "trashed-queue-owner",
+      ownerId: "trashedqueueowner",
+      localPart: "trashedqueueowner",
       displayName: "Trashed",
     });
     await testEnv.DB.prepare(
@@ -157,8 +157,8 @@ describe("outbound delivery claim", () => {
 
   it("can abort a claimed message if it is trashed before provider send", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "claimed-trash-owner",
-      localPart: "claimed-trash-owner",
+      ownerId: "claimedtrashowner",
+      localPart: "claimedtrashowner",
       displayName: "Claimed Trash",
     });
     await testEnv.DB.prepare(
@@ -194,8 +194,8 @@ describe("outbound delivery claim", () => {
 
   it("settles abandoned trashed queue records during scheduled maintenance", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "sweep-trash-owner",
-      localPart: "sweep-trash-owner",
+      ownerId: "sweeptrashowner",
+      localPart: "sweeptrashowner",
       displayName: "Sweep Trash",
     });
     const now = new Date().toISOString();
@@ -231,8 +231,8 @@ describe("outbound delivery claim", () => {
 
   it("does not resurrect a trashed settled message during reconciliation", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "trashed-reconcile-owner",
-      localPart: "trashed-reconcile-owner",
+      ownerId: "trashedreconcileowner",
+      localPart: "trashedreconcileowner",
       displayName: "Trashed Reconcile",
     });
     const now = new Date().toISOString();

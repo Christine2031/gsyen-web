@@ -47,8 +47,8 @@ async function capture(id: string, body: unknown): Promise<void> {
 
 async function insertFailedOutbound(id: string): Promise<void> {
   const mailbox = await createMailbox(testEnv, {
-    ownerId: `owner-${id}`,
-    localPart: `owner-${id}`,
+    ownerId: `owner${id}`,
+    localPart: `owner${id}`.replace(/[^a-z0-9.]/g, ""),
     displayName: "Replay",
   });
   await testEnv.DB.prepare(

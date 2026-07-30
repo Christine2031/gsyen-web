@@ -1,4 +1,4 @@
-import { requireAdmin, requireUser } from "./auth";
+import { requireAdmin, requireInternalService, requireUser } from "./auth";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
 import { routeMessageRequest } from "./messageApi";
@@ -20,6 +20,8 @@ import {
 } from "./validation";
 
 type RegisterBody = { localPart?: unknown; displayName?: unknown };
+type InternalRegisterBody = { ownerId?: unknown; localPart?: unknown; displayName?: unknown };
+type InternalRevokeBody = { ownerId?: unknown; reason?: unknown };
 type AdminStatusBody = { status?: unknown };
 type AliasBody = { localPart?: unknown };
 
@@ -44,6 +46,57 @@ export async function routeRequest(
   if (request.method === "GET" && path === "/health") {
     return json(request, env, { ok: true, service: "gsyen-mail", domain: env.MAIL_DOMAIN });
   }
+
+  if (request.method === "POST" && path === "/v1/internal/mailboxes/register") {
+    requireInternalService(request, env);
+    const body = await readJson<InternalRegisterBody>(request);
+    const ownerId = String(body.ownerId ?? "").trim();
+    if (ownerId.length < 8) {
+      throw new ApiError(400, "invalid_owner", "Mailbox owner id is required");
+    }
+    const mailbox = await createMailbox(env, {
+      ownerId,
+      localPart: normalizeLocalPart(body.localPart),
+      displayName: normalizeDisplayName(body.displayName),
+    });
+    ctx.waitUntil(writeAudit(env, {
+      ownerId,
+      action: "mailbox.register_internal",
+      targetId: mailbox.id,
+      outcome: "allowed",
+      metadata: { registrationSource: "internal" },
+    }));
+    return json(request, env, {
+      mailbox: await serializeMailbox(env, mailbox),
+      registrationSource: "internal",
+    }, 201);
+  }
+
+  if (request.method === "POST" && path === "/v1/internal/mailboxes/revoke") {
+    requireInternalService(request, env);
+    const body = await readJson<InternalRevokeBody>(request);
+    const ownerId = String(body.ownerId ?? "").trim();
+    if (ownerId.length < 8) {
+      throw new ApiError(400, "invalid_owner", "Mailbox owner id is required");
+    }
+    const mailbox = await getMailboxByOwner(env, ownerId);
+    if (!mailbox) {
+      throw new ApiError(404, "mailbox_not_found", "Mailbox was not found");
+    }
+    const revokedMailbox = await updateMailboxStatus(env, mailbox.id, "suspended");
+    ctx.waitUntil(writeAudit(env, {
+      ownerId,
+      action: "mailbox.revoke_internal",
+      targetId: revokedMailbox.id,
+      outcome: "allowed",
+      metadata: { reason: typeof body.reason === "string" ? body.reason.slice(0, 240) : undefined },
+    }));
+    return json(request, env, {
+      mailbox: await serializeMailbox(env, revokedMailbox),
+      operation: "revoked",
+    }, 200);
+  }
+
   const user = await requireUser(request, env);
 
   if (request.method === "POST" && path === "/v1/mailboxes/register") {

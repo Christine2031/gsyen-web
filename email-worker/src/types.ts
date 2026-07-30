@@ -1,6 +1,7 @@
 export type MailEnv = Env & {
   RESEND_API_KEY: string;
   SUPABASE_ANON_KEY: string;
+  MAIL_WORKER_INTERNAL_TOKEN?: string;
 };
 
 export type AuthUser = {
@@ -33,6 +34,7 @@ export type MailboxRecord = {
   id: string;
   owner_id: string;
   local_part: string;
+  canonical_local_part?: string;
   address: string;
   display_name: string;
   status: MailboxStatus;

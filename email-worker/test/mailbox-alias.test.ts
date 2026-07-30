@@ -44,18 +44,18 @@ describe("mailbox aliases", () => {
   it("does not let another mailbox claim an existing alias", async () => {
     const first = await createMailbox(testEnv, {
       ownerId: "alias-owner-1",
-      localPart: "first-owner",
+      localPart: "firstowner",
       displayName: "First",
     });
     const second = await createMailbox(testEnv, {
       ownerId: "alias-owner-2",
-      localPart: "second-owner",
+      localPart: "secondowner",
       displayName: "Second",
     });
-    await addMailboxAlias(testEnv, first.id, "shared-name");
+    await addMailboxAlias(testEnv, first.id, "shared.name");
 
     await expect(
-      addMailboxAlias(testEnv, second.id, "shared-name"),
+      addMailboxAlias(testEnv, second.id, "sharedname"),
     ).rejects.toMatchObject({ status: 409, code: "alias_unavailable" });
   });
 });

@@ -1,3 +1,4 @@
 # Copy to .dev.vars. Never commit the real Supabase anon key.
 SUPABASE_ANON_KEY=replace-with-halfsphere-anon-key
 RESEND_API_KEY=replace-with-resend-sending-access-key
+MAIL_WORKER_INTERNAL_TOKEN=replace-with-internal-worker-token

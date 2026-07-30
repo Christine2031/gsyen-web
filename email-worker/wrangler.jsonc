@@ -19,7 +19,8 @@
     "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
     "AUTO_APPROVE_SIGNUPS": "false",
     "MAX_MESSAGE_BYTES": "5242880",
-    "DAILY_SEND_LIMIT": "30"
+    "DAILY_SEND_LIMIT": "30",
+    "MAIL_WORKER_INTERNAL_TOKEN": "dev-internal-token"
   },
   "d1_databases": [
     {
@@ -74,7 +75,8 @@
         "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
         "AUTO_APPROVE_SIGNUPS": "false",
         "MAX_MESSAGE_BYTES": "5242880",
-        "DAILY_SEND_LIMIT": "30"
+        "DAILY_SEND_LIMIT": "30",
+        "MAIL_WORKER_INTERNAL_TOKEN": "dev-internal-token"
       },
       "d1_databases": [
         {
