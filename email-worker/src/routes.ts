@@ -3,6 +3,10 @@ import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
 import { routeMessageRequest } from "./messageApi";
 import {
+  replayDeadLetter,
+} from "./deadLetters";
+import { getOperationsSnapshot } from "./operations";
+import {
   addMailboxAlias,
   createMailbox,
   getMailboxByOwner,
@@ -67,6 +71,27 @@ export async function routeRequest(
 
   const messageResponse = await routeMessageRequest(request, env, ctx, user, path, url);
   if (messageResponse) return messageResponse;
+
+  if (request.method === "GET" && path === "/v1/admin/operations") {
+    requireAdmin(user);
+    return json(request, env, { operations: await getOperationsSnapshot(env) });
+  }
+
+  const replayMatch = path.match(
+    /^\/v1\/admin\/dead-letters\/([A-Za-z0-9_-]{1,128})\/replay$/,
+  );
+  if (request.method === "POST" && replayMatch) {
+    requireAdmin(user);
+    const result = await replayDeadLetter(env, replayMatch[1]);
+    await writeAudit(env, {
+      ownerId: user.id,
+      action: "mail.dead_letter.replay",
+      targetId: result.messageId ?? replayMatch[1],
+      outcome: "allowed",
+      metadata: result,
+    });
+    return json(request, env, { result });
+  }
 
   const adminMatch = path.match(/^\/v1\/admin\/mailboxes\/([0-9a-f-]{36})\/status$/i);
   if (request.method === "POST" && adminMatch) {
