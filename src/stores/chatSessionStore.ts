@@ -22,11 +22,19 @@ function addSyncedId(id: string) {
   localStorage.setItem(SYNCED_KEY, JSON.stringify([...ids]));
 }
 
+function hasRecoverableCurrentChat(currentChat: string | null): boolean {
+  if (!currentChat?.trim()) return false;
+  try {
+    const parsed = JSON.parse(currentChat);
+    return Array.isArray(parsed) && parsed.length > 0;
+  } catch { return false; }
+}
+
 export function shouldKeepLocalChatOnEmptyPull(
   local: Pick<StoredSession, 'messages'>[],
   currentChat: string | null,
 ): boolean {
-  return Boolean(currentChat && currentChat !== '[]')
+  return hasRecoverableCurrentChat(currentChat)
     || local.some(session => (session.messages?.length ?? 0) > 0);
 }
 
@@ -189,3 +197,4 @@ export const chatSessionStore = {
     localStorage.removeItem(CURRENT_CHAT_KEY);
   },
 };
+

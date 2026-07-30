@@ -64,6 +64,9 @@ export function useMailMutations({
     const serverIds = [...new Set([...originals.values()].flatMap(mailMessageIds))];
     const sequence = ++mutationSequence.current;
     const groups = mutationGroups(patch);
+    const activePatch = (id: string) => Object.fromEntries(Object.entries(patch).filter(([key]) => (
+      latestMutation.current.get(`${id}:${mutationGroup(key)}`) === sequence
+    ))) as MailMessagePatch;
     originals.forEach((_, id) => groups.forEach(group => (
       latestMutation.current.set(`${id}:${group}`, sequence)
     )));
@@ -71,18 +74,15 @@ export function useMailMutations({
     const commit = syncPatch(serverIds, patch);
     void commit.catch(() => saveEmails(current => current.map(item => {
       const original = originals.get(item.id);
-      if (!original) return item;
-      const active = Object.fromEntries(Object.entries(patch).filter(([key]) => (
-        latestMutation.current.get(`${item.id}:${mutationGroup(key)}`) === sequence
-      ))) as MailMessagePatch;
-      return restoreLocalMailItem(item, original, active);
+      return original ? restoreLocalMailItem(item, original, activePatch(item.id)) : item;
     })));
     if (!notice) return;
     showToast(notice, async () => {
-      await commit;
+      try { await commit; }
+      catch { onSyncFailure(); return; }
       const restoreGroups = new Map<string, { ids: string[]; patch: MailMessagePatch }>();
       originals.forEach(item => {
-        const restored = restoreMailPatch(item, patch);
+        const restored = restoreMailPatch(item, activePatch(item.id));
         const key = JSON.stringify(restored);
         const group = restoreGroups.get(key) ?? { ids: [], patch: restored };
         group.ids.push(...mailMessageIds(item));
@@ -93,7 +93,7 @@ export function useMailMutations({
       ));
       saveEmails(current => current.map(item => {
         const original = originals.get(item.id);
-        return original ? restoreLocalMailItem(item, original, patch) : item;
+        return original ? restoreLocalMailItem(item, original, activePatch(item.id)) : item;
       }));
     });
   };

@@ -35,4 +35,10 @@ describe('chat session sync guards', () => {
     expect(shouldKeepLocalChatOnEmptyPull([], null)).toBe(false);
     expect(shouldKeepLocalChatOnEmptyPull([{ messages: [] }], '[]')).toBe(false);
   });
+
+  it('ignores malformed or non-array current chat snapshots', () => {
+    expect(shouldKeepLocalChatOnEmptyPull([], '{}')).toBe(false);
+    expect(shouldKeepLocalChatOnEmptyPull([], '   ')).toBe(false);
+    expect(shouldKeepLocalChatOnEmptyPull([], '{')).toBe(false);
+  });
 });

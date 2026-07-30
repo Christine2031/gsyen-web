@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import {
   mailApiToEmailItem, mailItemFolder, mailMessageTime,
@@ -71,10 +71,6 @@ export function mapMailMessages(messages: MailApiMessage[], lang: 'zh' | 'en'): 
   ));
 }
 
-function cachedMailMessageIds(items: EmailItem[]): Set<string> {
-  return new Set(items.flatMap(item => [item.id, ...(item.messageIds ?? [])]));
-}
-
 function mergeMailItems(remote: EmailItem[], cached: EmailItem[]): EmailItem[] {
   const byId = new Map<string, EmailItem>();
   cached.forEach(item => byId.set(item.id, item));
@@ -82,19 +78,13 @@ function mergeMailItems(remote: EmailItem[], cached: EmailItem[]): EmailItem[] {
   return compactMailSyncEmails([...byId.values()]);
 }
 
-async function loadFolder(
-  folder: ApiMailFolder,
-  knownIds: Set<string> = new Set(),
-): Promise<MailApiMessage[]> {
+async function loadFolder(folder: ApiMailFolder): Promise<MailApiMessage[]> {
   const messages: MailApiMessage[] = [];
   let cursor: string | undefined;
   for (let page = 0; page < MAX_PAGES_PER_FOLDER; page += 1) {
     const result = await listMailMessages(folder, cursor);
     messages.push(...result.messages);
-    const pageAlreadyCached = knownIds.size > 0
-      && result.messages.length > 0
-      && result.messages.every(message => knownIds.has(message.id));
-    if (pageAlreadyCached || !result.nextCursor || result.nextCursor === cursor) return messages;
+    if (!result.nextCursor || result.nextCursor === cursor) return messages;
     cursor = result.nextCursor;
   }
   throw new MailApiError(413, 'mail_sync_limit', 'Mailbox is too large to synchronize safely');
@@ -116,8 +106,11 @@ export function useMailSync(lang: 'zh' | 'en') {
   const inFlight = useRef<{ userId: string; request: Promise<void> } | null>(null);
   const lastSuccessfulSync = useRef(0);
   const settleTimer = useRef<number | null>(null);
-  activeIdentity.current = identityKey;
-  dataOwner.current = dataOwnerId;
+
+  useLayoutEffect(() => {
+    activeIdentity.current = identityKey;
+    dataOwner.current = dataOwnerId;
+  }, [identityKey, dataOwnerId]);
 
   const runRefresh = useCallback(async () => {
     const userId = user?.id;
@@ -134,7 +127,7 @@ export function useMailSync(lang: 'zh' | 'en') {
         throw new MailApiError(403, 'mailbox_inactive', 'Mailbox is not active');
       }
       const cached = readMailSyncSnapshot(userId, lang);
-      const messages = await loadFolder('all', cachedMailMessageIds(cached?.emails ?? []));
+      const messages = await loadFolder('all');
       if (!isCurrent()) return;
       const nextEmails = mergeMailItems(mapMailMessages(messages, lang), cached?.emails ?? []);
       dataOwner.current = userId;

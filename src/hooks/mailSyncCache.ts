@@ -69,7 +69,7 @@ export function clearMailSyncSnapshot(uid: string, lang: 'zh' | 'en') {
 
 export function isPermanentMailSyncError(error: unknown): boolean {
   const item = error as { status?: unknown; code?: unknown } | null;
-  const status = typeof item?.status === 'number' ? item.status : 0;
   const code = typeof item?.code === 'string' ? item.code : '';
-  return [401, 403, 404].includes(status) || PERMANENT_CODES.has(code);
+  return PERMANENT_CODES.has(code);
 }
+
