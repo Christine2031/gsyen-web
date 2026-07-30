@@ -115,4 +115,19 @@ describe("inbound email", () => {
     expect(rejection).toContain("domain is not accepted");
     expect(count?.count).toBe(0);
   });
+
+  it("rejects an unknown root-domain recipient without storing content", async () => {
+    let rejection = "";
+    await receiveEmail(emailMessage(
+      "unknown@gsyen.com",
+      "From: sender@example.com\r\n\r\nHello",
+      (reason) => { rejection = reason; },
+    ), testEnv);
+    const count = await testEnv.DB.prepare(
+      "SELECT count(*) AS count FROM messages",
+    ).first<{ count: number }>();
+    expect(rejection).toContain("Mailbox does not exist or is inactive");
+    expect(rejection).not.toContain("domain is not accepted");
+    expect(count?.count).toBe(0);
+  });
 });

@@ -58,9 +58,14 @@ npx wrangler d1 migrations apply gsyen-mail-production --remote --env production
 
 1. 在 Resend 保持 `gsyen.com` 为 Verified，保留其 SPF、DKIM 与 bounce 记录。
 2. Resend 发信 DNS 与根域入站 MX 相互独立，不得删除有效的 SPF/DKIM。
-3. 不为 `mail.gsyen.com` 创建 MX 或 Email Routing 规则。
-4. 只为已存在且已激活的 `@gsyen.com` 邮箱创建精确 Worker 路由。
-5. 保持 catch-all 关闭，避免不存在地址产生无效访问和存储。
+3. 删除 `mail.gsyen.com` 现存的三条 Cloudflare MX 记录，以及所有以
+   `@mail.gsyen.com` 为目标的 Email Routing 规则；不能只停止创建新记录。
+4. 删除后同时从 DNS Records 与 Email Routing Rules 页面确认已退役配置不存在，
+   并用公共 DNS 查询确认 `mail.gsyen.com` 不再返回 MX。
+5. 只为已存在且已激活的 `@gsyen.com` 邮箱创建精确 Worker 路由。
+6. 保持根域 Cloudflare MX、Resend SPF/DKIM/bounce 记录有效，不得在清理旧子域时
+   删除这些生产配置。
+7. 保持 catch-all 关闭，避免不存在地址产生无效访问和存储。
 
 DNS 通常 5–15 分钟生效，全球传播最长可能达到 24 小时。
 
@@ -103,6 +108,8 @@ Content-Type: application/json
 7. 人为使用不存在地址，确认没有 catch-all 泄露或无限存储。
 8. 超过每日配额返回 429，不产生额外队列消息。
 9. 检查 Queue、DLQ、Resend、Worker 与 D1 日志。
+10. 确认 `mail.gsyen.com` 无 MX、无 Email Routing 规则，同时根域收件与 Resend
+    发件仍各自通过一次真实邮件测试。
 
 ## 回滚
 
