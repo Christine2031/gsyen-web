@@ -19,26 +19,45 @@ const RESERVED_LOCAL_PARTS = new Set([
   "webmaster",
 ]);
 
+const RESERVED_CANONICAL_LOCAL_PARTS = new Set(
+  Array.from(RESERVED_LOCAL_PARTS).map((value) => value.replace(/\./g, "")),
+);
+
 const ADDRESS_PATTERN =
   /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$/i;
 const MESSAGE_ID_PATTERN = /^<[^<>\s@]+@[^<>\s@]+>$/;
 export const MAX_RFC_MESSAGE_ID_LENGTH = 998;
+const MAILBOX_LOCAL_PART_MIN_LENGTH = 3;
+const MAILBOX_LOCAL_PART_MAX_LENGTH = 30;
 
 export function normalizeLocalPart(value: unknown): string {
   if (typeof value !== "string") {
     throw new ApiError(400, "invalid_local_part", "Mailbox name is required");
   }
   const localPart = value.trim().toLowerCase();
+  const canonicalLocalPart = localPart.replace(/\./g, "");
   if (
-    localPart.length < 3 ||
-    localPart.length > 32 ||
-    !/^[a-z0-9](?:[a-z0-9._-]*[a-z0-9])$/.test(localPart) ||
-    /[._-]{2}/.test(localPart) ||
-    RESERVED_LOCAL_PARTS.has(localPart)
+    localPart.length < MAILBOX_LOCAL_PART_MIN_LENGTH ||
+    localPart.length > MAILBOX_LOCAL_PART_MAX_LENGTH ||
+    !/^[a-z0-9](?:[a-z0-9.]*[a-z0-9])$/.test(localPart) ||
+    localPart.includes("..") ||
+    RESERVED_LOCAL_PARTS.has(localPart) ||
+    RESERVED_CANONICAL_LOCAL_PARTS.has(canonicalLocalPart)
   ) {
     throw new ApiError(400, "invalid_local_part", "Mailbox name is unavailable");
   }
   return localPart;
+}
+
+export function canonicalizeLocalPart(value: unknown): string {
+  const normalized = normalizeLocalPart(value);
+  return normalized.replace(/\./g, "");
+}
+
+export function canonicalizeLookupLocalPart(value: string): string | null {
+  const localPart = value.trim().toLowerCase();
+  if (!localPart || /[\r\n\0]/.test(localPart)) return null;
+  return localPart.replace(/\./g, "");
 }
 
 export function normalizeDisplayName(value: unknown): string {
@@ -154,6 +173,10 @@ export function canonicalInboundAddress(
       .filter(Boolean),
   );
   if (!allowed.has(recipientDomain)) return null;
-  const localPart = normalized.slice(0, at).split("+", 1)[0];
-  return `${localPart}@${primaryDomain.trim().toLowerCase()}`;
+
+  const rawLocalPart = normalized.slice(0, at).split("+", 1)[0];
+  const canonicalLocalPart = canonicalizeLookupLocalPart(rawLocalPart);
+  return canonicalLocalPart
+    ? `${canonicalLocalPart}@${primaryDomain.trim().toLowerCase()}`
+    : null;
 }

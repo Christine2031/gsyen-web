@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   canonicalInboundAddress,
   normalizeLocalPart,
+  canonicalizeLocalPart,
   parseIdempotencyKey,
   parseSendRequest,
 } from "../src/validation";
@@ -9,9 +10,10 @@ import {
 describe("mailbox registration validation", () => {
   it("normalizes an available mailbox name", () => {
     expect(normalizeLocalPart(" Ethan.7586 ")).toBe("ethan.7586");
+    expect(canonicalizeLocalPart(" Ethan.7586 ")).toBe("ethan7586");
   });
 
-  it.each(["admin", "a", ".ethan", "ethan..7586", "ethan@evil.test"])(
+  it.each(["admin", "a", ".ethan", "ethan..7586", "ethan@evil.test", "ethan_spam", "ethan-spam", "a.buse"])(
     "rejects reserved or malformed mailbox name %s",
     (value) => {
       expect(() => normalizeLocalPart(value)).toThrow();
@@ -165,6 +167,22 @@ describe("inbound routing", () => {
       "gsyen.com",
       "gsyen.com",
     )).toBe("ethan@gsyen.com");
+  });
+
+  it("maps gmail dot-insensitive inbound localpart", () => {
+    expect(canonicalInboundAddress(
+      "E.T.H.A.N+receipt@gsyen.com",
+      "gsyen.com",
+      "gsyen.com",
+    )).toBe("ethan@gsyen.com");
+  });
+
+  it("keeps legacy inbound aliases outside signup validation", () => {
+    expect(canonicalInboundAddress(
+      "old-user_name+receipt@gsyen.com",
+      "gsyen.com",
+      "gsyen.com",
+    )).toBe("old-user_name@gsyen.com");
   });
 
   it("rejects the retired mail subdomain", () => {

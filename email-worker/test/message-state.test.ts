@@ -26,8 +26,8 @@ beforeEach(async () => {
 describe("message state", () => {
   it("moves one message through starred, archive, and trash views", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "state-owner",
-      localPart: "state-owner",
+      ownerId: "stateowner",
+      localPart: "stateowner",
       displayName: "State",
     });
     const now = new Date().toISOString();
@@ -65,8 +65,8 @@ describe("message state", () => {
 
   it("paginates messages with identical timestamps without skipping rows", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "cursor-owner",
-      localPart: "cursor-owner",
+      ownerId: "cursorowner",
+      localPart: "cursorowner",
       displayName: "Cursor",
     });
     const createdAt = "2020-01-01T10:00:00.000Z";
@@ -95,13 +95,13 @@ describe("message state", () => {
 
   it("updates a bounded batch without crossing mailbox ownership", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "batch-state-owner",
-      localPart: "batch-state",
+      ownerId: "batchstateowner",
+      localPart: "batchstate",
       displayName: "Batch State",
     });
     const other = await createMailbox(testEnv, {
-      ownerId: "batch-state-other",
-      localPart: "batch-state-other",
+      ownerId: "batchstateother",
+      localPart: "batchstateother",
       displayName: "Other",
     });
     const now = new Date().toISOString();

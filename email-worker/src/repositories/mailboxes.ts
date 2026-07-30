@@ -1,3 +1,7 @@
+import {
+  canonicalizeLocalPart,
+  canonicalizeLookupLocalPart,
+} from "../validation";
 import { ApiError } from "../http";
 import type {
   MailEnv,
@@ -7,7 +11,7 @@ import type {
 
 const MAILBOX_COLUMNS = `
   id, owner_id, local_part, address, display_name, status,
-  created_at, approved_at
+  canonical_local_part, created_at, approved_at
 `;
 
 export async function getMailboxByOwner(
@@ -23,13 +27,28 @@ export async function getMailboxByAddress(
   env: MailEnv,
   address: string,
 ): Promise<MailboxRecord | null> {
-  return env.DB.prepare(
+  const normalized = address.trim().toLowerCase();
+  const exact = await env.DB.prepare(
     `SELECT b.id, b.owner_id, b.local_part, b.address, b.display_name,
             b.status, b.created_at, b.approved_at
        FROM mailbox_addresses a
        JOIN mailboxes b ON b.id = a.mailbox_id
       WHERE a.address = ?`,
-  ).bind(address).first<MailboxRecord>();
+  ).bind(normalized).first<MailboxRecord>();
+  if (exact) return exact;
+  const at = normalized.indexOf("@");
+  if (at < 0) return null;
+  const localPart = normalized.slice(0, at);
+  const canonicalLocalPart = canonicalizeLookupLocalPart(localPart);
+  if (!canonicalLocalPart) return null;
+  return env.DB.prepare(
+    `SELECT b.id, b.owner_id, b.local_part, b.address, b.display_name,
+            b.status, b.created_at, b.approved_at
+       FROM mailbox_addresses a
+       JOIN mailboxes b ON b.id = a.mailbox_id
+      WHERE a.canonical_local_part = ?
+        AND LOWER(substr(a.address, INSTR(a.address, '@') + 1)) = ?`,
+  ).bind(canonicalLocalPart, normalized.slice(at + 1)).first<MailboxRecord>();
 }
 
 export async function createMailbox(
@@ -42,12 +61,14 @@ export async function createMailbox(
 ): Promise<MailboxRecord> {
   const existing = await getMailboxByOwner(env, input.ownerId);
   if (existing) return existing;
+  const canonicalLocalPart = canonicalizeLocalPart(input.localPart);
   const now = new Date().toISOString();
   const status = String(env.AUTO_APPROVE_SIGNUPS) === "true" ? "active" : "pending";
   const mailbox: MailboxRecord = {
     id: crypto.randomUUID(),
     owner_id: input.ownerId,
     local_part: input.localPart,
+    canonical_local_part: canonicalLocalPart,
     address: `${input.localPart}@${env.MAIL_DOMAIN.toLowerCase()}`,
     display_name: input.displayName,
     status,
@@ -57,13 +78,14 @@ export async function createMailbox(
   try {
     await env.DB.batch([
       env.DB.prepare(
-        `INSERT INTO mailboxes
-          (id, owner_id, local_part, address, display_name, status, created_at, approved_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO mailboxes
+          (id, owner_id, local_part, canonical_local_part, address, display_name, status, created_at, approved_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(
         mailbox.id,
         mailbox.owner_id,
         mailbox.local_part,
+        mailbox.canonical_local_part,
         mailbox.address,
         mailbox.display_name,
         mailbox.status,
@@ -72,9 +94,9 @@ export async function createMailbox(
       ),
       env.DB.prepare(
         `INSERT INTO mailbox_addresses
-          (address, local_part, mailbox_id, kind, created_at)
-         VALUES (?, ?, ?, 'primary', ?)`,
-      ).bind(mailbox.address, mailbox.local_part, mailbox.id, now),
+          (address, local_part, canonical_local_part, mailbox_id, kind, created_at)
+         VALUES (?, ?, ?, ?, 'primary', ?)`,
+      ).bind(mailbox.address, mailbox.local_part, mailbox.canonical_local_part, mailbox.id, now),
     ]);
   } catch (error) {
     const conflict = await getMailboxByOwner(env, input.ownerId);
@@ -123,6 +145,7 @@ export async function addMailboxAlias(
   mailboxId: string,
   localPart: string,
 ): Promise<MailboxAddressRecord> {
+  const canonicalLocalPart = canonicalizeLocalPart(localPart);
   const mailbox = await env.DB.prepare(
     "SELECT id FROM mailboxes WHERE id = ?",
   ).bind(mailboxId).first<{ id: string }>();
@@ -144,10 +167,10 @@ export async function addMailboxAlias(
   };
   try {
     await env.DB.prepare(
-      `INSERT INTO mailbox_addresses
-        (address, local_part, mailbox_id, kind, created_at)
-       VALUES (?, ?, ?, 'alias', ?)`,
-    ).bind(address, localPart, mailboxId, record.created_at).run();
+    `INSERT INTO mailbox_addresses
+        (address, local_part, canonical_local_part, mailbox_id, kind, created_at)
+       VALUES (?, ?, ?, ?, 'alias', ?)`,
+    ).bind(address, localPart, canonicalLocalPart, mailboxId, record.created_at).run();
   } catch (error) {
     if (String(error).toLowerCase().includes("unique")) {
       throw new ApiError(409, "alias_unavailable", "Email alias is unavailable");

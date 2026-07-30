@@ -1,4 +1,4 @@
-import { requireAdmin, requireUser } from "./auth";
+import { requireAdmin, requireInternalService, requireUser } from "./auth";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
 import { routeMessageRequest } from "./messageApi";
@@ -20,8 +20,58 @@ import {
 } from "./validation";
 
 type RegisterBody = { localPart?: unknown; displayName?: unknown };
+type InternalRegisterBody = { ownerId?: unknown; localPart?: unknown; displayName?: unknown };
+type InternalRevokeBody = { ownerId?: unknown; reason?: unknown };
 type AdminStatusBody = { status?: unknown };
 type AliasBody = { localPart?: unknown };
+
+function firstText(...values: unknown[]): string {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
+function localPartFromEmail(email: string): string {
+  const at = email.indexOf("@");
+  return (at >= 0 ? email.slice(0, at) : email).split("+", 1)[0];
+}
+
+function deterministicFallbackLocalPart(ownerId: string): string {
+  const suffix = ownerId.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 18);
+  return `user${suffix || "mailbox"}`.slice(0, 30);
+}
+
+function safeLegacyLocalPart(preferred: string, ownerId: string): string {
+  const sanitized = preferred
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, ".")
+    .replace(/[^a-z0-9.]/g, "")
+    .replace(/\.+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+  try {
+    return normalizeLocalPart(sanitized);
+  } catch {
+    return normalizeLocalPart(deterministicFallbackLocalPart(ownerId));
+  }
+}
+
+async function createActiveMailboxForUser(env: MailEnv, user: { id: string; email: string; userMetadata: Record<string, unknown> }) {
+  const preferred = firstText(
+    user.userMetadata.gsyen_username,
+    user.userMetadata.username,
+    user.userMetadata.preferred_username,
+    user.userMetadata.name,
+    localPartFromEmail(user.email),
+  );
+  const mailbox = await createMailbox(env, {
+    ownerId: user.id,
+    localPart: safeLegacyLocalPart(preferred, user.id),
+    displayName: firstText(user.userMetadata.gsyen_display_name, user.userMetadata.display_name, preferred),
+  });
+  return mailbox.status === "active" ? mailbox : updateMailboxStatus(env, mailbox.id, "active");
+}
 
 async function serializeMailbox(env: MailEnv, mailbox: MailboxRecord | null) {
   if (!mailbox) return null;
@@ -44,6 +94,60 @@ export async function routeRequest(
   if (request.method === "GET" && path === "/health") {
     return json(request, env, { ok: true, service: "gsyen-mail", domain: env.MAIL_DOMAIN });
   }
+
+  if (request.method === "POST" && path === "/v1/internal/mailboxes/register") {
+    requireInternalService(request, env);
+    const body = await readJson<InternalRegisterBody>(request);
+    const ownerId = String(body.ownerId ?? "").trim();
+    if (ownerId.length < 8) {
+      throw new ApiError(400, "invalid_owner", "Mailbox owner id is required");
+    }
+    const mailbox = await createMailbox(env, {
+      ownerId,
+      localPart: normalizeLocalPart(body.localPart),
+      displayName: normalizeDisplayName(body.displayName),
+    });
+    const activeMailbox = mailbox.status === "active"
+      ? mailbox
+      : await updateMailboxStatus(env, mailbox.id, "active");
+    ctx.waitUntil(writeAudit(env, {
+      ownerId,
+      action: "mailbox.register_internal",
+      targetId: activeMailbox.id,
+      outcome: "allowed",
+      metadata: { registrationSource: "internal" },
+    }));
+    return json(request, env, {
+      mailbox: await serializeMailbox(env, activeMailbox),
+      registrationSource: "internal",
+    }, 201);
+  }
+
+  if (request.method === "POST" && path === "/v1/internal/mailboxes/revoke") {
+    requireInternalService(request, env);
+    const body = await readJson<InternalRevokeBody>(request);
+    const ownerId = String(body.ownerId ?? "").trim();
+    if (ownerId.length < 8) {
+      throw new ApiError(400, "invalid_owner", "Mailbox owner id is required");
+    }
+    const mailbox = await getMailboxByOwner(env, ownerId);
+    if (!mailbox) {
+      throw new ApiError(404, "mailbox_not_found", "Mailbox was not found");
+    }
+    const revokedMailbox = await updateMailboxStatus(env, mailbox.id, "suspended");
+    ctx.waitUntil(writeAudit(env, {
+      ownerId,
+      action: "mailbox.revoke_internal",
+      targetId: revokedMailbox.id,
+      outcome: "allowed",
+      metadata: { reason: typeof body.reason === "string" ? body.reason.slice(0, 240) : undefined },
+    }));
+    return json(request, env, {
+      mailbox: await serializeMailbox(env, revokedMailbox),
+      operation: "revoked",
+    }, 200);
+  }
+
   const user = await requireUser(request, env);
 
   if (request.method === "POST" && path === "/v1/mailboxes/register") {
@@ -64,8 +168,10 @@ export async function routeRequest(
   }
 
   if (request.method === "GET" && path === "/v1/mailboxes/me") {
+    const mailbox = await getMailboxByOwner(env, user.id)
+      ?? await createActiveMailboxForUser(env, user);
     return json(request, env, {
-      mailbox: await serializeMailbox(env, await getMailboxByOwner(env, user.id)),
+      mailbox: await serializeMailbox(env, mailbox),
     });
   }
 

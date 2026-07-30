@@ -34,7 +34,7 @@ async function insertQueuedMessage(
 ): Promise<void> {
   const mailbox = await createMailbox(testEnv, {
     ownerId,
-    localPart: ownerId,
+    localPart: ownerId.replace(/[^a-z0-9.]/g, ""),
     displayName: "Dual Write",
   });
   await testEnv.DB.prepare(

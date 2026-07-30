@@ -32,7 +32,7 @@ beforeEach(async () => {
 async function insertSendingMessage(id: string, ownerId: string): Promise<void> {
   const mailbox = await createMailbox(testEnv, {
     ownerId,
-    localPart: ownerId,
+    localPart: ownerId.replace(/[^a-z0-9.]/g, ""),
     displayName: "Receipt",
   });
   const now = new Date().toISOString();

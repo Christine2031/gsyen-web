@@ -22,8 +22,8 @@ beforeEach(async () => {
 
 async function storedMessage(): Promise<{ mailboxId: string; messageId: string }> {
   const mailbox = await createMailbox(testEnv, {
-    ownerId: "delete-owner",
-    localPart: "delete-owner",
+    ownerId: "deleteowner",
+    localPart: "deleteowner",
     displayName: "Delete",
   });
   const messageId = "00000000-0000-4000-8000-000000000201";
@@ -80,8 +80,8 @@ describe("permanent message deletion", () => {
   it("does not reveal or delete a message owned by another mailbox", async () => {
     const { messageId } = await storedMessage();
     const other = await createMailbox(testEnv, {
-      ownerId: "delete-other",
-      localPart: "delete-other",
+      ownerId: "deleteother",
+      localPart: "deleteother",
       displayName: "Other",
     });
     await expect(deleteTrashedMessage(testEnv, other.id, messageId))
@@ -156,8 +156,8 @@ describe("permanent message deletion", () => {
 
   it("refunds a trashed queued message before permanent deletion", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "delete-queued-owner",
-      localPart: "delete-queued-owner",
+      ownerId: "deletequeuedowner",
+      localPart: "deletequeuedowner",
       displayName: "Delete Queued",
     });
     const messageId = "00000000-0000-4000-8000-000000000203";
@@ -188,8 +188,8 @@ describe("permanent message deletion", () => {
 
   it("does not refund quota if a queued message is untrashed before deletion", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "delete-race-owner",
-      localPart: "delete-race-owner",
+      ownerId: "deleteraceowner",
+      localPart: "deleteraceowner",
       displayName: "Delete Race",
     });
     const messageId = "00000000-0000-4000-8000-000000000204";

@@ -39,6 +39,23 @@ describe("mailbox repository", () => {
     expect(second.id).toBe(first.id);
   });
 
+  it("keeps gmail-style usernames unique across dot variants", async () => {
+    await createMailbox(testEnv, {
+      ownerId: "owner-dotted",
+      localPart: "ethan.smith",
+      displayName: "Owner Dotted",
+    });
+
+    await expect(createMailbox(testEnv, {
+      ownerId: "owner-nodot",
+      localPart: "ethansmith",
+      displayName: "Owner No Dot",
+    })).rejects.toMatchObject({
+      status: 409,
+      code: "mailbox_unavailable",
+    });
+  });
+
   it("deduplicates client retries before consuming quota twice", async () => {
     await testEnv.DB.prepare(
       `INSERT INTO mailboxes
@@ -105,8 +122,8 @@ describe("mailbox repository", () => {
 
   it("rejects an invalid daily send limit as a server configuration error", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "invalid-limit-owner",
-      localPart: "invalid-limit",
+      ownerId: "invalidlimit-owner",
+      localPart: "invalidlimit",
       displayName: "Invalid Limit",
     });
     await testEnv.DB.prepare(
@@ -120,7 +137,7 @@ describe("mailbox repository", () => {
       invalidEnv,
       { ...mailbox, status: "active" },
       { to: ["recipient@example.com"], cc: [], subject: "Hello", text: "Body" },
-      "client:20260729:invalid-limit",
+      "client:20260729:invalidlimit",
     )).rejects.toMatchObject({
       status: 500,
       code: "config_invalid",
@@ -129,8 +146,8 @@ describe("mailbox repository", () => {
 
   it("delays delivery briefly and refunds quota when a queued send is cancelled", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "cancel-owner",
-      localPart: "cancel-owner",
+      ownerId: "cancelowner",
+      localPart: "cancelowner",
       displayName: "Cancel",
     });
     await testEnv.DB.prepare(
@@ -145,7 +162,7 @@ describe("mailbox repository", () => {
       queueEnv,
       { ...mailbox, status: "active" },
       { to: ["recipient@example.com"], cc: [], subject: "Hello", text: "Body" },
-      "client:20260729:cancel-owner",
+      "client:20260729:cancelowner",
     );
     expect(send).toHaveBeenCalledWith(
       { messageId: queued.messageId },
@@ -165,8 +182,8 @@ describe("mailbox repository", () => {
 
   it("persists an explicit message category", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "category-owner",
-      localPart: "category-owner",
+      ownerId: "categoryowner",
+      localPart: "categoryowner",
       displayName: "Category",
     });
     await testEnv.DB.prepare(
@@ -186,7 +203,7 @@ describe("mailbox repository", () => {
         text: "Body",
         category: "promotions",
       },
-      "client:20260730:category-owner",
+      "client:20260730:categoryowner",
     );
     const message = await testEnv.DB.prepare(
       "SELECT category FROM messages WHERE id = ?",
@@ -196,8 +213,8 @@ describe("mailbox repository", () => {
 
   it("keeps a durable queued outbox record when the Queue binding is unavailable", async () => {
     const mailbox = await createMailbox(testEnv, {
-      ownerId: "durable-queue-owner",
-      localPart: "durable-queue-owner",
+      ownerId: "durablequeueowner",
+      localPart: "durablequeueowner",
       displayName: "Durable Queue",
     });
     await testEnv.DB.prepare(

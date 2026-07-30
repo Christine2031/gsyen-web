@@ -6,6 +6,7 @@ type SupabaseUser = {
   email?: unknown;
   email_confirmed_at?: unknown;
   app_metadata?: unknown;
+  user_metadata?: unknown;
 };
 
 export async function requireUser(
@@ -37,11 +38,39 @@ export async function requireUser(
     data.app_metadata && typeof data.app_metadata === "object"
       ? data.app_metadata as Record<string, unknown>
       : {};
+  const userMetadata =
+    data.user_metadata && typeof data.user_metadata === "object"
+      ? data.user_metadata as Record<string, unknown>
+      : {};
   return {
     id: data.id,
     email: data.email.toLowerCase(),
     isAdmin: metadata.mail_admin === true,
+    userMetadata,
   };
+}
+
+export function requireInternalService(request: Request, env: MailEnv): void {
+  const headerKey = "x-mail-internal-token";
+  const token = request.headers.get(headerKey);
+  if (!env.MAIL_WORKER_INTERNAL_TOKEN) {
+    throw new ApiError(500, "internal_token_missing", "Internal service token is not configured");
+  }
+  if (!token || !constantTimeEqual(token, env.MAIL_WORKER_INTERNAL_TOKEN)) {
+    throw new ApiError(401, "internal_unauthorized", "Invalid internal service token");
+  }
+}
+
+function constantTimeEqual(left: string, right: string): boolean {
+  const encoder = new TextEncoder();
+  const leftBytes = encoder.encode(left);
+  const rightBytes = encoder.encode(right);
+  const maxLength = Math.max(leftBytes.length, rightBytes.length);
+  let diff = leftBytes.length ^ rightBytes.length;
+  for (let index = 0; index < maxLength; index += 1) {
+    diff |= (leftBytes[index] ?? 0) ^ (rightBytes[index] ?? 0);
+  }
+  return diff === 0;
 }
 
 export function requireAdmin(user: AuthUser): void {

@@ -10,7 +10,7 @@ import type { AuthUser, MailEnv } from "../src/types";
 
 type TestEnv = MailEnv & { TEST_MIGRATIONS: D1Migration[] };
 const testEnv = env as TestEnv;
-const user: AuthUser = { id: "api-owner", email: "api@gsyen.com", isAdmin: false };
+const user: AuthUser = { id: "apiowner", email: "api@gsyen.com", isAdmin: false, userMetadata: {} };
 const ctx = {
   waitUntil: vi.fn(),
   passThroughOnException: vi.fn(),
@@ -25,7 +25,7 @@ describe("message API representation", () => {
   it("exposes provider IDs but hides non-RFC inbound dedupe hashes", async () => {
     const mailbox = await createMailbox(testEnv, {
       ownerId: user.id,
-      localPart: "api-owner",
+      localPart: "apiowner",
       displayName: "API",
     });
     await testEnv.DB.prepare(
@@ -73,18 +73,19 @@ describe("message API representation", () => {
 
   it("lists all folders in one mailbox-scoped page", async () => {
     const allUser: AuthUser = {
-      id: "all-api-owner",
+      id: "all-apiowner",
       email: "all-api@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: allUser.id,
-      localPart: "all-owner",
+      localPart: "allowner",
       displayName: "All",
     });
     const other = await createMailbox(testEnv, {
-      ownerId: "other-owner",
-      localPart: "other-owner",
+      ownerId: "otherowner",
+      localPart: "otherowner",
       displayName: "Other",
     });
     await testEnv.DB.prepare(
@@ -124,13 +125,14 @@ describe("message API representation", () => {
 
   it("returns the persisted delivery state for an idempotent send retry", async () => {
     const retryUser: AuthUser = {
-      id: "send-retry-owner",
+      id: "sendretryowner",
       email: "send-retry@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: retryUser.id,
-      localPart: "send-retry-owner",
+      localPart: "sendretryowner",
       displayName: "Retry",
     });
     await testEnv.DB.prepare(
@@ -181,13 +183,14 @@ describe("message API representation", () => {
 
   it("rejects a null batch body through the 400 validation path", async () => {
     const batchUser: AuthUser = {
-      id: "batch-null-owner",
+      id: "batchnullowner",
       email: "batch-null@gsyen.com",
       isAdmin: false,
+      userMetadata: {},
     };
     const mailbox = await createMailbox(testEnv, {
       ownerId: batchUser.id,
-      localPart: "batch-null-owner",
+      localPart: "batchnullowner",
       displayName: "Batch Null",
     });
     await testEnv.DB.prepare(
