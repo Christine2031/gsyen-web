@@ -6,7 +6,6 @@
     { "source": "/branch", "destination": "https://branch.gsyen.com", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/facts", "destination": "/facts.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

@@ -141,7 +141,7 @@ export default function MailDetailView({
             ) : (
               <iframe
                 title={lang === 'zh' ? '隔离 HTML 邮件预览' : 'Isolated HTML mail preview'}
-                sandbox=""
+                sandbox="allow-popups allow-popups-to-escape-sandbox"
                 referrerPolicy="no-referrer"
                 srcDoc={htmlPreview}
                 className="w-full min-h-[480px] border-0 bg-white"
