@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { getMailbox, listMailMessages, authState } = vi.hoisted(() => ({
   getMailbox: vi.fn(),
@@ -25,10 +25,13 @@ vi.mock('../services/mailApi', () => ({
 }));
 
 import { __resetMailSyncCacheForTest, useMailSync } from './useMailSync';
+import { writeMailSyncSnapshot } from './mailSyncCache';
+import type { EmailItem } from '../types/mail';
 
 let root: Root | null = null;
 let host: HTMLDivElement | null = null;
 let snapshots: ReturnType<typeof useMailSync>[] = [];
+let store: Map<string, string>;
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -49,6 +52,15 @@ function message(id: string) {
   } as const;
 }
 
+
+function cachedEmail(): EmailItem {
+  return {
+    id: 'cached-1', messageIds: ['cached-1'], senderName: 'Sender', senderAddress: 'sender@example.com',
+    subject: 'Cached hello', snippet: 'The cached message body', body: 'The cached message body',
+    date: '07-30', time: '12:00', starred: false, important: false, read: false,
+    folder: 'inbox', category: 'primary', threadMessages: [], createdAt: '2026-07-30T12:00:00.000Z',
+  };
+}
 function Harness() {
   const mail = useMailSync('zh');
   snapshots.push(mail);
@@ -57,7 +69,7 @@ function Harness() {
 
 function renderHarness() {
   host = document.createElement('div');
-  document.body.append(host);
+  document.body.appendChild(host);
   root = createRoot(host);
   act(() => root?.render(<Harness />));
 }
@@ -66,11 +78,21 @@ async function flush() {
   await act(async () => { await Promise.resolve(); });
 }
 
+
+beforeEach(() => {
+  store = new Map();
+  vi.stubGlobal('localStorage', {
+    getItem: (key: string) => store.get(key) ?? null,
+    setItem: (key: string, value: string) => { store.set(key, value); },
+    removeItem: (key: string) => { store.delete(key); },
+    clear: () => { store.clear(); },
+  });
+});
 afterEach(() => {
   act(() => root?.unmount());
   root = null; host?.remove(); host = null; snapshots = [];
   __resetMailSyncCacheForTest(); getMailbox.mockReset();
-  listMailMessages.mockReset(); document.body.replaceChildren();
+  listMailMessages.mockReset(); document.body.replaceChildren(); vi.unstubAllGlobals();
 });
 
 describe('useMailSync cache hydration', () => {
@@ -82,10 +104,15 @@ describe('useMailSync cache hydration', () => {
     await flush();
 
     await act(async () => first.resolve({ messages: [message('cached-1')], nextCursor: null }));
+    await flush();
     expect(snapshots.at(-1)?.emails).toHaveLength(1);
     act(() => root?.unmount());
     root = null; host?.remove(); host = null; snapshots = [];
 
+    writeMailSyncSnapshot('mail-cache-user', 'zh', {
+      emails: [cachedEmail()],
+      mailboxAddress: 'ethan7586@gsyen.com',
+    });
     const second = deferred<{ messages: any[]; nextCursor: null }>();
     listMailMessages.mockReturnValueOnce(second.promise);
     renderHarness();

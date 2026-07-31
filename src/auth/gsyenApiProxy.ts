@@ -3,8 +3,23 @@
  * All requests go with credentials: 'include' so the browser
  * sends the HttpOnly gsyen_rt cookie automatically.
  */
-const BASE = (import.meta.env.VITE_GSYEN_API_URL as string | undefined)
-  || 'https://gsyen-api-776196228503.asia-east1.run.app';
+const CLOUD_RUN_BASE = 'https://gsyen-api-776196228503.asia-east1.run.app';
+
+export function resolveGsyenApiBase(
+  configured?: string,
+  protocol = typeof window !== 'undefined' ? window.location.protocol : '',
+): string {
+  const value = configured?.trim().replace(/\/+$/, '');
+  if (value) return value;
+  if (protocol === 'file:') {
+    return CLOUD_RUN_BASE;
+  }
+  return '';
+}
+
+const BASE = resolveGsyenApiBase(import.meta.env.VITE_GSYEN_API_URL as string | undefined);
+
+function authEndpoint(path: string): string { return `${BASE}${path}`; }
 
 export interface AuthProxyResult {
   ok: boolean;
@@ -80,7 +95,7 @@ export const authProxy = {
 
   async me(): Promise<AuthProxyResult> {
     try {
-      const r = await fetch(`${BASE}/api/auth/me`, { credentials: 'include' });
+      const r = await fetch(authEndpoint('/api/auth/me'), { credentials: 'include' });
       if (!r.ok) return { ok: false, status: r.status };
       const json = await r.json() as AuthProxyJson;
       return {

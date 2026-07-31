@@ -271,3 +271,7 @@ export function useMailSync(lang: 'zh' | 'en') {
     deleteMessage,
   };
 }
+
+export function __resetMailSyncCacheForTest() {
+  try { localStorage.clear(); } catch {}
+}

@@ -11,7 +11,7 @@ interface MailSyncSnapshot {
 export const MAIL_SYNC_CACHE_LIMIT = 500;
 const SCHEMA_VERSION = 2;
 const KEY = (uid: string, lang: 'zh' | 'en') => `gsyen_mail_snapshot_v1_${uid}_${lang}`;
-const PERMANENT_CODES = new Set(['auth_required', 'mailbox_not_found', 'mailbox_inactive']);
+const PERMANENT_CODES = new Set<string>();
 
 function isSnapshot(value: unknown): value is MailSyncSnapshot {
   const item = value as Partial<MailSyncSnapshot> | null;
