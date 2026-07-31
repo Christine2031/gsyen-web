@@ -1,3 +1,5 @@
+import PostalMime from "postal-mime";
+import { readableMessageText } from "./messageText";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
 import { parseMessageCursor, serializeMessageCursor } from "./messageCursor";
@@ -64,6 +66,31 @@ function serializeMessage(message: MessageSummary) {
     attachmentCount: message.attachment_count,
     category: message.category,
   };
+}
+
+async function recoverInboundText(
+  env: MailEnv,
+  mailboxId: string,
+  message: MessageSummary,
+): Promise<MessageSummary> {
+  if (message.direction !== "inbound" || message.text_body.trim()) return message;
+  const stored = await env.DB.prepare(
+    "SELECT raw_object_key FROM messages WHERE id = ? AND mailbox_id = ?",
+  ).bind(message.id, mailboxId).first<{ raw_object_key: string | null }>();
+  if (!stored?.raw_object_key) return message;
+  const raw = await env.MAIL_OBJECTS.get(stored.raw_object_key);
+  if (!raw) return message;
+  const parsed = await PostalMime.parse(await raw.arrayBuffer(), {
+    attachmentEncoding: "arraybuffer",
+    maxHeadersSize: 128_000,
+    maxNestingDepth: 20,
+  });
+  const text = readableMessageText(parsed);
+  if (!text) return message;
+  await env.DB.prepare(
+    "UPDATE messages SET text_body = ? WHERE id = ? AND mailbox_id = ?",
+  ).bind(text, message.id, mailboxId).run();
+  return { ...message, text_body: text };
 }
 
 function parseFolder(value: string | null): MailFolder | "all" {
@@ -226,10 +253,11 @@ export async function routeMessageRequest(
   if (request.method === "GET" && messageMatch) {
     const message = await getMessage(env, mailbox.id, messageMatch[1]);
     if (!message) throw new ApiError(404, "message_not_found", "Message was not found");
-    const viewed = message.is_read === 1
+    let viewed = message.is_read === 1
       ? message
       : await updateMessageState(env, mailbox.id, message.id, { isRead: true });
     const attachments = await listMessageAttachments(env, mailbox.id, message.id);
+    viewed = await recoverInboundText(env, mailbox.id, viewed);
     return json(request, env, {
       message: serializeMessage(viewed),
       attachments: attachments.map((item) => ({
