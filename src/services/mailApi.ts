@@ -244,6 +244,11 @@ export async function getMailMessage(id: string): Promise<MailApiMessage> {
   const result = await request<{ message: MailApiMessage }>(`/v1/messages/${encodeURIComponent(id)}`);
   return result.message;
 }
+
+export async function getMailMessageHtml(id: string): Promise<string> {
+  const result = await request<{ html: string }>(`/v1/messages/${encodeURIComponent(id)}/html`);
+  return result.html;
+}
 export async function patchMailMessage(
   id: string,
   patch: MailMessagePatch,

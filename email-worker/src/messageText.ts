@@ -17,11 +17,17 @@ function decodeEntities(value: string): string {
       : entity;
   });
 }
+function linkText(_match: string, quoted: string | undefined, singleQuoted: string | undefined, bare: string | undefined, label: string): string {
+  const href = decodeEntities(quoted ?? singleQuoted ?? bare ?? '').trim();
+  return /^https?:\/\//i.test(href) ? `${label} (${href})` : label;
+}
+
 
 export function plainTextFromHtml(html: string): string {
   return decodeEntities(html)
     .replace(/<!--[\s\S]*?-->/g, "")
     .replace(/<(script|style|template|head)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+    .replace(/<a\b[^>]*\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))[^>]*>([\s\S]*?)<\/a\s*>/gi, linkText)
     .replace(/<(br|hr)\b[^>]*>/gi, "\n")
     .replace(/<\/(address|article|blockquote|div|fieldset|footer|h[1-6]|header|li|main|p|pre|section|table|tr|ul|ol)\s*>/gi, "\n")
     .replace(/<[^>]*>/g, "")

@@ -1,4 +1,5 @@
 import PostalMime from "postal-mime";
+import { getMessageHtmlPreview } from "./htmlPreview";
 import { readableMessageText } from "./messageText";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
@@ -248,6 +249,11 @@ export async function routeMessageRequest(
       outcome: "allowed",
     }));
     return json(request, env, { cancelled: true });
+  }
+  const messageHtmlMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})\/html$/i);
+  if (request.method === "GET" && messageHtmlMatch) {
+    const html = await getMessageHtmlPreview(env, mailbox.id, messageHtmlMatch[1]);
+    return json(request, env, { html });
   }
   const messageMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})$/i);
   if (request.method === "GET" && messageMatch) {

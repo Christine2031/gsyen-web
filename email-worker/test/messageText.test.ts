@@ -11,4 +11,13 @@ describe("plainTextFromHtml", () => {
     expect(text).not.toContain("display:none");
     expect(text).not.toContain("alert(1)");
   });
+
+  it("keeps HTTPS magic links while rejecting unsafe link schemes", () => {
+    const text = plainTextFromHtml(
+      '<p><a href="https://claude.ai/login?token=abc">Sign in</a> <a href="javascript:alert(1)">Ignore</a></p>',
+    );
+    expect(text).toContain('Sign in (https://claude.ai/login?token=abc)');
+    expect(text).toContain('Ignore');
+    expect(text).not.toContain('javascript:');
+  });
 });
