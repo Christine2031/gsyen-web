@@ -1,4 +1,5 @@
 import PostalMime, { type Address, type Email } from "postal-mime";
+import { readableMessageText } from "./messageText";
 import { getMailboxByAddress } from "./repository";
 import type { AttachmentInput, MailEnv, MailboxRecord } from "./types";
 import {
@@ -140,7 +141,7 @@ async function persistInbound(
       JSON.stringify(flattenAddresses(parsed.to)),
       JSON.stringify(flattenAddresses(parsed.cc)),
       (parsed.subject ?? "").slice(0, 500),
-      (parsed.text ?? "").slice(0, 250_000),
+      readableMessageText(parsed),
       objects.htmlKey,
       objects.rawKey,
       parsed.inReplyTo?.slice(0, MAX_RFC_MESSAGE_ID_LENGTH) ?? null,
