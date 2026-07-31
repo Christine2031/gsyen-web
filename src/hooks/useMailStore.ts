@@ -3,7 +3,8 @@ import type { MouseEvent } from 'react';
 import { filterMailItems, mailMessageIds, mailSearchToken, moveMailItem,
   selectedMailIds, resolveSnooze,
   type EmailItem, type MailCategory, type MailFolder, type MailSelection, type SnoozePreset } from '../types/mail';
-import type { MailMessagePatch } from '../services/mailApi';
+import { mailApiToEmailItem } from '../types/mail';
+import { getMailMessage, type MailMessagePatch } from '../services/mailApi';
 import { appendMailReply, removeMailReply, sendMailReply, useMailToast } from './useMailCompose';
 import { useMailMutations, useMailSync } from './useMailSync';
 export function useMailStore(lang: 'zh' | 'en') {
@@ -95,6 +96,14 @@ export function useMailStore(lang: 'zh' | 'en') {
     const opened = item.read ? item : { ...item, read: true };
     setSelectedEmail(opened);
     if (!item.read) mutate([item.id], message => ({ ...message, read: true }), { isRead: true });
+    if (opened.body.trim()) return;
+    const generation = identityGeneration.current;
+    void getMailMessage(item.id).then(message => {
+      if (generation !== identityGeneration.current) return;
+      const hydrated = { ...opened, ...mailApiToEmailItem(message, lang), read: true };
+      saveEmails(current => current.map(email => email.id === item.id ? hydrated : email));
+      setSelectedEmail(current => current?.id === item.id ? hydrated : current);
+    }).catch(() => {});
   };
   const handleDeleteEmail = (id: string, event?: MouseEvent) => {
     event?.stopPropagation();

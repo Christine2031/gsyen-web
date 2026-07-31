@@ -240,6 +240,10 @@ export async function listMailMessages(
   return request(`/v1/messages?${params.toString()}`);
 }
 
+export async function getMailMessage(id: string): Promise<MailApiMessage> {
+  const result = await request<{ message: MailApiMessage }>(`/v1/messages/${encodeURIComponent(id)}`);
+  return result.message;
+}
 export async function patchMailMessage(
   id: string,
   patch: MailMessagePatch,
