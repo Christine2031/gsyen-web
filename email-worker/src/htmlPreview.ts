@@ -12,6 +12,22 @@ function removeUnsafeMarkup(source: string): string {
 }
 
 
+
+function decodeEntities(value: string): string {
+  const named: Record<string, string> = {
+    amp: "&", apos: "'", gt: ">", lt: "<", quot: '"',
+  };
+  return value.replace(/&(#x[\da-f]+|#\d+|[a-z]+);/gi, (entity, token: string) => {
+    const normalized = token.toLowerCase();
+    if (normalized in named) return named[normalized];
+    const numeric = normalized.startsWith("#x")
+      ? Number.parseInt(normalized.slice(2), 16)
+      : normalized.startsWith("#") ? Number.parseInt(normalized.slice(1), 10) : NaN;
+    return Number.isSafeInteger(numeric) && numeric >= 0 && numeric <= 0x10ffff
+      ? String.fromCodePoint(numeric)
+      : entity;
+  });
+}
 function escapeAttribute(value: string): string {
   return value.replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
@@ -25,11 +41,11 @@ function escapeAttribute(value: string): string {
 function rewriteExternalLinks(source: string): string {
   return source.replace(/<a\b([^>]*)>/gi, (_match, attributes: string) => {
     const hrefMatch = attributes.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
-    const href = (hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "").trim();
+    const href = decodeEntities((hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "").trim()).trim();
     if (!/^https?:\/\//i.test(href)) return "<a>";
 
     const retainedAttributes = attributes
-      .replace(/\s(?:href|target|rel)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .replace(/\s(?:href|target|rel)\b(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?/gi, "")
       .trim();
     const retained = retainedAttributes ? ` ${retainedAttributes}` : "";
     return `<a${retained} href="${escapeAttribute(href)}" target="_blank" rel="noopener noreferrer">`;
