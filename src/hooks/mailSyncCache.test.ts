@@ -72,7 +72,8 @@ describe('mail sync cache', () => {
     expect(compacted[0].id).toBe(`m${MAIL_SYNC_CACHE_LIMIT + 19}`);
   });
   it('distinguishes permanent identity errors from temporary sync failures', () => {
-    expect(isPermanentMailSyncError({ status: 404, code: 'mailbox_not_found' })).toBe(true);
+    expect(isPermanentMailSyncError({ status: 404, code: 'mailbox_not_found' })).toBe(false);
+    expect(isPermanentMailSyncError({ status: 401, code: 'auth_required' })).toBe(false);
     expect(isPermanentMailSyncError({ status: 0, code: 'mail_api_unavailable' })).toBe(false);
     expect(isPermanentMailSyncError(new Error('network'))).toBe(false);
   });

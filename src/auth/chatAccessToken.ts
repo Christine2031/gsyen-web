@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 
 const EXPIRY_SKEW_SECONDS = 30;
 let pendingRecovery: Promise<string> | null = null;
+let pendingForcedRecovery: Promise<string> | null = null;
 
 function usableAccessToken(session: {
   access_token?: string;
@@ -30,10 +31,30 @@ async function recoverAccessToken(): Promise<string> {
   return usableAccessToken(data.session);
 }
 
-export async function getChatAccessToken(): Promise<string> {
+async function refreshAccessToken(): Promise<string> {
+  const { data } = await supabase.auth.refreshSession();
+  const refreshed = usableAccessToken(data.session);
+  if (refreshed) return refreshed;
+  return recoverAccessToken();
+}
+
+export async function getChatAccessToken(forceRefresh = false): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const current = usableAccessToken(data.session);
-  if (current) return current;
+  if (current && !forceRefresh) return current;
+
+  if (forceRefresh) {
+    const normalRecovery = pendingRecovery;
+    if (!pendingForcedRecovery) {
+      pendingForcedRecovery = (async () => {
+        await normalRecovery?.catch(() => '');
+        return refreshAccessToken();
+      })().finally(() => {
+        pendingForcedRecovery = null;
+      });
+    }
+    return pendingForcedRecovery;
+  }
 
   if (!pendingRecovery) {
     pendingRecovery = recoverAccessToken().finally(() => {
