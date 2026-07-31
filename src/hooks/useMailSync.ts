@@ -13,6 +13,7 @@ import {
   clearMailSyncSnapshot, compactMailSyncEmails, isPermanentMailSyncError,
   readMailSyncSnapshot, writeMailSyncSnapshot,
 } from './mailSyncCache';
+import { isRetryableMailSyncError, waitForMailSyncRetry } from './mailSyncRecovery';
 
 export { useMailMutations } from './mailMutations';
 
@@ -112,7 +113,7 @@ export function useMailSync(lang: 'zh' | 'en') {
     dataOwner.current = dataOwnerId;
   }, [identityKey, dataOwnerId]);
 
-  const runRefresh = useCallback(async () => {
+  const runRefresh = useCallback(async (reportFailure = true) => {
     const userId = user?.id;
     if (!userId) throw new MailApiError(401, 'auth_required', 'Login is required');
     const version = ++requestVersion.current;
@@ -138,7 +139,7 @@ export function useMailSync(lang: 'zh' | 'en') {
       lastSuccessfulSync.current = Date.now();
     } catch (error) {
       if (isCurrent()) {
-        setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
+        if (reportFailure) setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
         if (isPermanentMailSyncError(error)) {
           clearMailSyncSnapshot(userId, lang);
           dataOwner.current = '';
@@ -158,7 +159,21 @@ export function useMailSync(lang: 'zh' | 'en') {
       new MailApiError(401, 'auth_required', 'Login is required'),
     );
     if (inFlight.current?.userId === user.id) return inFlight.current.request;
-    const request = runRefresh().finally(() => {
+    const request = (async () => {
+      try {
+        await runRefresh(false);
+      } catch (error) {
+        if (!isRetryableMailSyncError(error)) {
+          if (activeIdentity.current === user.id) {
+            setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
+          }
+          throw error;
+        }
+        await waitForMailSyncRetry();
+        if (activeIdentity.current !== user.id) return;
+        await runRefresh(true);
+      }
+    })().finally(() => {
       if (inFlight.current?.request === request) inFlight.current = null;
     });
     inFlight.current = { userId: user.id, request };

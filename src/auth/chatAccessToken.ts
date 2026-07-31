@@ -30,13 +30,20 @@ async function recoverAccessToken(): Promise<string> {
   return usableAccessToken(data.session);
 }
 
-export async function getChatAccessToken(): Promise<string> {
+async function refreshAccessToken(): Promise<string> {
+  const { data } = await supabase.auth.refreshSession();
+  const refreshed = usableAccessToken(data.session);
+  if (refreshed) return refreshed;
+  return recoverAccessToken();
+}
+
+export async function getChatAccessToken(forceRefresh = false): Promise<string> {
   const { data } = await supabase.auth.getSession();
   const current = usableAccessToken(data.session);
-  if (current) return current;
+  if (current && !forceRefresh) return current;
 
   if (!pendingRecovery) {
-    pendingRecovery = recoverAccessToken().finally(() => {
+    pendingRecovery = (forceRefresh ? refreshAccessToken() : recoverAccessToken()).finally(() => {
       pendingRecovery = null;
     });
   }

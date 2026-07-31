@@ -220,8 +220,15 @@ async function request<T>(
 }
 
 export async function getMailbox(): Promise<MailboxSummary | null> {
-  const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
-  return result.mailbox;
+  try {
+    const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
+    return result.mailbox;
+  } catch (error) {
+    if (!(error instanceof MailApiError) || error.status !== 401) throw error;
+    if (!await getChatAccessToken(true)) throw error;
+    const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
+    return result.mailbox;
+  }
 }
 
 export async function listMailMessages(

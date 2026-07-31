@@ -3,17 +3,21 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getMailbox, listMailMessages, authState } = vi.hoisted(() => ({
-  getMailbox: vi.fn(),
-  listMailMessages: vi.fn(),
-  authState: { user: { id: 'mail-cache-user', email: 'ethan7586@gsyen.com' }, loading: false },
-}));
+const { getMailbox, listMailMessages, authState, MailApiError } = vi.hoisted(() => {
+  class MailApiError extends Error {
+    constructor(readonly status: number, readonly code: string, message: string) { super(message); }
+  }
+  return {
+    getMailbox: vi.fn(),
+    listMailMessages: vi.fn(),
+    authState: { user: { id: 'mail-cache-user', email: 'ethan7586@gsyen.com' }, loading: false },
+    MailApiError,
+  };
+});
 
 vi.mock('../auth/useAuth', () => ({ useAuth: () => authState }));
 vi.mock('../services/mailApi', () => ({
-  MailApiError: class MailApiError extends Error {
-    constructor(readonly status: number, readonly code: string, message: string) { super(message); }
-  },
+  MailApiError,
   MailPatchQueue: class MailPatchQueue { clear() {} run() { return Promise.resolve(); } },
   getMailbox,
   listMailMessages,
@@ -118,5 +122,27 @@ describe('useMailSync cache hydration', () => {
     renderHarness();
     expect(snapshots.at(-1)?.emails).toHaveLength(1);
     expect(snapshots.at(-1)?.mailboxAddress).toBe('ethan7586@gsyen.com');
+  });
+});
+describe('useMailSync recovery', () => {
+  it('retries a temporary auth failure without clearing cached mail', async () => {
+    vi.useFakeTimers();
+    try {
+      writeMailSyncSnapshot('mail-cache-user', 'zh', {
+        emails: [cachedEmail()],
+        mailboxAddress: 'ethan7586@gsyen.com',
+      });
+      getMailbox.mockRejectedValueOnce(new MailApiError(401, 'auth_required', 'Login is required'))
+        .mockResolvedValue({ id: 'box', address: 'ethan7586@gsyen.com', status: 'active' });
+      listMailMessages.mockResolvedValue({ messages: [message('cached-1')], nextCursor: null });
+      renderHarness();
+      expect(snapshots.at(-1)?.emails).toHaveLength(1);
+      await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+      await flush();
+      expect(getMailbox).toHaveBeenCalledTimes(2);
+      expect(snapshots.at(-1)?.emails).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
