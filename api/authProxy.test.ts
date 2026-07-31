@@ -33,7 +33,7 @@ describe('same-origin auth proxy', () => {
 
     await handler({
       method: 'GET',
-      query: { path: ['me'] },
+      url: '/api/auth/me', query: {},
       headers: { cookie: 'gsyen_rt=old', origin: 'https://gsyen.com' },
       socket: { remoteAddress: '127.0.0.1' },
     } as never, res as never);
