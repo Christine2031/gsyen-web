@@ -1,5 +1,7 @@
 import { motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Printer, Reply, SendHorizontal } from 'lucide-react';
+import { getMailMessageHtml } from '../../services/mailApi';
 import { EmailItem } from '../../types/mail';
 
 interface MailDetailViewProps {
@@ -17,6 +19,39 @@ export default function MailDetailView({
   lang, email, inlineReplyText, onReplyChange, onSendReply,
   onBack, onArchive, onDelete,
 }: MailDetailViewProps) {
+  const [bodyMode, setBodyMode] = useState<'text' | 'html'>('text');
+  const [htmlPreview, setHtmlPreview] = useState('');
+  const [htmlLoading, setHtmlLoading] = useState(false);
+  const requestVersion = useRef(0);
+
+  useEffect(() => {
+    requestVersion.current += 1;
+    setBodyMode('text');
+    setHtmlPreview('');
+    setHtmlLoading(false);
+  }, [email.id]);
+
+  const selectHtmlPreview = () => {
+    if (bodyMode === 'html') {
+      setBodyMode('text');
+      return;
+    }
+    setBodyMode('html');
+    if (htmlPreview) return;
+    const version = ++requestVersion.current;
+    setHtmlLoading(true);
+    void getMailMessageHtml(email.id)
+      .then((html) => {
+        if (version === requestVersion.current) setHtmlPreview(html);
+      })
+      .catch(() => {
+        if (version === requestVersion.current) setBodyMode('text');
+      })
+      .finally(() => {
+        if (version === requestVersion.current) setHtmlLoading(false);
+      });
+  };
+
   return (
     <motion.div
       key="detail-panel"
@@ -34,6 +69,14 @@ export default function MailDetailView({
           <span className="font-mono fs-xs uppercase tracking-widest text-neutral-400">
             {lang === 'zh' ? '信件线程阅读端' : 'READING CORRESPONDENCE THREADED DECK'}
           </span>
+          <div className="flex border border-[#1A1A1A]/10 bg-white">
+            <button onClick={() => setBodyMode('text')} className={`px-2 py-1.5 fs-sm font-mono uppercase tracking-wider transition rounded-none ${bodyMode === 'text' ? 'bg-[#1A1A1A] text-white' : 'hover:bg-[#1A1A1A]/5'}`}>
+              {lang === 'zh' ? '纯文本' : 'Text'}
+            </button>
+            <button onClick={selectHtmlPreview} className={`px-2 py-1.5 fs-sm font-mono uppercase tracking-wider transition rounded-none ${bodyMode === 'html' ? 'bg-[#1A1A1A] text-white' : 'hover:bg-[#1A1A1A]/5'}`}>
+              HTML
+            </button>
+          </div>
         </div>
         <div className="flex items-center gap-1.5">
           <button onClick={() => onArchive(email.id)} className="p-1.5 bg-white border border-[#1A1A1A]/10 hover:bg-stone-800 hover:text-white fs-sm font-mono uppercase tracking-wider transition rounded-none">
@@ -64,7 +107,7 @@ export default function MailDetailView({
         </div>
 
         {/* Thread messages */}
-        <div className="space-y-6">
+        {bodyMode === 'text' && <div className="space-y-6">
           {email.threadMessages.map((msg, i) => (
             <div key={msg.id || i} className={`p-5 rounded-none border border-[#1A1A1A]/10 ${msg.isMe ? 'bg-white border-l-4 border-l-[#1A1A1A]' : 'bg-[#F4F2EE]/40 border-l-4 border-l-stone-300'}`}>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-[#1A1A1A]/5 pb-3 mb-4">
@@ -88,7 +131,24 @@ export default function MailDetailView({
               </div>
             </div>
           ))}
-        </div>
+        </div>}
+        {bodyMode === 'html' && (
+          <div className="border border-[#1A1A1A]/10 bg-white min-h-[480px]">
+            {htmlLoading ? (
+              <div className="p-5 fs-sm font-mono uppercase tracking-wider text-[#1A1A1A]/45">
+                {lang === 'zh' ? '正在加载隔离 HTML 预览…' : 'Loading isolated HTML preview…'}
+              </div>
+            ) : (
+              <iframe
+                title={lang === 'zh' ? '隔离 HTML 邮件预览' : 'Isolated HTML mail preview'}
+                sandbox=""
+                referrerPolicy="no-referrer"
+                srcDoc={htmlPreview}
+                className="w-full min-h-[480px] border-0 bg-white"
+              />
+            )}
+          </div>
+        )}
 
         {/* Inline reply */}
         <div className="border border-[#1A1A1A] p-4 bg-white space-y-3">
