@@ -11,8 +11,33 @@ function removeUnsafeMarkup(source: string): string {
     .replace(/\s(?:href|src)\s*=\s*(?:"\s*javascript:[^"]*"|'\s*javascript:[^']*'|javascript:[^\s>]+)/gi, "");
 }
 
+
+function escapeAttribute(value: string): string {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[character] ?? character);
+}
+
+function rewriteExternalLinks(source: string): string {
+  return source.replace(/<a\b([^>]*)>/gi, (_match, attributes: string) => {
+    const hrefMatch = attributes.match(/\bhref\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/i);
+    const href = (hrefMatch?.[1] ?? hrefMatch?.[2] ?? hrefMatch?.[3] ?? "").trim();
+    if (!/^https?:\/\//i.test(href)) return "<a>";
+
+    const retainedAttributes = attributes
+      .replace(/\s(?:href|target|rel)\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+      .trim();
+    const retained = retainedAttributes ? ` ${retainedAttributes}` : "";
+    return `<a${retained} href="${escapeAttribute(href)}" target="_blank" rel="noopener noreferrer">`;
+  });
+}
+
 export function sealHtmlPreview(source: string): string {
-  const content = removeUnsafeMarkup(source);
+  const content = rewriteExternalLinks(removeUnsafeMarkup(source));
   return `<!doctype html>
 <html><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data: cid:; base-uri 'none'; form-action 'none'">
