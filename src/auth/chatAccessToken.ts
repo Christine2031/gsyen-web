@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 
 const EXPIRY_SKEW_SECONDS = 30;
 let pendingRecovery: Promise<string> | null = null;
+let pendingForcedRecovery: Promise<string> | null = null;
 
 function usableAccessToken(session: {
   access_token?: string;
@@ -42,8 +43,21 @@ export async function getChatAccessToken(forceRefresh = false): Promise<string> 
   const current = usableAccessToken(data.session);
   if (current && !forceRefresh) return current;
 
+  if (forceRefresh) {
+    const normalRecovery = pendingRecovery;
+    if (!pendingForcedRecovery) {
+      pendingForcedRecovery = (async () => {
+        await normalRecovery?.catch(() => '');
+        return refreshAccessToken();
+      })().finally(() => {
+        pendingForcedRecovery = null;
+      });
+    }
+    return pendingForcedRecovery;
+  }
+
   if (!pendingRecovery) {
-    pendingRecovery = (forceRefresh ? refreshAccessToken() : recoverAccessToken()).finally(() => {
+    pendingRecovery = recoverAccessToken().finally(() => {
       pendingRecovery = null;
     });
   }
