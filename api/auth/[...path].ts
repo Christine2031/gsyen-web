@@ -22,7 +22,11 @@ function headerValue(value: string | string[] | undefined): string | undefined {
 function authPath(req: VercelRequest): string | null {
   const raw = req.query.path;
   const parts = Array.isArray(raw) ? raw : [raw].filter(Boolean);
-  const path = `/api/auth/${parts.join('/')}`.replace(/\/+$/, '');
+  const queryPath = `/api/auth/${parts.join('/')}`.replace(/\/+$/, '');
+  const requestPath = req.url
+    ? new URL(req.url, 'https://gsyen.com').pathname.replace(/\/+$/, '')
+    : '';
+  const path = queryPath === '/api/auth' ? requestPath : queryPath;
   return ALLOWED_AUTH_PATHS.has(path) ? path : null;
 }
 
