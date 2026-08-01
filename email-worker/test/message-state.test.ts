@@ -146,7 +146,9 @@ describe("message state", () => {
       change.operation === "upsert" && change.message?.is_starred === 1
     ))).toBe(true);
 
-    const beforeFailure = await currentMessageChangeCursor(testEnv, mailbox.id);
+    const afterSuccess = await currentMessageChangeCursor(testEnv, mailbox.id);
+    expect(afterSuccess).toBeGreaterThan(beforeSuccess);
+    const beforeFailure = afterSuccess;
     await expect(updateMessagesState(
       testEnv,
       mailbox.id,
