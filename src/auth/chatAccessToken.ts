@@ -32,9 +32,11 @@ async function recoverAccessToken(): Promise<string> {
 }
 
 async function refreshAccessToken(): Promise<string> {
-  const { data } = await supabase.auth.refreshSession();
-  const refreshed = usableAccessToken(data.session);
-  if (refreshed) return refreshed;
+  try {
+    const { data } = await supabase.auth.refreshSession();
+    const refreshed = usableAccessToken(data.session);
+    if (refreshed) return refreshed;
+  } catch {}
   return recoverAccessToken();
 }
 
@@ -57,7 +59,7 @@ export async function getChatAccessToken(forceRefresh = false): Promise<string> 
   }
 
   if (!pendingRecovery) {
-    pendingRecovery = recoverAccessToken().finally(() => {
+    pendingRecovery = refreshAccessToken().finally(() => {
       pendingRecovery = null;
     });
   }
