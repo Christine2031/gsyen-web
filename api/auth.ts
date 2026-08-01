@@ -1,1 +1,1 @@
-export { default } from './authProxy';
+export { default } from './authProxy.js';
