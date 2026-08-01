@@ -13,13 +13,21 @@ interface MailSyncSnapshot {
 
 export const MAIL_SYNC_CACHE_LIMIT = 500;
 const SCHEMA_VERSION = 3;
-const KEY = (uid: string, lang: 'zh' | 'en') => `gsyen_mail_snapshot_v2_${uid}_${lang}`;
+const KEY = (uid: string, lang: 'zh' | 'en') => (
+  `gsyen_mail_snapshot_v${SCHEMA_VERSION}_${uid}_${lang}`
+);
+const LEGACY_KEY = (uid: string, lang: 'zh' | 'en') => `gsyen_mail_snapshot_v2_${uid}_${lang}`;
 const PERMANENT_CODES = new Set<string>();
 const pendingWrites = new Map<string, number>();
 
+function clearLegacySnapshot(uid: string, lang: 'zh' | 'en') {
+  try { localStorage.removeItem(LEGACY_KEY(uid, lang)); } catch {}
+}
+
 function isSnapshot(value: unknown): value is MailSyncSnapshot {
   const item = value as Partial<MailSyncSnapshot> | null;
-  return (Array.isArray(item?.emails) || Array.isArray(item?.messages))
+  return item?.schemaVersion === SCHEMA_VERSION
+    && (Array.isArray(item.emails) || Array.isArray(item.messages))
     && typeof item.mailboxAddress === 'string' && typeof item.savedAt === 'string';
 }
 
@@ -34,12 +42,14 @@ export function compactMailSyncEmails(emails: EmailItem[]): EmailItem[] {
 function compactMessages(messages: MailApiMessage[]): MailApiMessage[] {
   const unique = new Map<string, MailApiMessage>();
   messages.forEach(message => unique.set(message.id, message));
-  return [...unique.values()].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+  const time = (message: MailApiMessage) => Date.parse(message.createdAt) || 0;
+  return [...unique.values()].sort((a, b) => time(b) - time(a))
     .slice(0, MAIL_SYNC_CACHE_LIMIT);
 }
 
 export function readMailSyncSnapshot(uid: string, lang: 'zh' | 'en'): MailSyncSnapshot | null {
   try {
+    clearLegacySnapshot(uid, lang);
     const parsed = JSON.parse(localStorage.getItem(KEY(uid, lang)) ?? 'null');
     if (!isSnapshot(parsed)) return null;
     return {
@@ -56,6 +66,7 @@ export function readMailSyncSnapshot(uid: string, lang: 'zh' | 'en'): MailSyncSn
 export function writeMailSyncSnapshot(uid: string, lang: 'zh' | 'en', snapshot: Omit<MailSyncSnapshot, 'savedAt' | 'schemaVersion'>) {
   try {
     const now = new Date().toISOString();
+    clearLegacySnapshot(uid, lang);
     localStorage.setItem(KEY(uid, lang), JSON.stringify({
       ...snapshot, schemaVersion: SCHEMA_VERSION,
       emails: snapshot.emails ? compactMailSyncEmails(snapshot.emails) : undefined,
@@ -77,7 +88,9 @@ export function scheduleMailSyncSnapshot(uid: string, lang: 'zh' | 'en', snapsho
 export function clearMailSyncSnapshot(uid: string, lang: 'zh' | 'en') {
   const key = KEY(uid, lang); const pending = pendingWrites.get(key);
   if (pending !== undefined) window.clearTimeout(pending);
-  pendingWrites.delete(key); try { localStorage.removeItem(key); } catch {}
+  pendingWrites.delete(key);
+  try { localStorage.removeItem(key); } catch {}
+  clearLegacySnapshot(uid, lang);
 }
 
 export function isPermanentMailSyncError(error: unknown): boolean {

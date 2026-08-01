@@ -12,6 +12,13 @@ const PAGE_SIZE = 50;
 const MAX_BASELINE_PAGES = Math.ceil(MAIL_SYNC_CACHE_LIMIT / PAGE_SIZE);
 const MAX_CHANGE_PAGES = 10;
 
+function parsedTime(value: string | undefined): number {
+  return Date.parse(value ?? '') || 0;
+}
+
+const messageTime = (message: MailApiMessage) => parsedTime(mailMessageTime(message));
+
+
 export type MailSyncBaseline = { messages: MailApiMessage[]; syncCursor: number };
 export type MailSyncChanges = { changes: MailApiMessageChange[]; syncCursor: number };
 
@@ -19,7 +26,7 @@ export function compactMailSyncMessages(messages: MailApiMessage[]): MailApiMess
   const unique = new Map<string, MailApiMessage>();
   messages.forEach(message => unique.set(message.id, message));
   return [...unique.values()]
-    .sort((a, b) => Date.parse(mailMessageTime(b)) - Date.parse(mailMessageTime(a)))
+    .sort((a, b) => messageTime(b) - messageTime(a))
     .slice(0, MAIL_SYNC_CACHE_LIMIT);
 }
 
@@ -48,7 +55,7 @@ export function mapMailMessages(messages: MailApiMessage[], lang: 'zh' | 'en'): 
     if (group) group.push(message); else groups.set(rootId, [message]);
   });
   const items = [...groups.entries()].map(([rootId, thread]) => {
-    const ordered = thread.sort((a, b) => Date.parse(mailMessageTime(a)) - Date.parse(mailMessageTime(b)));
+    const ordered = thread.sort((a, b) => messageTime(a) - messageTime(b));
     const latest = ordered.at(-1)!;
     const folders = ordered.map(mailItemFolder);
     const folder: MailFolder = folders.every(value => value === 'trash') ? 'trash'
@@ -65,7 +72,7 @@ export function mapMailMessages(messages: MailApiMessage[], lang: 'zh' | 'en'): 
       threadMessages: ordered.map(mailThreadMessage),
     };
   });
-  return items.sort((a, b) => Date.parse(b.createdAt ?? '') - Date.parse(a.createdAt ?? ''));
+  return items.sort((a, b) => parsedTime(b.createdAt) - parsedTime(a.createdAt));
 }
 
 export async function loadMailSyncBaseline(): Promise<MailSyncBaseline> {
