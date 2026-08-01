@@ -1,5 +1,6 @@
 import { ApiError } from "./http";
 import type { AuthUser, MailEnv } from "./types";
+import { resolveMailRequestId } from "./messageApiDiagnostics";
 
 type SupabaseUser = {
   id?: unknown;
@@ -72,7 +73,7 @@ function logAuthFailure(
   authFailureByRequest.set(request, context);
   console.warn(JSON.stringify({
     event: "mail_auth_failed",
-    requestId: getRequestId(request),
+    requestId: resolveMailRequestId(request),
     path,
     stage,
     ...(upstreamStatus ? { upstreamStatus } : {}),
@@ -86,13 +87,6 @@ export function consumeAuthFailure(request: Request): AuthFailureContext | undef
   return value;
 }
 
-function getRequestId(request: Request): string {
-  return (
-    request.headers.get("x-mail-request-id")
-    ?? request.headers.get("x-request-id")
-    ?? request.headers.get("cf-ray")
-  ) || crypto.randomUUID();
-}
 
 export function requireInternalService(request: Request, env: MailEnv): void {
   const headerKey = "x-mail-internal-token";

@@ -188,10 +188,15 @@ export async function updateMessageState(
 ): Promise<MessageSummary> {
   const values = stateValues(patch);
   const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
-  await env.DB.prepare(
-    `UPDATE messages SET ${assignments} WHERE id = ? AND mailbox_id = ?`,
-  ).bind(...values.values(), messageId, mailboxId).run();
-  const message = await getMessage(env, mailboxId, messageId);
+  const [, selected] = await env.DB.batch<MessageSummary>([
+    env.DB.prepare(
+      `UPDATE messages SET ${assignments} WHERE id = ? AND mailbox_id = ?`,
+    ).bind(...values.values(), messageId, mailboxId),
+    env.DB.prepare(
+      `SELECT ${MESSAGE_COLUMNS} FROM messages m WHERE m.id = ? AND m.mailbox_id = ?`,
+    ).bind(messageId, mailboxId),
+  ]);
+  const message = selected.results[0];
   if (!message) {
     throw new ApiError(404, "message_not_found", "Message was not found");
   }
@@ -211,23 +216,25 @@ export async function updateMessagesState(
   const values = stateValues(patch);
   const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
   const placeholders = ids.map(() => "?").join(", ");
-  await env.DB.prepare(
-    `UPDATE messages SET ${assignments}
-      WHERE mailbox_id = ? AND id IN (${placeholders})
-        AND (SELECT count(*) FROM messages
-              WHERE mailbox_id = ? AND id IN (${placeholders})) = ?`,
-  ).bind(
-    ...values.values(),
-    mailboxId,
-    ...ids,
-    mailboxId,
-    ...ids,
-    ids.length,
-  ).run();
-  const selected = await env.DB.prepare(
-    `SELECT ${MESSAGE_COLUMNS} FROM messages m
-      WHERE m.mailbox_id = ? AND m.id IN (${placeholders})`,
-  ).bind(mailboxId, ...ids).all<MessageSummary>();
+  const [, selected] = await env.DB.batch<MessageSummary>([
+    env.DB.prepare(
+      `UPDATE messages SET ${assignments}
+        WHERE mailbox_id = ? AND id IN (${placeholders})
+          AND (SELECT count(*) FROM messages
+                WHERE mailbox_id = ? AND id IN (${placeholders})) = ?`,
+    ).bind(
+      ...values.values(),
+      mailboxId,
+      ...ids,
+      mailboxId,
+      ...ids,
+      ids.length,
+    ),
+    env.DB.prepare(
+      `SELECT ${MESSAGE_COLUMNS} FROM messages m
+        WHERE m.mailbox_id = ? AND m.id IN (${placeholders})`,
+    ).bind(mailboxId, ...ids),
+  ]);
   if (selected.results.length !== ids.length) {
     throw new ApiError(404, "message_not_found", "One or more messages were not found");
   }

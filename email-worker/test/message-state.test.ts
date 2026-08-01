@@ -7,6 +7,8 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { parseMessageCursor, serializeMessageCursor } from "../src/messageCursor";
 import {
   createMailbox,
+  currentMessageChangeCursor,
+  listMessageChanges,
   listMessages,
   updateMessagesState,
   updateMessageState,
@@ -121,6 +123,7 @@ describe("message state", () => {
       insert(foreignId, other.id),
     ]);
 
+    const beforeSuccess = await currentMessageChangeCursor(testEnv, mailbox.id);
     const updated = await updateMessagesState(
       testEnv,
       mailbox.id,
@@ -128,15 +131,36 @@ describe("message state", () => {
       { isStarred: true },
     );
     expect(updated).toHaveLength(2);
+    expect(updated.every((message) => message.is_starred === 1)).toBe(true);
+    const successChanges = await listMessageChanges(
+      testEnv,
+      mailbox.id,
+      beforeSuccess,
+      10,
+    );
+    expect(successChanges).toHaveLength(2);
+    expect(successChanges.map((change) => change.messageId).sort()).toEqual(
+      [firstId, secondId],
+    );
+    expect(successChanges.every((change) => (
+      change.operation === "upsert" && change.message?.is_starred === 1
+    ))).toBe(true);
+
+    const beforeFailure = await currentMessageChangeCursor(testEnv, mailbox.id);
     await expect(updateMessagesState(
       testEnv,
       mailbox.id,
       [firstId, foreignId],
       { isImportant: true },
     )).rejects.toMatchObject({ status: 404 });
-    const first = await testEnv.DB.prepare(
-      "SELECT is_important FROM messages WHERE id = ?",
-    ).bind(firstId).first<{ is_important: number }>();
-    expect(first?.is_important).toBe(0);
+    const states = await testEnv.DB.prepare(
+      `SELECT id, is_important FROM messages
+        WHERE id IN (?, ?, ?) ORDER BY id`,
+    ).bind(firstId, secondId, foreignId).all<{
+      id: string;
+      is_important: number;
+    }>();
+    expect(states.results.map((message) => message.is_important)).toEqual([0, 0, 0]);
+    expect(await currentMessageChangeCursor(testEnv, mailbox.id)).toBe(beforeFailure);
   });
 });

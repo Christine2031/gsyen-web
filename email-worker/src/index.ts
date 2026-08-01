@@ -1,5 +1,6 @@
 import { consumeAuthFailure, } from "./auth";
 import { ApiError, errorResponse } from "./http";
+import { resolveMailRequestId } from "./messageApiDiagnostics";
 import { receiveEmail } from "./inbound";
 import { consumeOutbound } from "./outbound";
 import {
@@ -103,11 +104,7 @@ type ApiDiagnostic = {
 function createApiDiagnostic(request: Request): ApiDiagnostic {
   const url = new URL(request.url);
   if (!url.pathname.startsWith("/v1/")) return null;
-  const requestId = (
-    request.headers.get("x-mail-request-id")
-    ?? request.headers.get("x-request-id")
-    ?? request.headers.get("cf-ray")
-  ) || crypto.randomUUID();
+  const requestId = resolveMailRequestId(request);
   return {
     requestId,
     method: request.method,

@@ -1,4 +1,4 @@
-function requestId(request: Request): string {
+export function resolveMailRequestId(request: Request): string {
   return (
     request.headers.get("x-mail-request-id")
     ?? request.headers.get("x-request-id")
@@ -15,7 +15,7 @@ export function logMessageApiPhase(
   if (!path.startsWith("/v1/")) return;
   console.log(JSON.stringify({
     event: "mail_api_request_phase",
-    requestId: requestId(request),
+    requestId: resolveMailRequestId(request),
     path,
     stage,
     ...extra,

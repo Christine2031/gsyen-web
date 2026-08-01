@@ -109,4 +109,97 @@ describe("message synchronization events", () => {
       }),
     ]);
   });
+
+  it("emits attachment count changes when an attachment is added, moved, and deleted", async () => {
+    const mailbox = await activeMailbox();
+    const firstId = "00000000-0000-4000-8000-000000000411";
+    const secondId = "00000000-0000-4000-8000-000000000412";
+    const attachmentId = "00000000-0000-4000-8000-000000000413";
+    const insertMessage = (id: string) => testEnv.DB.prepare(
+      `INSERT INTO messages
+        (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+         subject, text_body, references_json, status, created_at)
+       VALUES (?, ?, 'inbound', 'inbox', 'sender@example.com', '[]', '[]',
+         'Attachment sync', 'Body', '[]', 'received', ?)`,
+    ).bind(id, mailbox.id, new Date().toISOString());
+    await testEnv.DB.batch([insertMessage(firstId), insertMessage(secondId)]);
+
+    const snapshot = await route("/v1/messages?folder=all");
+    const snapshotBody = await snapshot?.json<{ syncCursor: number }>();
+
+    await testEnv.DB.prepare(
+      `INSERT INTO attachments
+        (id, message_id, filename, mime_type, disposition, size_bytes, object_key)
+       VALUES (?, ?, 'file.txt', 'text/plain', 'attachment', 4, 'attachments/sync-test')`,
+    ).bind(attachmentId, firstId).run();
+    const added = await route(
+      `/v1/messages/changes?after=${snapshotBody?.syncCursor}`,
+    );
+    const addedBody = await added?.json<{
+      changes: Array<{
+        cursor: number;
+        operation: string;
+        messageId: string;
+        message: { attachmentCount: number } | null;
+      }>;
+      nextCursor: number | null;
+    }>();
+    expect(addedBody?.changes).toEqual([
+      expect.objectContaining({
+        operation: "upsert",
+        messageId: firstId,
+        message: expect.objectContaining({ attachmentCount: 1 }),
+      }),
+    ]);
+    expect(addedBody?.nextCursor).toBeNull();
+
+    const addedCursor = addedBody?.changes.at(-1)?.cursor;
+    await testEnv.DB.prepare(
+      "UPDATE attachments SET message_id = ? WHERE id = ?",
+    ).bind(secondId, attachmentId).run();
+    const moved = await route(`/v1/messages/changes?after=${addedCursor}`);
+    const movedBody = await moved?.json<{
+      changes: Array<{
+        cursor: number;
+        operation: string;
+        messageId: string;
+        message: { attachmentCount: number } | null;
+      }>;
+    }>();
+    expect(movedBody?.changes).toHaveLength(2);
+    expect(movedBody?.changes).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        operation: "upsert",
+        messageId: firstId,
+        message: expect.objectContaining({ attachmentCount: 0 }),
+      }),
+      expect.objectContaining({
+        operation: "upsert",
+        messageId: secondId,
+        message: expect.objectContaining({ attachmentCount: 1 }),
+      }),
+    ]));
+
+    const movedCursor = movedBody?.changes.at(-1)?.cursor;
+    await testEnv.DB.prepare(
+      "DELETE FROM attachments WHERE id = ?",
+    ).bind(attachmentId).run();
+    const deleted = await route(`/v1/messages/changes?after=${movedCursor}`);
+    const deletedBody = await deleted?.json<{
+      changes: Array<{
+        operation: string;
+        messageId: string;
+        message: { attachmentCount: number } | null;
+      }>;
+      nextCursor: number | null;
+    }>();
+    expect(deletedBody?.changes).toEqual([
+      expect.objectContaining({
+        operation: "upsert",
+        messageId: secondId,
+        message: expect.objectContaining({ attachmentCount: 0 }),
+      }),
+    ]);
+    expect(deletedBody?.nextCursor).toBeNull();
+  });
 });
