@@ -25,4 +25,19 @@ function isAllowedNavigation(url, isDev, rendererDirectory) {
   }
 }
 
-module.exports = { isAllowedNavigation };
+function isExternalHttpUrl(url) {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+const USER_INITIATED_DISPOSITIONS = new Set(['foreground-tab', 'background-tab', 'new-window']);
+
+function isUserInitiatedExternalOpen(url, disposition) {
+  return USER_INITIATED_DISPOSITIONS.has(disposition) && isExternalHttpUrl(url);
+}
+
+module.exports = { isAllowedNavigation, isExternalHttpUrl, isUserInitiatedExternalOpen };
