@@ -40,14 +40,14 @@ interface UserSnap { uid: string; email: string; tier: UserTier | null; ev: bool
 function _readSnap(): UserSnap | null {
   try { const r = localStorage.getItem(SNAP_KEY); return r ? JSON.parse(r) : null; } catch { return null; }
 }
-function _writeSnap(s: UserSnap) { try { localStorage.setItem(SNAP_KEY, JSON.stringify(s)); } catch {} }
-function _clearSnap()             { try { localStorage.removeItem(SNAP_KEY); }               catch {} }
+let _snap = _readSnap();
+function _writeSnap(s: UserSnap) { _snap = s; try { localStorage.setItem(SNAP_KEY, JSON.stringify(s)); } catch {} }
+function _clearSnap()             { _snap = null; try { localStorage.removeItem(SNAP_KEY); } catch {} }
 
 // ── Singleton store ───────────────────────────────────────────────────────────
 // 所有 useAuth() 调用共享同一份状态，boot/listener 只初始化一次。
 interface AuthStore extends AuthState { justVerified: boolean; }
 
-const _snap = _readSnap();
 export function resolveCachedTier(
   cached: TierCache | null,
   snap: UserSnap | null,
@@ -59,6 +59,14 @@ export function resolveCachedTier(
 }
 function readCachedTier(uid: string): TierCache | null {
   return resolveCachedTier(readTier(uid), _snap, uid);
+}
+export async function retryNull<T>(load: () => Promise<T | null>, delays = [0, 250, 750]) {
+  for (const delay of delays) {
+    if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+    const value = await load();
+    if (value !== null) return value;
+  }
+  return null;
 }
 let _store: AuthStore = {
   ...DEFAULT_AUTH_STATE,
@@ -117,7 +125,7 @@ function _refreshTier(
   const active = _tierRefreshes.get(user.id);
   if (active) return active;
 
-  const request = initializeUserData(user.id, provider ?? 'email')
+  const request = retryNull(() => initializeUserData(user.id, provider ?? 'email'))
     .then(membership => {
       _applyTier(
         user,

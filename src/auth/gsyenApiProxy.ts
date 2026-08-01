@@ -9,12 +9,10 @@ export function resolveGsyenApiBase(
   configured?: string,
   protocol = typeof window !== 'undefined' ? window.location.protocol : '',
 ): string {
+  // Browser auth must stay first-party so gsyen_rt belongs to gsyen.com.
+  if (protocol !== 'file:') return '';
   const value = configured?.trim().replace(/\/+$/, '');
-  if (value) return value;
-  if (protocol === 'file:') {
-    return CLOUD_RUN_BASE;
-  }
-  return '';
+  return value || CLOUD_RUN_BASE;
 }
 
 const BASE = resolveGsyenApiBase(import.meta.env.VITE_GSYEN_API_URL as string | undefined);
