@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const test = require('node:test');
 const { pathToFileURL } = require('node:url');
-const { isAllowedNavigation, isExternalHttpUrl } = require('./navigation-policy.cjs');
+const { isAllowedNavigation, isExternalHttpUrl, isUserInitiatedExternalOpen } = require('./navigation-policy.cjs');
 
 test('production navigation stays inside the packaged renderer directory', () => {
   const renderer = path.resolve('fixtures', 'resources', 'app', 'dist');
@@ -32,4 +32,13 @@ test('external links only permit HTTP(S) protocols', () => {
   assert.equal(isExternalHttpUrl('mailto:test@example.com'), false);
   assert.equal(isExternalHttpUrl('file:///C:/secret.txt'), false);
   assert.equal(isExternalHttpUrl('javascript:alert(1)'), false);
+});
+
+test('external browser opening requires a user click disposition', () => {
+  for (const disposition of ['foreground-tab', 'background-tab', 'new-window']) {
+    assert.equal(isUserInitiatedExternalOpen('https://example.com/verify', disposition), true);
+  }
+  assert.equal(isUserInitiatedExternalOpen('https://example.com/verify', 'default'), false);
+  assert.equal(isUserInitiatedExternalOpen('https://example.com/verify', 'other'), false);
+  assert.equal(isUserInitiatedExternalOpen('javascript:alert(1)', 'foreground-tab'), false);
 });

@@ -34,4 +34,10 @@ function isExternalHttpUrl(url) {
   }
 }
 
-module.exports = { isAllowedNavigation, isExternalHttpUrl };
+const USER_INITIATED_DISPOSITIONS = new Set(['foreground-tab', 'background-tab', 'new-window']);
+
+function isUserInitiatedExternalOpen(url, disposition) {
+  return USER_INITIATED_DISPOSITIONS.has(disposition) && isExternalHttpUrl(url);
+}
+
+module.exports = { isAllowedNavigation, isExternalHttpUrl, isUserInitiatedExternalOpen };
