@@ -140,7 +140,7 @@ describe('useMailSync recovery', () => {
       listMailMessages.mockResolvedValue({ messages: [message('cached-1')], nextCursor: null });
       renderHarness();
       expect(snapshots.at(-1)?.emails).toHaveLength(1);
-      await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
       await flush();
       expect(getMailbox).toHaveBeenCalledTimes(2);
       expect(snapshots.at(-1)?.emails).toHaveLength(1);

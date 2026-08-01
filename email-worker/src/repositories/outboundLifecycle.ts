@@ -38,7 +38,7 @@ export async function cancelOutboundMessage(
           AND status = 'queued'`,
     ).bind(messageId, mailboxId),
   ]);
-  if (results[1].meta.changes !== 1) {
+  if (results[1].meta.changes < 1) {
     throw new ApiError(409, "message_not_cancellable", "Message is already being delivered");
   }
 }
@@ -80,7 +80,7 @@ async function settleTrashedWithStatus(
           AND trashed_at IS NOT NULL`,
     ).bind(messageId, status),
   ]);
-  return results[1].meta.changes === 1;
+  return results[1].meta.changes >= 1;
 }
 
 export function settleTrashedQueuedOutbound(

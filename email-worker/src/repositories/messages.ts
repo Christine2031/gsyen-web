@@ -1,5 +1,4 @@
 import { ApiError } from "../http";
-import { appendMessageSyncEvents } from "./messageSyncEvents";
 import type { MessageCursor } from "../messageCursor";
 import type { MailEnv, MailFolder, MessageSummary } from "../types";
 
@@ -169,7 +168,8 @@ export async function listMessageChanges(
   }));
 }
 
-export async function getMessage(  env: MailEnv,
+export async function getMessage(
+  env: MailEnv,
   mailboxId: string,
   messageId: string,
 ): Promise<MessageSummary | null> {
@@ -195,7 +195,6 @@ export async function updateMessageState(
   if (!message) {
     throw new ApiError(404, "message_not_found", "Message was not found");
   }
-  await appendMessageSyncEvents(env, mailboxId, [messageId]);
   return message;
 }
 
@@ -232,7 +231,6 @@ export async function updateMessagesState(
   if (selected.results.length !== ids.length) {
     throw new ApiError(404, "message_not_found", "One or more messages were not found");
   }
-  await appendMessageSyncEvents(env, mailboxId, ids);
   return selected.results;
 }
 

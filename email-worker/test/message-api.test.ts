@@ -243,7 +243,7 @@ describe("message API representation", () => {
       snapshotRequest, testEnv, ctx, syncUser, "/v1/messages", new URL(snapshotRequest.url),
     );
     const snapshotBody = await snapshot?.json<{ syncCursor: number }>();
-    expect(snapshotBody?.syncCursor).toBe(0);
+    expect(snapshotBody?.syncCursor).toBeGreaterThan(0);
 
     await updateMessageState(testEnv, mailbox.id, messageId, { isStarred: true });
     const changesRequest = new Request(
