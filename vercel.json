@@ -7,6 +7,12 @@
   ],
   "rewrites": [
     { "source": "/facts", "destination": "/facts.html" },
+    { "source": "/api/auth/deactivate", "destination": "/api/auth?path=deactivate" },
+    { "source": "/api/auth/login", "destination": "/api/auth?path=login" },
+    { "source": "/api/auth/logout", "destination": "/api/auth?path=logout" },
+    { "source": "/api/auth/me", "destination": "/api/auth?path=me" },
+    { "source": "/api/auth/session", "destination": "/api/auth?path=session" },
+    { "source": "/api/auth/signup", "destination": "/api/auth?path=signup" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
