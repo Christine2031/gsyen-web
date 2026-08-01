@@ -3,12 +3,13 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getMailbox, listMailMessages, authState, MailApiError } = vi.hoisted(() => {
+const { getMailbox, listMailMessageChanges, listMailMessages, authState, MailApiError } = vi.hoisted(() => {
   class MailApiError extends Error {
     constructor(readonly status: number, readonly code: string, message: string) { super(message); }
   }
   return {
     getMailbox: vi.fn(),
+    listMailMessageChanges: vi.fn(),
     listMailMessages: vi.fn(),
     authState: { user: { id: 'mail-cache-user', email: 'ethan7586@gsyen.com' }, loading: false },
     MailApiError,
@@ -20,6 +21,7 @@ vi.mock('../services/mailApi', () => ({
   MailApiError,
   MailPatchQueue: class MailPatchQueue { clear() {} run() { return Promise.resolve(); } },
   getMailbox,
+  listMailMessageChanges,
   listMailMessages,
   cancelQueuedMessage: vi.fn(),
   deleteMailMessage: vi.fn(),
@@ -30,6 +32,7 @@ vi.mock('../services/mailApi', () => ({
 
 import { __resetMailSyncCacheForTest, useMailSync } from './useMailSync';
 import { writeMailSyncSnapshot } from './mailSyncCache';
+import type { MailApiMessage } from '../services/mailApi';
 import type { EmailItem } from '../types/mail';
 
 let root: Root | null = null;
@@ -43,7 +46,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-function message(id: string) {
+function message(id: string): MailApiMessage {
   return {
     id, direction: 'inbound', folder: 'inbox', fromAddress: 'Sender <sender@example.com>',
     envelopeFrom: null, to: ['ethan7586@gsyen.com'], cc: [], subject: 'Cached hello',
@@ -53,7 +56,7 @@ function message(id: string) {
     receivedAt: '2026-07-30T12:00:00.000Z', sentAt: null, isRead: false,
     isStarred: false, isImportant: false, archivedAt: null, snoozedUntil: null,
     spamAt: null, trashedAt: null, attachmentCount: 0, category: 'primary',
-  } as const;
+  };
 }
 
 
@@ -96,7 +99,7 @@ afterEach(() => {
   act(() => root?.unmount());
   root = null; host?.remove(); host = null; snapshots = [];
   __resetMailSyncCacheForTest(); getMailbox.mockReset();
-  listMailMessages.mockReset(); document.body.replaceChildren(); vi.unstubAllGlobals();
+  listMailMessageChanges.mockReset(); listMailMessages.mockReset(); document.body.replaceChildren(); vi.unstubAllGlobals();
 });
 
 describe('useMailSync cache hydration', () => {
@@ -137,12 +140,38 @@ describe('useMailSync recovery', () => {
       listMailMessages.mockResolvedValue({ messages: [message('cached-1')], nextCursor: null });
       renderHarness();
       expect(snapshots.at(-1)?.emails).toHaveLength(1);
-      await act(async () => { await vi.advanceTimersByTimeAsync(750); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
       await flush();
       expect(getMailbox).toHaveBeenCalledTimes(2);
       expect(snapshots.at(-1)?.emails).toHaveLength(1);
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('useMailSync incremental updates', () => {
+  it('merges a cached cursor delta without a new mailbox lookup', async () => {
+    writeMailSyncSnapshot('mail-cache-user', 'zh', {
+      messages: [message('cached-1')],
+      mailboxAddress: 'ethan7586@gsyen.com',
+      syncCursor: 1,
+    });
+    listMailMessageChanges.mockResolvedValue({
+      changes: [{
+        cursor: 2,
+        operation: 'upsert',
+        messageId: 'fresh-1',
+        message: message('fresh-1'),
+      }],
+      nextCursor: null,
+    });
+
+    renderHarness();
+    await flush();
+
+    expect(listMailMessageChanges).toHaveBeenCalledWith(1);
+    expect(getMailbox).not.toHaveBeenCalled();
+    expect(snapshots.at(-1)?.emails).toHaveLength(2);
   });
 });

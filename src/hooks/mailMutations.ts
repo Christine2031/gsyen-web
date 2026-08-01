@@ -57,6 +57,7 @@ export function useMailMutations({
     notice?: string,
   ) => {
     if (ids.length === 0) return;
+    const generation = identityGeneration.current;
     const targets = new Set(ids);
     const originals = new Map(emails.filter(item => targets.has(item.id))
       .map(item => [item.id, item]));
@@ -72,6 +73,11 @@ export function useMailMutations({
     )));
     saveEmails(current => current.map(item => targets.has(item.id) ? update(item) : item));
     const commit = syncPatch(serverIds, patch);
+    void commit.then(() => {
+      if (generation === identityGeneration.current) {
+        window.dispatchEvent(new Event('gsyen:mail-state-committed'));
+      }
+    }).catch(() => {});
     void commit.catch(() => saveEmails(current => current.map(item => {
       const original = originals.get(item.id);
       return original ? restoreLocalMailItem(item, original, activePatch(item.id)) : item;

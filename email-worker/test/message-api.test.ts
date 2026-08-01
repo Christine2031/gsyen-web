@@ -5,7 +5,7 @@ import {
 } from "cloudflare:test";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { routeMessageRequest } from "../src/messageApi";
-import { createMailbox } from "../src/repository";
+import { createMailbox, updateMessageState } from "../src/repository";
 import type { AuthUser, MailEnv } from "../src/types";
 
 type TestEnv = MailEnv & { TEST_MIGRATIONS: D1Migration[] };
@@ -213,5 +213,52 @@ describe("message API representation", () => {
       status: 400,
       code: "invalid_message_ids",
     });
+  });
+  it("returns changes after a snapshot cursor for another client's state update", async () => {
+    const syncUser: AuthUser = {
+      id: "sync-apiowner",
+      email: "sync-api@gsyen.com",
+      isAdmin: false,
+      userMetadata: {},
+    };
+    const mailbox = await createMailbox(testEnv, {
+      ownerId: syncUser.id,
+      localPart: "syncowner",
+      displayName: "Sync",
+    });
+    await testEnv.DB.prepare(
+      "UPDATE mailboxes SET status = 'active' WHERE id = ?",
+    ).bind(mailbox.id).run();
+    const messageId = "00000000-0000-4000-8000-000000000314";
+    await testEnv.DB.prepare(
+      `INSERT INTO messages
+        (id, mailbox_id, direction, folder, from_address, to_json, cc_json,
+         subject, text_body, references_json, status, created_at)
+       VALUES (?, ?, 'inbound', 'inbox', 'sender@example.com', '[]', '[]',
+         'Hello', 'Body', '[]', 'received', ?)`,
+    ).bind(messageId, mailbox.id, new Date().toISOString()).run();
+
+    const snapshotRequest = new Request("https://mail.test/v1/messages?folder=all");
+    const snapshot = await routeMessageRequest(
+      snapshotRequest, testEnv, ctx, syncUser, "/v1/messages", new URL(snapshotRequest.url),
+    );
+    const snapshotBody = await snapshot?.json<{ syncCursor: number }>();
+    expect(snapshotBody?.syncCursor).toBeGreaterThan(0);
+
+    await updateMessageState(testEnv, mailbox.id, messageId, { isStarred: true });
+    const changesRequest = new Request(
+      `https://mail.test/v1/messages/changes?after=${snapshotBody?.syncCursor}`,
+    );
+    const changes = await routeMessageRequest(
+      changesRequest, testEnv, ctx, syncUser, "/v1/messages/changes", new URL(changesRequest.url),
+    );
+    const changesBody = await changes?.json<{
+      changes: Array<{ cursor: number; operation: string; messageId: string; message: { isStarred: boolean } }>;
+      nextCursor: number | null;
+    }>();
+    expect(changesBody?.changes).toEqual([
+      expect.objectContaining({ operation: "upsert", messageId, message: expect.objectContaining({ isStarred: true }) }),
+    ]);
+    expect(changesBody?.nextCursor).toBeNull();
   });
 });

@@ -3,6 +3,9 @@ import { getMessageHtmlPreview } from "./htmlPreview";
 import { readableMessageText } from "./messageText";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
+import { routeMessageChanges } from "./messageChangesApi";
+import { logMessageApiPhase } from "./messageApiDiagnostics";
+import { serializeMessage } from "./messageSerialization";
 import { parseMessageCursor, serializeMessageCursor } from "./messageCursor";
 import {
   cancelOutboundMessage,
@@ -12,6 +15,7 @@ import {
   getMailboxByOwner,
   getMessage,
   listMessageAttachments,
+  currentMessageChangeCursor,
   listMessages,
   queueOutboundMessage,
   updateMessagesState,
@@ -29,45 +33,6 @@ import { parseIdempotencyKey, parseSendRequest } from "./validation";
 
 type StateBody = Record<string, unknown>;
 type BatchBody = { ids?: unknown; patch?: unknown };
-
-function publicInternetMessageId(value: string | null): string | null {
-  if (!value || value.length > 998 || /[\r\n]/.test(value)) return null;
-  return /^<[^<>\s@]+@[^<>\s@]+>$/.test(value) ? value : null;
-}
-
-function serializeMessage(message: MessageSummary) {
-  return {
-    id: message.id,
-    direction: message.direction,
-    folder: message.folder,
-    providerMessageId: message.provider_message_id,
-    internetMessageId: publicInternetMessageId(message.internet_message_id),
-    fromAddress: message.from_address,
-    envelopeFrom: message.envelope_from_address,
-    to: JSON.parse(message.to_json) as string[],
-    cc: JSON.parse(message.cc_json) as string[],
-    subject: message.subject,
-    text: message.text_body,
-    inReplyTo: publicInternetMessageId(message.in_reply_to),
-    references: (JSON.parse(message.references_json) as string[])
-      .map(publicInternetMessageId)
-      .filter((value): value is string => Boolean(value)),
-    status: message.status,
-    errorCode: message.error_code,
-    createdAt: message.created_at,
-    receivedAt: message.received_at,
-    sentAt: message.sent_at,
-    isRead: message.is_read === 1,
-    isStarred: message.is_starred === 1,
-    isImportant: message.is_important === 1,
-    archivedAt: message.archived_at,
-    snoozedUntil: message.snoozed_until,
-    spamAt: message.spam_at,
-    trashedAt: message.trashed_at,
-    attachmentCount: message.attachment_count,
-    category: message.category,
-  };
-}
 
 async function recoverInboundText(
   env: MailEnv,
@@ -189,21 +154,28 @@ export async function routeMessageRequest(
   if (!path.startsWith("/v1/messages") && !path.startsWith("/v1/attachments")) {
     return null;
   }
+  logMessageApiPhase(request, "mailbox_query_start");
   const mailbox = await currentMailbox(env, user.id);
+  logMessageApiPhase(request, "mailbox_query_complete", {
+    hasMailbox: Boolean(mailbox),
+  });
+
   if (request.method === "GET" && path === "/v1/messages") {
-    const messages = await listMessages(
-      env,
-      mailbox.id,
-      parseFolder(url.searchParams.get("folder")),
-      parseMessageCursor(url.searchParams.get("before")),
-      51,
-    );
+    const folder = parseFolder(url.searchParams.get("folder"));
+    logMessageApiPhase(request, "messages_query_start", { folder });
+    const syncCursor = await currentMessageChangeCursor(env, mailbox.id);
+    const messages = await listMessages(env, mailbox.id, folder,
+      parseMessageCursor(url.searchParams.get("before")), 51);
     const page = messages.slice(0, 50);
+    logMessageApiPhase(request, "messages_query_complete", { count: page.length });
     return json(request, env, {
       messages: page.map(serializeMessage),
       nextCursor: messages.length > 50 ? serializeMessageCursor(page.at(-1)) : null,
+      syncCursor,
     });
   }
+  const changesResponse = await routeMessageChanges(request, env, mailbox, path, url);
+  if (changesResponse) return changesResponse;
   if (request.method === "PATCH" && path === "/v1/messages/batch") {
     const body = (await readJson<BatchBody | null>(request)) ?? {};
     const messages = await updateMessagesState(
@@ -252,18 +224,30 @@ export async function routeMessageRequest(
   }
   const messageHtmlMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})\/html$/i);
   if (request.method === "GET" && messageHtmlMatch) {
+    logMessageApiPhase(request, "message_html_start", { messageId: messageHtmlMatch[1] });
     const html = await getMessageHtmlPreview(env, mailbox.id, messageHtmlMatch[1]);
+    logMessageApiPhase(request, "message_html_complete", {
+      hasHtml: Boolean(html),
+    });
     return json(request, env, { html });
   }
   const messageMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})$/i);
   if (request.method === "GET" && messageMatch) {
+    logMessageApiPhase(request, "message_detail_start", { messageId: messageMatch[1] });
     const message = await getMessage(env, mailbox.id, messageMatch[1]);
-    if (!message) throw new ApiError(404, "message_not_found", "Message was not found");
+    if (!message) {
+      logMessageApiPhase(request, "message_detail_not_found", { messageId: messageMatch[1] });
+      throw new ApiError(404, "message_not_found", "Message was not found");
+    }
     let viewed = message.is_read === 1
       ? message
       : await updateMessageState(env, mailbox.id, message.id, { isRead: true });
     const attachments = await listMessageAttachments(env, mailbox.id, message.id);
     viewed = await recoverInboundText(env, mailbox.id, viewed);
+    logMessageApiPhase(request, "message_detail_complete", {
+      hasAttachments: attachments.length > 0,
+      hasBody: Boolean(viewed.text_body),
+    });
     return json(request, env, {
       message: serializeMessage(viewed),
       attachments: attachments.map((item) => ({
@@ -295,3 +279,5 @@ export async function routeMessageRequest(
   }
   return null;
 }
+
+

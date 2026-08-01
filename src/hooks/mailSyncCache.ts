@@ -1,75 +1,99 @@
+import type { MailApiMessage } from '../services/mailApi';
 import type { EmailItem } from '../types/mail';
 
 interface MailSyncSnapshot {
   schemaVersion?: number;
-  emails: EmailItem[];
+  emails?: EmailItem[];
+  messages?: MailApiMessage[];
   mailboxAddress: string;
   savedAt: string;
   lastSyncedAt?: string;
+  syncCursor?: number | null;
 }
 
 export const MAIL_SYNC_CACHE_LIMIT = 500;
-const SCHEMA_VERSION = 2;
-const KEY = (uid: string, lang: 'zh' | 'en') => `gsyen_mail_snapshot_v1_${uid}_${lang}`;
+const SCHEMA_VERSION = 3;
+const KEY = (uid: string, lang: 'zh' | 'en') => (
+  `gsyen_mail_snapshot_v${SCHEMA_VERSION}_${uid}_${lang}`
+);
+const LEGACY_KEY = (uid: string, lang: 'zh' | 'en') => `gsyen_mail_snapshot_v2_${uid}_${lang}`;
 const PERMANENT_CODES = new Set<string>();
+const pendingWrites = new Map<string, number>();
+
+function clearLegacySnapshot(uid: string, lang: 'zh' | 'en') {
+  try { localStorage.removeItem(LEGACY_KEY(uid, lang)); } catch {}
+}
 
 function isSnapshot(value: unknown): value is MailSyncSnapshot {
   const item = value as Partial<MailSyncSnapshot> | null;
-  return Array.isArray(item?.emails)
-    && typeof item.mailboxAddress === 'string'
-    && typeof item.savedAt === 'string';
+  return item?.schemaVersion === SCHEMA_VERSION
+    && (Array.isArray(item.emails) || Array.isArray(item.messages))
+    && typeof item.mailboxAddress === 'string' && typeof item.savedAt === 'string';
 }
 
-function mailTime(item: EmailItem): number {
-  return Date.parse(item.createdAt ?? item.date ?? '') || 0;
-}
+function mailTime(item: EmailItem): number { return Date.parse(item.createdAt ?? item.date ?? '') || 0; }
 
 export function compactMailSyncEmails(emails: EmailItem[]): EmailItem[] {
   const unique = new Map<string, EmailItem>();
   emails.forEach(item => unique.set(item.id, item));
-  return [...unique.values()]
-    .sort((a, b) => mailTime(b) - mailTime(a))
+  return [...unique.values()].sort((a, b) => mailTime(b) - mailTime(a)).slice(0, MAIL_SYNC_CACHE_LIMIT);
+}
+
+function compactMessages(messages: MailApiMessage[]): MailApiMessage[] {
+  const unique = new Map<string, MailApiMessage>();
+  messages.forEach(message => unique.set(message.id, message));
+  const time = (message: MailApiMessage) => Date.parse(message.createdAt) || 0;
+  return [...unique.values()].sort((a, b) => time(b) - time(a))
     .slice(0, MAIL_SYNC_CACHE_LIMIT);
 }
 
 export function readMailSyncSnapshot(uid: string, lang: 'zh' | 'en'): MailSyncSnapshot | null {
   try {
+    clearLegacySnapshot(uid, lang);
     const parsed = JSON.parse(localStorage.getItem(KEY(uid, lang)) ?? 'null');
     if (!isSnapshot(parsed)) return null;
     return {
       schemaVersion: SCHEMA_VERSION,
-      emails: compactMailSyncEmails(parsed.emails),
-      mailboxAddress: parsed.mailboxAddress,
-      savedAt: parsed.savedAt,
+      emails: parsed.emails ? compactMailSyncEmails(parsed.emails) : undefined,
+      messages: parsed.messages ? compactMessages(parsed.messages) : undefined,
+      mailboxAddress: parsed.mailboxAddress, savedAt: parsed.savedAt,
       lastSyncedAt: parsed.lastSyncedAt ?? parsed.savedAt,
+      syncCursor: typeof parsed.syncCursor === 'number' ? parsed.syncCursor : null,
     };
   } catch { return null; }
 }
 
-export function writeMailSyncSnapshot(
-  uid: string,
-  lang: 'zh' | 'en',
-  snapshot: Omit<MailSyncSnapshot, 'savedAt'>,
-) {
+export function writeMailSyncSnapshot(uid: string, lang: 'zh' | 'en', snapshot: Omit<MailSyncSnapshot, 'savedAt' | 'schemaVersion'>) {
   try {
     const now = new Date().toISOString();
+    clearLegacySnapshot(uid, lang);
     localStorage.setItem(KEY(uid, lang), JSON.stringify({
-      ...snapshot,
-      schemaVersion: SCHEMA_VERSION,
-      emails: compactMailSyncEmails(snapshot.emails),
-      savedAt: now,
-      lastSyncedAt: now,
+      ...snapshot, schemaVersion: SCHEMA_VERSION,
+      emails: snapshot.emails ? compactMailSyncEmails(snapshot.emails) : undefined,
+      messages: snapshot.messages ? compactMessages(snapshot.messages) : undefined,
+      savedAt: now, lastSyncedAt: now,
     }));
   } catch {}
 }
 
+export function scheduleMailSyncSnapshot(uid: string, lang: 'zh' | 'en', snapshot: Omit<MailSyncSnapshot, 'savedAt' | 'schemaVersion'>) {
+  const key = KEY(uid, lang);
+  const pending = pendingWrites.get(key);
+  if (pending !== undefined) window.clearTimeout(pending);
+  pendingWrites.set(key, window.setTimeout(() => {
+    pendingWrites.delete(key); writeMailSyncSnapshot(uid, lang, snapshot);
+  }, 250));
+}
+
 export function clearMailSyncSnapshot(uid: string, lang: 'zh' | 'en') {
-  try { localStorage.removeItem(KEY(uid, lang)); } catch {}
+  const key = KEY(uid, lang); const pending = pendingWrites.get(key);
+  if (pending !== undefined) window.clearTimeout(pending);
+  pendingWrites.delete(key);
+  try { localStorage.removeItem(key); } catch {}
+  clearLegacySnapshot(uid, lang);
 }
 
 export function isPermanentMailSyncError(error: unknown): boolean {
   const item = error as { status?: unknown; code?: unknown } | null;
-  const code = typeof item?.code === 'string' ? item.code : '';
-  return PERMANENT_CODES.has(code);
+  return PERMANENT_CODES.has(typeof item?.code === 'string' ? item.code : '');
 }
-

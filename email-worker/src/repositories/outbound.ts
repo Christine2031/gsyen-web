@@ -132,7 +132,7 @@ export async function claimOutboundRecord(
         AND (status IN ('queued', 'failed')
           OR (status = 'sending' AND last_attempt_at < ?))`,
   ).bind(now.toISOString(), messageId, staleBefore).run();
-  if (claim.meta.changes !== 1) return null;
+  if (claim.meta.changes < 1) return null;
   return env.DB.prepare(
     `SELECT m.id, m.from_address, m.to_json, m.cc_json, m.subject, m.text_body,
             m.in_reply_to, m.references_json, m.status, b.display_name,
@@ -166,7 +166,8 @@ export async function markOutboundSent(
             sent_at = ?, error_code = NULL
       WHERE id = ? AND status = 'sending'`,
   ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
-  return result.meta.changes === 1;
+  if (result.meta.changes < 1) return false;
+  return true;
 }
 
 export async function reconcileOutboundSent(
@@ -183,7 +184,8 @@ export async function reconcileOutboundSent(
             sent_at = COALESCE(sent_at, ?), error_code = NULL
       WHERE id = ? AND direction = 'outbound' AND trashed_at IS NULL`,
   ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
-  return result.meta.changes === 1;
+  if (result.meta.changes < 1) return false;
+  return true;
 }
 
 export async function markOutboundFailed(

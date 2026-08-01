@@ -40,7 +40,7 @@ export async function requeueStaleOutboundMessages(
           AND trashed_at IS NULL
           AND (queue_dispatched_at IS NULL OR queue_dispatched_at < ?)`,
     ).bind(lease, row.id, leaseBefore).run();
-    if (claimed.meta.changes !== 1) continue;
+    if (claimed.meta.changes < 1) continue;
     try {
       await env.OUTBOUND_QUEUE.send({ messageId: row.id });
       enqueued += 1;

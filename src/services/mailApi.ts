@@ -173,73 +173,66 @@ function apiBase(): string {
   return url.toString().replace(/\/+$/, '');
 }
 
-async function request<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
-  const token = await getChatAccessToken();
-  if (!token) throw new MailApiError(401, 'auth_required', 'Login is required');
-
+async function requestWithToken<T>(path: string, init: RequestInit, token: string): Promise<T> {
   const headers = new Headers(init.headers);
-  headers.set('Accept', 'application/json');
-  headers.set('Authorization', `Bearer ${token}`);
+  headers.set('Accept', 'application/json'); headers.set('Authorization', `Bearer ${token}`);
   if (init.body !== undefined) headers.set('Content-Type', 'application/json');
-
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const response = await fetch(`${apiBase()}${path}`, {
-      ...init,
-      headers,
-      signal: controller.signal,
-      cache: 'no-store',
-      credentials: 'omit',
-      redirect: 'error',
-      referrerPolicy: 'no-referrer',
+      ...init, headers, signal: controller.signal, cache: 'no-store', credentials: 'omit',
+      redirect: 'error', referrerPolicy: 'no-referrer',
     });
-    const payload = response.status === 204
-      ? null
+    const payload = response.status === 204 ? null
       : await response.json().catch(() => null) as Record<string, unknown> | null;
-    if (!response.ok) {
-      throw new MailApiError(
-        response.status,
-        typeof payload?.error === 'string' ? payload.error : 'mail_api_error',
-        typeof payload?.message === 'string' ? payload.message : `Mail API error: ${response.status}`,
-      );
-    }
+    if (!response.ok) throw new MailApiError(response.status,
+      typeof payload?.error === 'string' ? payload.error : 'mail_api_error',
+      typeof payload?.message === 'string' ? payload.message : `Mail API error: ${response.status}`);
     return payload as T;
   } catch (error) {
     if (error instanceof MailApiError) throw error;
-    if (controller.signal.aborted) {
-      throw new MailApiError(408, 'mail_api_timeout', 'Mail service timed out');
-    }
+    if (controller.signal.aborted) throw new MailApiError(408, 'mail_api_timeout', 'Mail service timed out');
     throw new MailApiError(0, 'mail_api_unavailable', 'Mail service is unavailable');
-  } finally {
-    window.clearTimeout(timer);
-  }
+  } finally { window.clearTimeout(timer); }
 }
 
-export async function getMailbox(): Promise<MailboxSummary | null> {
-  try {
-    const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
-    return result.mailbox;
-  } catch (error) {
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await getChatAccessToken();
+  if (!token) throw new MailApiError(401, 'auth_required', 'Login is required');
+  try { return await requestWithToken(path, init, token); }
+  catch (error) {
     if (!(error instanceof MailApiError) || error.status !== 401) throw error;
-    if (!await getChatAccessToken(true)) throw error;
-    const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
-    return result.mailbox;
+    const refreshed = await getChatAccessToken(true);
+    if (!refreshed) throw error;
+    return requestWithToken(path, init, refreshed);
   }
 }
-
-export async function listMailMessages(
-  folder: ApiMailFolder,
-  before?: string,
-): Promise<{ messages: MailApiMessage[]; nextCursor: string | null }> {
+export async function getMailbox(): Promise<MailboxSummary | null> {
+  const result = await request<{ mailbox: MailboxSummary | null }>('/v1/mailboxes/me');
+  return result.mailbox;
+}
+export async function listMailMessages(folder: ApiMailFolder, before?: string): Promise<{
+  messages: MailApiMessage[]; nextCursor: string | null; syncCursor?: number;
+}> {
   const params = new URLSearchParams({ folder });
   if (before) params.set('before', before);
   return request(`/v1/messages?${params.toString()}`);
 }
 
+export type MailApiMessageChange = {
+  cursor: number;
+  operation: 'upsert' | 'delete';
+  messageId: string;
+  message: MailApiMessage | null;
+};
+
+export async function listMailMessageChanges(after: number): Promise<{
+  changes: MailApiMessageChange[]; nextCursor: number | null;
+}> {
+  const params = new URLSearchParams({ after: String(after) });
+  return request(`/v1/messages/changes?${params.toString()}`);
+}
 export async function getMailMessage(id: string): Promise<MailApiMessage> {
   const result = await request<{ message: MailApiMessage }>(`/v1/messages/${encodeURIComponent(id)}`);
   return result.message;

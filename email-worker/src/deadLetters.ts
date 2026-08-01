@@ -179,7 +179,7 @@ export async function replayDeadLetter(
         WHERE id = ? AND direction = 'outbound' AND status = 'failed'
           AND trashed_at IS NULL`,
     ).bind(dispatchLease, messageId).run();
-    if (messageClaim.meta.changes !== 1) {
+    if (messageClaim.meta.changes < 1) {
       return resolveCompetingMessageState(env, deadLetterId, messageId);
     }
   }

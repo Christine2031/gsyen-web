@@ -24,7 +24,7 @@ describe("CORS policy", () => {
     });
     const headers = corsHeaders(request, {
       ALLOWED_ORIGINS: "https://gsyen.com",
-    } as MailEnv);
+    } as unknown as MailEnv);
     expect(headers.get("Access-Control-Allow-Methods")).toContain("DELETE");
     expect(headers.get("Access-Control-Allow-Origin")).toBe("https://gsyen.com");
   });

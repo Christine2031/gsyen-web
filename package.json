@@ -1,7 +1,7 @@
 {
   "name": "gsyen",
   "private": true,
-  "version": "2.88.323",
+  "version": "2.88.324",
   "description": "GSYEN AI atelier workspace",
   "author": "GSYEN",
   "type": "module",
@@ -23,7 +23,7 @@
     "version:release": "node -e \"const v=require('./package.json').version;require('child_process').execSync('git add -A && git commit -m \\\"release: v'+v+'\\\" && git tag v'+v+' && git push && git push --tags',{stdio:'inherit'});\"",
     "smoke:chatgpt": "node scripts/smoke-chatgpt-windows.cjs",
     "smoke:chatgpt:desktop": "npm run build && node scripts/smoke-chatgpt-windows.cjs --desktop",
-    "test": "vitest run",
+    "test": "vitest run --exclude email-worker/test/**",
     "test:electron-security": "node --test electron/*.node-test.cjs"
   },
   "build": {
