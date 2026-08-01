@@ -1,13 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const { getSession, setSession, me } = vi.hoisted(() => ({
+const { getSession, setSession, refreshSession, me } = vi.hoisted(() => ({
   getSession: vi.fn(),
   setSession: vi.fn(),
+  refreshSession: vi.fn(),
   me: vi.fn(),
 }));
 
 vi.mock('./supabaseClient', () => ({
-  supabase: { auth: { getSession, setSession } },
+  supabase: { auth: { getSession, setSession, refreshSession } },
 }));
 vi.mock('./gsyenApiProxy', () => ({
   authProxy: { me },
@@ -16,6 +17,7 @@ vi.mock('./gsyenApiProxy', () => ({
 import { getChatAccessToken } from './chatAccessToken';
 
 afterEach(() => {
+  refreshSession.mockReset();
   getSession.mockReset();
   setSession.mockReset();
   me.mockReset();
@@ -77,5 +79,18 @@ describe('chat access token recovery', () => {
     });
 
     await expect(getChatAccessToken()).resolves.toBe('');
+  });
+
+  it('refreshes an expired in-memory session before falling back to the auth cookie', async () => {
+    getSession.mockResolvedValue({
+      data: { session: { access_token: 'expired-token', expires_at: 1 } },
+    });
+    refreshSession.mockResolvedValue({
+      data: { session: { access_token: 'refreshed-access', expires_at: Math.floor(Date.now() / 1000) + 3600 } },
+    });
+
+    await expect(getChatAccessToken()).resolves.toBe('refreshed-access');
+    expect(refreshSession).toHaveBeenCalledTimes(1);
+    expect(me).not.toHaveBeenCalled();
   });
 });
