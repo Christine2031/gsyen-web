@@ -8,7 +8,7 @@ const { createTray } = require('./tray.cjs');
 const { registerUpdaterIpc, setupAutoUpdater } = require('./updater.cjs');
 const { startLocalServer, stopLocalServer, getLocalBridgeConfig } = require('./local-server.cjs');
 const { registerGsyenApiCors } = require('./gsyen-api-cors.cjs');
-const { isAllowedNavigation } = require('./navigation-policy.cjs');
+const { isAllowedNavigation, isExternalHttpUrl } = require('./navigation-policy.cjs');
 
 Sentry.init({
   dsn: 'https://a7b7176417e2f24b54156ef4ff01e8b2@o4511541959720960.ingest.us.sentry.io/4511541969551360',
@@ -151,7 +151,7 @@ function createWindow() {
   }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    if (isExternalHttpUrl(url)) void shell.openExternal(url);
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => {

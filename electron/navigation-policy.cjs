@@ -25,4 +25,13 @@ function isAllowedNavigation(url, isDev, rendererDirectory) {
   }
 }
 
-module.exports = { isAllowedNavigation };
+function isExternalHttpUrl(url) {
+  try {
+    const protocol = new URL(url).protocol;
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+module.exports = { isAllowedNavigation, isExternalHttpUrl };
