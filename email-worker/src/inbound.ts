@@ -171,7 +171,10 @@ async function persistInbound(
       objects.attachmentKeys[index],
     ));
   });
-  try {
+  statements.push(env.DB.prepare(
+    `INSERT INTO message_sync_events(mailbox_id, message_id, operation, created_at)
+     VALUES (?, ?, 'upsert', ?)`,
+  ).bind(mailbox.id, messageId, now));  try {
     await env.DB.batch(statements);
   } catch (error) {
     await Promise.all([

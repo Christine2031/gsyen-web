@@ -48,4 +48,26 @@ describe("mail identity", () => {
       userMetadata: { gsyen_username: "Ethan.7586" },
     });
   });
+
+  it("reuses x-mail-request-id in auth failure logs", async () => {
+    const warning = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const request = new Request("https://mail.test/v1/mailboxes/me", {
+      headers: { "x-mail-request-id": "diag-2026", Authorization: "bad-token" },
+    });
+
+    await expect(requireUser(request, authEnv)).rejects.toMatchObject({
+      status: 401,
+      code: "unauthorized",
+    });
+
+    const lastLog = warning.mock.calls.at(-1)?.[0];
+    expect(lastLog).toBeDefined();
+    const payload = JSON.parse(String(lastLog));
+    expect(payload.event).toBe("mail_auth_failed");
+    expect(payload.requestId).toBe("diag-2026");
+    expect(payload.stage).toBe("auth_missing_or_oversized_bearer");
+    expect(payload.path).toBe("/v1/mailboxes/me");
+  });
 });
+
+

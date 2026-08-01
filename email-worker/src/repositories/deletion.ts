@@ -1,4 +1,5 @@
 import { ApiError } from "../http";
+import { appendMessageSyncEvents } from "./messageSyncEvents";
 import type { MailEnv } from "../types";
 
 type DeletableMessage = {
@@ -98,6 +99,7 @@ export async function deleteTrashedMessage(
   if (remaining) {
     throw new ApiError(409, "message_delete_conflict", "Message could not be deleted");
   }
+  await appendMessageSyncEvents(env, mailboxId, [messageId], "delete");
   return { pendingObjects: objectKeys.length };
 }
 

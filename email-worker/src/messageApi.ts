@@ -12,6 +12,8 @@ import {
   getMailboxByOwner,
   getMessage,
   listMessageAttachments,
+  currentMessageChangeCursor,
+  listMessageChanges,
   listMessages,
   queueOutboundMessage,
   updateMessagesState,
@@ -69,8 +71,19 @@ function serializeMessage(message: MessageSummary) {
   };
 }
 
-async function recoverInboundText(
-  env: MailEnv,
+function parseChangeCursor(value: string | null): number {
+  if (value === null) return 0;
+  if (!/^(0|[1-9]\d*)$/.test(value)) {
+    throw new ApiError(400, "invalid_sync_cursor", "Sync cursor is invalid");
+  }
+  const cursor = Number(value);
+  if (!Number.isSafeInteger(cursor)) {
+    throw new ApiError(400, "invalid_sync_cursor", "Sync cursor is invalid");
+  }
+  return cursor;
+}
+
+async function recoverInboundText(  env: MailEnv,
   mailboxId: string,
   message: MessageSummary,
 ): Promise<MessageSummary> {
@@ -178,6 +191,30 @@ async function attachmentResponse(
   return new Response(object.body, { headers });
 }
 
+function logMessageApiPhase(
+  request: Request,
+  stage: string,
+  extra: Record<string, unknown> = {},
+): void {
+  const path = new URL(request.url).pathname;
+  if (!path.startsWith("/v1/")) return;
+  console.log(JSON.stringify({
+    event: "mail_api_request_phase",
+    requestId: getRequestId(request),
+    path,
+    stage,
+    ...extra,
+  }));
+}
+
+function getRequestId(request: Request): string {
+  return (
+    request.headers.get("x-mail-request-id")
+    ?? request.headers.get("x-request-id")
+    ?? request.headers.get("cf-ray")
+  ) || crypto.randomUUID();
+}
+
 export async function routeMessageRequest(
   request: Request,
   env: MailEnv,
@@ -189,19 +226,38 @@ export async function routeMessageRequest(
   if (!path.startsWith("/v1/messages") && !path.startsWith("/v1/attachments")) {
     return null;
   }
+  logMessageApiPhase(request, "mailbox_query_start");
   const mailbox = await currentMailbox(env, user.id);
+  logMessageApiPhase(request, "mailbox_query_complete", {
+    hasMailbox: Boolean(mailbox),
+  });
+
   if (request.method === "GET" && path === "/v1/messages") {
-    const messages = await listMessages(
-      env,
-      mailbox.id,
-      parseFolder(url.searchParams.get("folder")),
-      parseMessageCursor(url.searchParams.get("before")),
-      51,
-    );
+    const folder = parseFolder(url.searchParams.get("folder"));
+    logMessageApiPhase(request, "messages_query_start", { folder });
+    const syncCursor = await currentMessageChangeCursor(env, mailbox.id);
+    const messages = await listMessages(env, mailbox.id, folder,
+      parseMessageCursor(url.searchParams.get("before")), 51);
     const page = messages.slice(0, 50);
+    logMessageApiPhase(request, "messages_query_complete", { count: page.length });
     return json(request, env, {
       messages: page.map(serializeMessage),
       nextCursor: messages.length > 50 ? serializeMessageCursor(page.at(-1)) : null,
+      syncCursor,
+    });
+  }
+  if (request.method === "GET" && path === "/v1/messages/changes") {
+    const after = parseChangeCursor(url.searchParams.get("after"));
+    logMessageApiPhase(request, "message_changes_query_start", { after });
+    const changes = await listMessageChanges(env, mailbox.id, after, 51);
+    const page = changes.slice(0, 50);
+    logMessageApiPhase(request, "message_changes_query_complete", { count: page.length });
+    return json(request, env, {
+      changes: page.map(change => ({
+        cursor: change.sequence, operation: change.operation, messageId: change.messageId,
+        message: change.message ? serializeMessage(change.message) : null,
+      })),
+      nextCursor: changes.length > 50 ? page.at(-1)?.sequence ?? null : null,
     });
   }
   if (request.method === "PATCH" && path === "/v1/messages/batch") {
@@ -252,18 +308,30 @@ export async function routeMessageRequest(
   }
   const messageHtmlMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})\/html$/i);
   if (request.method === "GET" && messageHtmlMatch) {
+    logMessageApiPhase(request, "message_html_start", { messageId: messageHtmlMatch[1] });
     const html = await getMessageHtmlPreview(env, mailbox.id, messageHtmlMatch[1]);
+    logMessageApiPhase(request, "message_html_complete", {
+      hasHtml: Boolean(html),
+    });
     return json(request, env, { html });
   }
   const messageMatch = path.match(/^\/v1\/messages\/([0-9a-f-]{36})$/i);
   if (request.method === "GET" && messageMatch) {
+    logMessageApiPhase(request, "message_detail_start", { messageId: messageMatch[1] });
     const message = await getMessage(env, mailbox.id, messageMatch[1]);
-    if (!message) throw new ApiError(404, "message_not_found", "Message was not found");
+    if (!message) {
+      logMessageApiPhase(request, "message_detail_not_found", { messageId: messageMatch[1] });
+      throw new ApiError(404, "message_not_found", "Message was not found");
+    }
     let viewed = message.is_read === 1
       ? message
       : await updateMessageState(env, mailbox.id, message.id, { isRead: true });
     const attachments = await listMessageAttachments(env, mailbox.id, message.id);
     viewed = await recoverInboundText(env, mailbox.id, viewed);
+    logMessageApiPhase(request, "message_detail_complete", {
+      hasAttachments: attachments.length > 0,
+      hasBody: Boolean(viewed.text_body),
+    });
     return json(request, env, {
       message: serializeMessage(viewed),
       attachments: attachments.map((item) => ({
@@ -295,3 +363,5 @@ export async function routeMessageRequest(
   }
   return null;
 }
+
+

@@ -1,4 +1,5 @@
 import { ApiError } from "../http";
+import { appendMessageSyncEvents } from "./messageSyncEvents";
 import type { MessageCursor } from "../messageCursor";
 import type { MailEnv, MailFolder, MessageSummary } from "../types";
 
@@ -33,6 +34,18 @@ export type AttachmentRecord = {
   object_key: string;
 };
 
+export type MessageChange = {
+  sequence: number;
+  operation: "upsert" | "delete";
+  messageId: string;
+  message: MessageSummary | null;
+};
+
+type MessageChangeRow = MessageSummary & {
+  sequence: number;
+  operation: "upsert" | "delete";
+  message_id: string;
+};
 function stateValues(patch: MessageStatePatch): Map<string, unknown> {
   const values = new Map<string, unknown>();
   const now = new Date().toISOString();
@@ -123,8 +136,40 @@ export async function listMessages(
   return result.results;
 }
 
-export async function getMessage(
+export async function currentMessageChangeCursor(
   env: MailEnv,
+  mailboxId: string,
+): Promise<number> {
+  const row = await env.DB.prepare(
+    "SELECT COALESCE(MAX(sequence), 0) AS cursor FROM message_sync_events WHERE mailbox_id = ?",
+  ).bind(mailboxId).first<{ cursor: number }>();
+  return row?.cursor ?? 0;
+}
+
+export async function listMessageChanges(
+  env: MailEnv,
+  mailboxId: string,
+  after: number,
+  limit = 50,
+): Promise<MessageChange[]> {
+  const safeLimit = Math.max(1, Math.min(51, Math.trunc(limit)));
+  const result = await env.DB.prepare(
+    `SELECT e.sequence, e.operation, e.message_id,
+            ${MESSAGE_COLUMNS}
+       FROM message_sync_events e
+       LEFT JOIN messages m ON m.id = e.message_id AND m.mailbox_id = e.mailbox_id
+      WHERE e.mailbox_id = ? AND e.sequence > ?
+      ORDER BY e.sequence ASC LIMIT ?`,
+  ).bind(mailboxId, after, safeLimit).all<MessageChangeRow>();
+  return result.results.map((row) => ({
+    sequence: row.sequence,
+    operation: row.id ? row.operation : "delete",
+    messageId: row.message_id,
+    message: row.id ? row : null,
+  }));
+}
+
+export async function getMessage(  env: MailEnv,
   mailboxId: string,
   messageId: string,
 ): Promise<MessageSummary | null> {
@@ -143,16 +188,14 @@ export async function updateMessageState(
 ): Promise<MessageSummary> {
   const values = stateValues(patch);
   const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
-  const result = await env.DB.prepare(
+  await env.DB.prepare(
     `UPDATE messages SET ${assignments} WHERE id = ? AND mailbox_id = ?`,
   ).bind(...values.values(), messageId, mailboxId).run();
-  if (result.meta.changes !== 1) {
-    throw new ApiError(404, "message_not_found", "Message was not found");
-  }
   const message = await getMessage(env, mailboxId, messageId);
   if (!message) {
     throw new ApiError(404, "message_not_found", "Message was not found");
   }
+  await appendMessageSyncEvents(env, mailboxId, [messageId]);
   return message;
 }
 
@@ -169,7 +212,7 @@ export async function updateMessagesState(
   const values = stateValues(patch);
   const assignments = [...values.keys()].map((column) => `${column} = ?`).join(", ");
   const placeholders = ids.map(() => "?").join(", ");
-  const result = await env.DB.prepare(
+  await env.DB.prepare(
     `UPDATE messages SET ${assignments}
       WHERE mailbox_id = ? AND id IN (${placeholders})
         AND (SELECT count(*) FROM messages
@@ -182,13 +225,14 @@ export async function updateMessagesState(
     ...ids,
     ids.length,
   ).run();
-  if (result.meta.changes !== ids.length) {
-    throw new ApiError(404, "message_not_found", "One or more messages were not found");
-  }
   const selected = await env.DB.prepare(
     `SELECT ${MESSAGE_COLUMNS} FROM messages m
       WHERE m.mailbox_id = ? AND m.id IN (${placeholders})`,
   ).bind(mailboxId, ...ids).all<MessageSummary>();
+  if (selected.results.length !== ids.length) {
+    throw new ApiError(404, "message_not_found", "One or more messages were not found");
+  }
+  await appendMessageSyncEvents(env, mailboxId, ids);
   return selected.results;
 }
 

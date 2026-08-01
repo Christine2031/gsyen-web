@@ -16,7 +16,7 @@
     "MAIL_DOMAIN": "gsyen.com",
     "INBOUND_DOMAINS": "gsyen.com",
     "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
-    "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
+    "ALLOWED_ORIGINS": "https://gsyen.com,https://www.gsyen.com,http://127.0.0.1:5173",
     "AUTO_APPROVE_SIGNUPS": "false",
     "MAX_MESSAGE_BYTES": "5242880",
     "DAILY_SEND_LIMIT": "30"
@@ -71,7 +71,7 @@
         "MAIL_DOMAIN": "gsyen.com",
         "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
-        "ALLOWED_ORIGINS": "https://gsyen.com,http://127.0.0.1:5173",
+        "ALLOWED_ORIGINS": "https://gsyen.com,https://www.gsyen.com,http://127.0.0.1:5173",
         "AUTO_APPROVE_SIGNUPS": "false",
         "MAX_MESSAGE_BYTES": "5242880",
         "DAILY_SEND_LIMIT": "30"
@@ -133,7 +133,7 @@
         "MAIL_DOMAIN": "gsyen.com",
         "INBOUND_DOMAINS": "gsyen.com",
         "AUTH_API_URL": "https://hrtynofmjcumuanjvpxz.supabase.co",
-        "ALLOWED_ORIGINS": "https://gsyen.com",
+        "ALLOWED_ORIGINS": "https://gsyen.com,https://www.gsyen.com",
         "AUTO_APPROVE_SIGNUPS": "false",
         "MAX_MESSAGE_BYTES": "5242880",
         "DAILY_SEND_LIMIT": "30"
@@ -181,3 +181,4 @@
     }
   }
 }
+

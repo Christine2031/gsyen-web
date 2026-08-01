@@ -1,101 +1,38 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../auth/useAuth';
 import {
-  mailApiToEmailItem, mailItemFolder, mailMessageTime,
-  mailThreadMessage, type EmailItem, type MailFolder,
-} from '../types/mail';
-import {
-  MailApiError, cancelQueuedMessage, deleteMailMessage, getMailbox,
-  listMailMessages, sendMailMessage,
-  type ApiMailFolder, type MailApiMessage, type MailSendInput,
+  MailApiError, cancelQueuedMessage, deleteMailMessage, getMailbox, sendMailMessage,
+  type MailApiMessage, type MailSendInput,
 } from '../services/mailApi';
+import type { EmailItem } from '../types/mail';
+import { readMailSyncSnapshot, scheduleMailSyncSnapshot } from './mailSyncCache';
 import {
-  clearMailSyncSnapshot, compactMailSyncEmails, isPermanentMailSyncError,
-  readMailSyncSnapshot, writeMailSyncSnapshot,
-} from './mailSyncCache';
-import { isRetryableMailSyncError, waitForMailSyncRetry } from './mailSyncRecovery';
+  applyMailSyncChanges, loadMailSyncBaseline, loadMailSyncChanges, mapMailMessages,
+} from './mailSyncData';
+import { isRetryableMailSyncError, MAIL_SYNC_RETRY_DELAYS_MS, waitForMailSyncRetry } from './mailSyncRecovery';
 
 export { useMailMutations } from './mailMutations';
+export { mapMailMessages } from './mailSyncData';
 
-const MAX_PAGES_PER_FOLDER = 100;
+const BACKGROUND_SYNC_MS = 30_000;
+const FOCUS_SYNC_GUARD_MS = 5_000;
+type SyncMode = 'baseline' | 'delta';
 
-export function mapMailMessages(messages: MailApiMessage[], lang: 'zh' | 'en'): EmailItem[] {
-  const unique = [...new Map(messages.map(message => [message.id, message])).values()];
-  const byInternetId = new Map(unique.flatMap(message => (message.internetMessageId
-    ? [[message.internetMessageId, message.id]] : [])));
-  const parent = new Map(unique.map(message => [message.id, message.id]));
-  const find = (id: string): string => {
-    const ancestor = parent.get(id) ?? id;
-    if (ancestor === id) return id;
-    const root = find(ancestor);
-    parent.set(id, root);
-    return root;
-  };
-  unique.forEach(message => {
-    const related = [message.inReplyTo, ...message.references].find(
-      reference => reference && byInternetId.has(reference));
-    if (!related) return;
-    const otherId = byInternetId.get(related);
-    if (otherId && find(message.id) !== find(otherId)) parent.set(find(message.id), find(otherId));
-  });
-  const groups = new Map<string, MailApiMessage[]>();
-  unique.forEach(message => {
-    const rootId = find(message.id);
-    const group = groups.get(rootId);
-    if (group) group.push(message);
-    else groups.set(rootId, [message]);
-  });
-  const items = [...groups.entries()].map(([rootId, messages]) => {
-    const ordered = messages.sort(
-      (a, b) => Date.parse(mailMessageTime(a)) - Date.parse(mailMessageTime(b)));
-    const latest = ordered.at(-1)!;
-    const item = mailApiToEmailItem(latest, lang);
-    const folders = ordered.map(mailItemFolder);
-    const folder: MailFolder = folders.every(value => value === 'trash') ? 'trash'
-      : folders.includes('inbox') ? 'inbox'
-        : folders.includes('snoozed') ? 'snoozed'
-          : folders.includes('spam') ? 'spam'
-            : folders.includes('drafts') ? 'drafts' : 'sent';
-    return {
-      ...item,
-      id: rootId,
-      messageIds: ordered.map(message => message.id),
-      folder,
-      read: ordered.every(message => message.isRead),
-      starred: ordered.some(message => message.isStarred),
-      important: ordered.some(message => message.isImportant),
-      threadMessages: ordered.map(mailThreadMessage),
-    };
-  });
-  return items.sort((a, b) => (
-    Date.parse(b.createdAt ?? '') - Date.parse(a.createdAt ?? '')
-  ));
+function syncErrorCode(error: unknown): string {
+  return error instanceof MailApiError ? error.code : 'mail_sync_unexpected';
 }
-
-function mergeMailItems(remote: EmailItem[], cached: EmailItem[]): EmailItem[] {
-  const byId = new Map<string, EmailItem>();
-  cached.forEach(item => byId.set(item.id, item));
-  remote.forEach(item => byId.set(item.id, item));
-  return compactMailSyncEmails([...byId.values()]);
-}
-
-async function loadFolder(folder: ApiMailFolder): Promise<MailApiMessage[]> {
-  const messages: MailApiMessage[] = [];
-  let cursor: string | undefined;
-  for (let page = 0; page < MAX_PAGES_PER_FOLDER; page += 1) {
-    const result = await listMailMessages(folder, cursor);
-    messages.push(...result.messages);
-    if (!result.nextCursor || result.nextCursor === cursor) return messages;
-    cursor = result.nextCursor;
-  }
-  throw new MailApiError(413, 'mail_sync_limit', 'Mailbox is too large to synchronize safely');
-}
+function reportSync(event: Record<string, string | number>) { console.info('[mail-sync]', event); }
 
 export function useMailSync(lang: 'zh' | 'en') {
   const { user, loading: authLoading } = useAuth();
   const identityKey = user?.id ?? '';
-  const cached = identityKey ? readMailSyncSnapshot(identityKey, lang) : null;
-  const [emails, setEmails] = useState<EmailItem[]>(cached?.emails ?? []);
+  const cached = useMemo(() => (
+    identityKey ? readMailSyncSnapshot(identityKey, lang) : null
+  ), [identityKey, lang]);
+  const cachedEmails = useMemo(() => (
+    cached?.emails ?? (cached?.messages ? mapMailMessages(cached.messages, lang) : [])
+  ), [cached, lang]);
+  const [emails, setEmails] = useState<EmailItem[]>(cachedEmails);
   const [mailboxAddress, setMailboxAddress] = useState(cached?.mailboxAddress ?? '');
   const [dataOwnerId, setDataOwnerId] = useState(cached ? identityKey : '');
   const [statusOwnerId, setStatusOwnerId] = useState('');
@@ -104,6 +41,9 @@ export function useMailSync(lang: 'zh' | 'en') {
   const requestVersion = useRef(0);
   const activeIdentity = useRef(identityKey);
   const dataOwner = useRef(dataOwnerId);
+  const rawMessages = useRef<MailApiMessage[]>(cached?.messages ?? []);
+  const syncCursor = useRef<number | null>(cached?.syncCursor ?? null);
+  const mailboxAddressRef = useRef(cached?.mailboxAddress ?? '');
   const inFlight = useRef<{ userId: string; request: Promise<void> } | null>(null);
   const lastSuccessfulSync = useRef(0);
   const settleTimer = useRef<number | null>(null);
@@ -113,133 +53,121 @@ export function useMailSync(lang: 'zh' | 'en') {
     dataOwner.current = dataOwnerId;
   }, [identityKey, dataOwnerId]);
 
-  const runRefresh = useCallback(async (reportFailure = true) => {
-    const userId = user?.id;
-    if (!userId) throw new MailApiError(401, 'auth_required', 'Login is required');
-    const version = ++requestVersion.current;
-    setStatusOwnerId(userId);
-    setIsSyncing(true);
-    setSyncError(null);
-    const isCurrent = () => version === requestVersion.current && activeIdentity.current === userId;
-    try {
-      const mailbox = await getMailbox();
-      if (!mailbox) throw new MailApiError(404, 'mailbox_not_found', 'Mailbox is not registered');
-      if (mailbox.status !== 'active') {
-        throw new MailApiError(403, 'mailbox_inactive', 'Mailbox is not active');
-      }
-      const cached = readMailSyncSnapshot(userId, lang);
-      const messages = await loadFolder('all');
-      if (!isCurrent()) return;
-      const nextEmails = mergeMailItems(mapMailMessages(messages, lang), cached?.emails ?? []);
-      dataOwner.current = userId;
-      setDataOwnerId(userId);
-      setMailboxAddress(mailbox.address);
-      setEmails(nextEmails);
-      writeMailSyncSnapshot(userId, lang, { emails: nextEmails, mailboxAddress: mailbox.address });
-      lastSuccessfulSync.current = Date.now();
-    } catch (error) {
-      if (isCurrent()) {
-        if (reportFailure) setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
-        if (isPermanentMailSyncError(error)) {
-          clearMailSyncSnapshot(userId, lang);
-          dataOwner.current = '';
-          setDataOwnerId('');
-          setMailboxAddress('');
-          setEmails([]);
-        }
-      }
-      throw error;
-    } finally {
-      if (isCurrent()) setIsSyncing(false);
-    }
-  }, [lang, user?.id]);
-
   const refreshMessages = useCallback((): Promise<void> => {
-    if (!user?.id) return Promise.reject(
-      new MailApiError(401, 'auth_required', 'Login is required'),
-    );
-    if (inFlight.current?.userId === user.id) return inFlight.current.request;
+    const userId = user?.id;
+    if (!userId) return Promise.reject(new MailApiError(401, 'auth_required', 'Login is required'));
+    if (inFlight.current?.userId === userId) return inFlight.current.request;
+    const version = ++requestVersion.current;
+    const isCurrent = () => version === requestVersion.current && activeIdentity.current === userId;
     const request = (async () => {
+      setStatusOwnerId(userId); setIsSyncing(true); setSyncError(null);
+      const startedAt = performance.now();
+      let attempts = 0;
+      let mode: SyncMode = syncCursor.current === null ? 'baseline' : 'delta';
       try {
-        await runRefresh(false);
-      } catch (error) {
-        if (!isRetryableMailSyncError(error)) {
-          if (activeIdentity.current === user.id) {
-            setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
+        while (true) {
+          try {
+            let changeCount = 0;
+            if (mode === 'baseline') {
+              const mailbox = await getMailbox();
+              if (!mailbox) throw new MailApiError(404, 'mailbox_not_found', 'Mailbox is not registered');
+              if (mailbox.status !== 'active') {
+                throw new MailApiError(403, 'mailbox_inactive', 'Mailbox is not active');
+              }
+              const baseline = await loadMailSyncBaseline();
+              if (!isCurrent()) return;
+              rawMessages.current = baseline.messages;
+              syncCursor.current = baseline.syncCursor;
+              mailboxAddressRef.current = mailbox.address;
+              setMailboxAddress(mailbox.address);
+              changeCount = baseline.messages.length;
+            } else {
+              const changes = await loadMailSyncChanges(syncCursor.current ?? 0);
+              if (!isCurrent()) return;
+              rawMessages.current = applyMailSyncChanges(rawMessages.current, changes.changes);
+              syncCursor.current = changes.syncCursor;
+              changeCount = changes.changes.length;
+            }
+            const nextEmails = mapMailMessages(rawMessages.current, lang);
+            dataOwner.current = userId;
+            setDataOwnerId(userId);
+            setEmails(nextEmails);
+            scheduleMailSyncSnapshot(userId, lang, {
+              messages: rawMessages.current,
+              mailboxAddress: mailboxAddressRef.current,
+              syncCursor: syncCursor.current,
+            });
+            lastSuccessfulSync.current = Date.now();
+            reportSync({ mode, outcome: 'success', attempts, changes: changeCount,
+              durationMs: Math.round(performance.now() - startedAt) });
+            return;
+          } catch (error) {
+            if (!isRetryableMailSyncError(error) || attempts >= MAIL_SYNC_RETRY_DELAYS_MS.length) {
+              if (isCurrent()) setSyncError(error instanceof Error ? error.message : 'Mail synchronization failed');
+              reportSync({ mode, outcome: 'failure', attempts, code: syncErrorCode(error),
+                durationMs: Math.round(performance.now() - startedAt) });
+              throw error;
+            }
+            await waitForMailSyncRetry(attempts);
+            attempts += 1;
+            if (!isCurrent()) return;
+            mode = syncCursor.current === null ? 'baseline' : 'delta';
           }
-          throw error;
         }
-        await waitForMailSyncRetry();
-        if (activeIdentity.current !== user.id) return;
-        await runRefresh(true);
+      } finally {
+        if (isCurrent()) setIsSyncing(false);
       }
     })().finally(() => {
       if (inFlight.current?.request === request) inFlight.current = null;
     });
-    inFlight.current = { userId: user.id, request };
+    inFlight.current = { userId, request };
     return request;
-  }, [runRefresh, user?.id]);
+  }, [lang, user?.id]);
 
   useEffect(() => {
     requestVersion.current += 1;
-    if (settleTimer.current) {
-      window.clearTimeout(settleTimer.current);
-      settleTimer.current = null;
-    }
-    inFlight.current = null;
-    lastSuccessfulSync.current = 0;
-    dataOwner.current = '';
-    const cached = identityKey ? readMailSyncSnapshot(identityKey, lang) : null;
-    if (cached) {
-      dataOwner.current = identityKey;
-      setEmails(cached.emails);
-      setMailboxAddress(cached.mailboxAddress);
-      setDataOwnerId(identityKey);
-    } else {
-      setEmails([]);
-      setMailboxAddress('');
-      setDataOwnerId('');
-    }
-    setStatusOwnerId('');
-    setIsSyncing(false);
-    setSyncError(null);
-  }, [identityKey, lang]);
+    if (settleTimer.current) window.clearTimeout(settleTimer.current);
+    settleTimer.current = null; inFlight.current = null; lastSuccessfulSync.current = 0;
+    rawMessages.current = cached?.messages ?? [];
+    syncCursor.current = cached?.syncCursor ?? null;
+    mailboxAddressRef.current = cached?.mailboxAddress ?? '';
+    dataOwner.current = cached ? identityKey : '';
+    setEmails(cachedEmails); setMailboxAddress(mailboxAddressRef.current);
+    setDataOwnerId(dataOwner.current); setStatusOwnerId(''); setIsSyncing(false); setSyncError(null);
+  }, [cached, cachedEmails, identityKey]);
 
   useEffect(() => {
     if (authLoading || !identityKey) return;
     void refreshMessages().catch(() => {});
-    return () => {
-      requestVersion.current += 1;
-      inFlight.current = null;
-    };
+    return () => { requestVersion.current += 1; inFlight.current = null; };
   }, [authLoading, identityKey, refreshMessages]);
 
   useEffect(() => {
-    const refreshIfStale = () => {
-      if (
-        document.visibilityState === 'visible'
-        && Date.now() - lastSuccessfulSync.current >= 60_000
-      ) {
-        void refreshMessages().catch(() => {});
-      }
+    const refreshIfVisible = () => {
+      if (document.visibilityState === 'visible') void refreshMessages().catch(() => {});
     };
-    window.addEventListener('focus', refreshIfStale);
-    document.addEventListener('visibilitychange', refreshIfStale);
+    const refreshOnFocus = () => {
+      if (Date.now() - lastSuccessfulSync.current >= FOCUS_SYNC_GUARD_MS) refreshIfVisible();
+    };
+    const timer = window.setInterval(refreshIfVisible, BACKGROUND_SYNC_MS);
+    window.addEventListener('focus', refreshOnFocus);
+    window.addEventListener('online', refreshIfVisible);
+    window.addEventListener('gsyen:mail-state-committed', refreshIfVisible);
+    document.addEventListener('visibilitychange', refreshIfVisible);
     return () => {
-      window.removeEventListener('focus', refreshIfStale);
-      document.removeEventListener('visibilitychange', refreshIfStale);
+      window.clearInterval(timer); window.removeEventListener('focus', refreshOnFocus);
+      window.removeEventListener('online', refreshIfVisible);
+      window.removeEventListener('gsyen:mail-state-committed', refreshIfVisible);
+      document.removeEventListener('visibilitychange', refreshIfVisible);
     };
   }, [refreshMessages]);
 
-  useEffect(() => () => {
-    if (settleTimer.current) window.clearTimeout(settleTimer.current);
-  }, []);
+  useEffect(() => () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); }, []);
 
   const scheduleSettlementRefresh = useCallback(() => {
     if (settleTimer.current) window.clearTimeout(settleTimer.current);
     settleTimer.current = window.setTimeout(() => {
-      settleTimer.current = null;
-      void refreshMessages().catch(() => {});
+      settleTimer.current = null; void refreshMessages().catch(() => {});
     }, 10_000);
   }, [refreshMessages]);
 
@@ -266,24 +194,21 @@ export function useMailSync(lang: 'zh' | 'en') {
     if (!activeIdentity.current || dataOwner.current !== activeIdentity.current) return;
     setEmails(current => {
       const next = typeof update === 'function' ? update(current) : update;
-      writeMailSyncSnapshot(activeIdentity.current, lang, { emails: next, mailboxAddress });
+      scheduleMailSyncSnapshot(activeIdentity.current, lang, {
+        messages: rawMessages.current, emails: next, mailboxAddress: mailboxAddressRef.current,
+        syncCursor: syncCursor.current,
+      });
       return next;
     });
-  }, [lang, mailboxAddress]);
+  }, [lang]);
 
   const ownsData = !authLoading && dataOwnerId === identityKey && Boolean(identityKey);
   const ownsStatus = !authLoading && statusOwnerId === identityKey && Boolean(identityKey);
   return {
-    emails: ownsData ? emails : [],
-    saveEmails,
+    emails: ownsData ? emails : [], saveEmails,
     mailboxAddress: ownsData ? mailboxAddress : (!authLoading ? user?.email ?? '' : ''),
-    identityKey,
-    isSyncing: ownsStatus && isSyncing,
-    syncError: ownsStatus ? syncError : null,
-    refreshMessages,
-    sendMessage,
-    cancelMessage,
-    deleteMessage,
+    identityKey, isSyncing: ownsStatus && isSyncing, syncError: ownsStatus ? syncError : null,
+    refreshMessages, sendMessage, cancelMessage, deleteMessage,
   };
 }
 

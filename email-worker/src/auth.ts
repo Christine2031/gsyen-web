@@ -9,12 +9,20 @@ type SupabaseUser = {
   user_metadata?: unknown;
 };
 
+type AuthFailureContext = {
+  stage: string;
+  upstreamStatus?: number;
+};
+
+const authFailureByRequest = new WeakMap<Request, AuthFailureContext>();
+
 export async function requireUser(
   request: Request,
   env: MailEnv,
 ): Promise<AuthUser> {
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ") || authorization.length > 8_192) {
+    logAuthFailure(request, "auth_missing_or_oversized_bearer");
     throw new ApiError(401, "unauthorized", "A valid login is required");
   }
   const response = await fetch(`${env.AUTH_API_URL}/auth/v1/user`, {
@@ -25,13 +33,16 @@ export async function requireUser(
     signal: AbortSignal.timeout(8_000),
   });
   if (!response.ok) {
+    logAuthFailure(request, "auth_supabase_user_rejected", response.status);
     throw new ApiError(401, "unauthorized", "Login has expired or is invalid");
   }
   const data = await response.json<SupabaseUser>();
   if (typeof data.id !== "string" || typeof data.email !== "string") {
+    logAuthFailure(request, "auth_identity_invalid");
     throw new ApiError(401, "unauthorized", "Identity response is invalid");
   }
   if (typeof data.email_confirmed_at !== "string") {
+    logAuthFailure(request, "auth_email_unverified");
     throw new ApiError(403, "email_unverified", "Verify your account email before creating a mailbox");
   }
   const metadata =
@@ -48,6 +59,39 @@ export async function requireUser(
     isAdmin: metadata.mail_admin === true,
     userMetadata,
   };
+}
+
+function logAuthFailure(
+  request: Request,
+  stage: string,
+  upstreamStatus?: number,
+): void {
+  const path = new URL(request.url).pathname;
+  if (!path.startsWith("/v1/")) return;
+  const context = { stage, ...(upstreamStatus ? { upstreamStatus } : {}) };
+  authFailureByRequest.set(request, context);
+  console.warn(JSON.stringify({
+    event: "mail_auth_failed",
+    requestId: getRequestId(request),
+    path,
+    stage,
+    ...(upstreamStatus ? { upstreamStatus } : {}),
+  }));
+}
+
+export function consumeAuthFailure(request: Request): AuthFailureContext | undefined {
+  const value = authFailureByRequest.get(request);
+  if (!value) return undefined;
+  authFailureByRequest.delete(request);
+  return value;
+}
+
+function getRequestId(request: Request): string {
+  return (
+    request.headers.get("x-mail-request-id")
+    ?? request.headers.get("x-request-id")
+    ?? request.headers.get("cf-ray")
+  ) || crypto.randomUUID();
 }
 
 export function requireInternalService(request: Request, env: MailEnv): void {

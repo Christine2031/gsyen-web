@@ -1,5 +1,6 @@
 import { ApiError } from "../http";
 import type { MailEnv, MailboxRecord, SendRequest } from "../types";
+import { appendMessageSyncEventsForMessageIds } from "./messageSyncEvents";
 import { markOutboundDispatched } from "./outboundDispatch";
 export type OutboundRecord = {
   id: string;
@@ -53,7 +54,8 @@ export async function queueOutboundMessage(
   const id = crypto.randomUUID();
   const now = new Date().toISOString();
   try {
-    await env.DB.prepare(
+    await env.DB.batch([
+      env.DB.prepare(
       `INSERT INTO messages
         (id, mailbox_id, direction, folder, client_request_id, from_address,
          to_json, cc_json, subject, text_body, in_reply_to, references_json,
@@ -72,7 +74,12 @@ export async function queueOutboundMessage(
       JSON.stringify(input.references ?? []),
       now,
       input.category ?? "primary",
-    ).run();
+    ),
+      env.DB.prepare(
+        `INSERT INTO message_sync_events(mailbox_id, message_id, operation, created_at)
+         VALUES (?, ?, 'upsert', ?)`,
+      ).bind(mailbox.id, id, now),
+    ]);
   } catch (error) {
     await refundUsage(env, mailbox.owner_id, dayKey);
     if (String(error).toLowerCase().includes("unique")) {
@@ -133,6 +140,7 @@ export async function claimOutboundRecord(
           OR (status = 'sending' AND last_attempt_at < ?))`,
   ).bind(now.toISOString(), messageId, staleBefore).run();
   if (claim.meta.changes !== 1) return null;
+  await appendMessageSyncEventsForMessageIds(env, [messageId]);
   return env.DB.prepare(
     `SELECT m.id, m.from_address, m.to_json, m.cc_json, m.subject, m.text_body,
             m.in_reply_to, m.references_json, m.status, b.display_name,
@@ -166,7 +174,9 @@ export async function markOutboundSent(
             sent_at = ?, error_code = NULL
       WHERE id = ? AND status = 'sending'`,
   ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
-  return result.meta.changes === 1;
+  if (result.meta.changes !== 1) return false;
+  await appendMessageSyncEventsForMessageIds(env, [messageId]);
+  return true;
 }
 
 export async function reconcileOutboundSent(
@@ -183,7 +193,9 @@ export async function reconcileOutboundSent(
             sent_at = COALESCE(sent_at, ?), error_code = NULL
       WHERE id = ? AND direction = 'outbound' AND trashed_at IS NULL`,
   ).bind(providerMessageId, internetMessageId, sentAt, messageId).run();
-  return result.meta.changes === 1;
+  if (result.meta.changes !== 1) return false;
+  await appendMessageSyncEventsForMessageIds(env, [messageId]);
+  return true;
 }
 
 export async function markOutboundFailed(
@@ -191,8 +203,11 @@ export async function markOutboundFailed(
   messageId: string,
   code: string,
 ): Promise<void> {
-  await env.DB.prepare(
+  const result = await env.DB.prepare(
     `UPDATE messages SET status = 'failed', error_code = ?
       WHERE id = ? AND status = 'sending'`,
   ).bind(code.slice(0, 120), messageId).run();
+  if (result.meta.changes === 1) {
+    await appendMessageSyncEventsForMessageIds(env, [messageId]);
+  }
 }
