@@ -1,1 +1,1 @@
-export { default } from './auth/[...path]';
+export { default } from './authProxy.js';
