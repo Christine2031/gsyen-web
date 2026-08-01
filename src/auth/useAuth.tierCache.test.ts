@@ -50,6 +50,28 @@ describe('auth tier cache fallback', () => {
 });
 
 describe('auth membership recovery', () => {
+  it('rejects a membership result when the authenticated identity changes in flight', async () => {
+    let current = true;
+    const load = vi.fn(async () => {
+      current = false;
+      return { tier: 'owner' as const, emailVerified: true };
+    });
+
+    await expect(retryNull(load, [0, 0], () => current)).resolves.toBeNull();
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops retries after the authenticated identity changes', async () => {
+    const load = vi.fn().mockResolvedValue(null);
+    const isCurrent = vi.fn()
+      .mockReturnValueOnce(true)
+      .mockReturnValueOnce(true)
+      .mockReturnValue(false);
+
+    await expect(retryNull(load, [0, 0, 0], isCurrent)).resolves.toBeNull();
+    expect(load).toHaveBeenCalledTimes(1);
+  });
+
   it('retries a temporary null result and returns the real membership', async () => {
     const load = vi.fn()
       .mockResolvedValueOnce(null)

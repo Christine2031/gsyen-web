@@ -14,7 +14,6 @@ const DEFAULT_AUTH_STATE: AuthState = {
   loading: true, isPasswordRecovery: false,
 };
 
-// ── Tier cache ────────────────────────────────────────────────────────────────
 interface TierCache { tier: UserTier; ev: boolean; }
 const TIER_KEY = (uid: string) => `gsyen_tier_${uid}`;
 
@@ -33,7 +32,6 @@ function clearTier(uid: string) {
   try { localStorage.removeItem(TIER_KEY(uid)); } catch {}
 }
 
-// ── User snapshot (optimistic hydration) ──────────────────────────────────────
 // 存非敏感展示信息，token 不在此处。刷新页面时同步读取，零延迟渲染。
 const SNAP_KEY = 'gsyen_user_snap';
 interface UserSnap { uid: string; email: string; tier: UserTier | null; ev: boolean; provider: LoginProvider | null; }
@@ -44,7 +42,6 @@ let _snap = _readSnap();
 function _writeSnap(s: UserSnap) { _snap = s; try { localStorage.setItem(SNAP_KEY, JSON.stringify(s)); } catch {} }
 function _clearSnap()             { _snap = null; try { localStorage.removeItem(SNAP_KEY); } catch {} }
 
-// ── Singleton store ───────────────────────────────────────────────────────────
 // 所有 useAuth() 调用共享同一份状态，boot/listener 只初始化一次。
 interface AuthStore extends AuthState { justVerified: boolean; }
 
@@ -60,10 +57,12 @@ export function resolveCachedTier(
 function readCachedTier(uid: string): TierCache | null {
   return resolveCachedTier(readTier(uid), _snap, uid);
 }
-export async function retryNull<T>(load: () => Promise<T | null>, delays = [0, 250, 750]) {
+export async function retryNull<T>(load: () => Promise<T | null>, delays = [0, 250, 750], isCurrent = () => true) {
   for (const delay of delays) {
     if (delay) await new Promise(resolve => setTimeout(resolve, delay));
+    if (!isCurrent()) return null;
     const value = await load();
+    if (!isCurrent()) return null;
     if (value !== null) return value;
   }
   return null;
@@ -124,9 +123,13 @@ function _refreshTier(
 ): Promise<UserTier | null> {
   const active = _tierRefreshes.get(user.id);
   if (active) return active;
-
-  const request = retryNull(() => initializeUserData(user.id, provider ?? 'email'))
+  const requestedSession = _store.session;
+  const requestIsCurrent = () => requestedSession?.user.id === user.id && _store.session === requestedSession;
+  const request = retryNull(
+    () => initializeUserData(user.id, provider ?? 'email'), undefined, requestIsCurrent,
+  )
     .then(membership => {
+      if (!requestIsCurrent()) return null;
       _applyTier(
         user,
         provider,
@@ -149,7 +152,6 @@ function _refreshCurrentTier() {
   _refreshTier(user, provider).catch(() => {});
 }
 
-// ── Auth state listener（全局注册一次）────────────────────────────────────────
 function _initListener() {
   if (!supabase) return;
   supabase.auth.onAuthStateChange((_event, session) => {
@@ -214,7 +216,6 @@ function _initListener() {
   });
 }
 
-// ── Boot（全局执行一次）───────────────────────────────────────────────────────
 function _boot() {
   if (_initialized) return;
   _initialized = true;
@@ -275,7 +276,6 @@ function _boot() {
   })();
 }
 
-// ── useAuth hook（纯订阅者，不再含任何 init 逻辑）────────────────────────────
 export function useAuth() {
   const [store, setStore] = useState<AuthStore>(_store);
 
