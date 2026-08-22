@@ -21,7 +21,7 @@ import { canvasStore } from '../stores/canvasStore';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatEmptyState } from './ChatEmptyState';
-import { CanvasEditorContent } from './CanvasEditorContent';
+import { openGyenBoxIWriter } from '../utils/openGyenBoxIWriter';
 import { ModelStatusPanel } from './ModelStatusPanel';
 import { TeamMembersPanel } from './TeamMembersPanel';
 import { FriendsPanel } from './FriendsPanel';
@@ -43,7 +43,6 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
   const [modelPanelOpen, setModelPanelOpen] = useState(false);
   const { selectedModel, setSelectedModel } = usePreferredModel();
   const { toast, showToast } = useToast();
-  const [creativeDocId, setCreativeDocId] = useState<string | null>(null);
   const [createTeamOpen, setCreateTeamOpen] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const { friends } = useFriends();
@@ -78,7 +77,7 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
     const doc = { id: `canvas-${Date.now()}`, title: '无标题', content: '', type: 'doc' as const,
       scope: 'self' as const, createdAt: now, updatedAt: now };
     canvasStore.add(doc);
-    setCreativeDocId(doc.id);
+    openGyenBoxIWriter(doc.id);
   }, []);
 
   const handleSendWithCanvasCommand = useCallback(async (text: string, attachments: Array<ChatAttachment | ChatDocumentSource> = []) => {
@@ -93,11 +92,8 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
       ];
       saveChat(localMessages, selectedModel);
       const pending = await prepareCanvasCodeAsk(text, sessionId);
-      setCreativeDocId(pending.docId);
-      window.setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('gsyen-canvas-ask', { detail: pending }));
-      }, 320);
-      showToast(lang === 'zh' ? '已打开本地代码画布' : 'Local code map opened');
+      openGyenBoxIWriter(pending.docId);
+      showToast(lang === 'zh' ? '已在 GyenBox iWriter 打开代码画布' : 'Code map opened in GyenBox iWriter');
       return;
     }
     handleSend(text, attachments);
@@ -264,7 +260,6 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
             : showFriends && <FriendsPanel friends={friends} onClose={() => setShowFriends(false)} />)}
         </div>
       </div>
-      {creativeDocId && <CanvasEditorContent docId={creativeDocId} onClose={() => setCreativeDocId(null)} />}
       <ChatCreateTeamModal open={createTeamOpen} zh={lang === 'zh'} onClose={() => setCreateTeamOpen(false)} />
       {savePrompt && <ChatSavePrompt onSave={() => { saveChat(messages, selectedModel); dismissSavePrompt(); }}
         onDiscard={() => { handleNewChat(); dismissSavePrompt(); }} />}
