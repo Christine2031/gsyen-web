@@ -9,6 +9,7 @@ const { registerUpdaterIpc, setupAutoUpdater } = require('./updater.cjs');
 const { startLocalServer, stopLocalServer, getLocalBridgeConfig } = require('./local-server.cjs');
 const { registerGsyenApiCors } = require('./gsyen-api-cors.cjs');
 const { isAllowedNavigation, isUserInitiatedExternalOpen } = require('./navigation-policy.cjs');
+const { acquireSingleInstanceLock } = require('./single-instance.cjs');
 
 Sentry.init({
   dsn: 'https://a7b7176417e2f24b54156ef4ff01e8b2@o4511541959720960.ingest.us.sentry.io/4511541969551360',
@@ -43,6 +44,8 @@ function showWindow() {
   win.show();
   win.focus();
 }
+
+const hasSingleInstanceLock = acquireSingleInstanceLock(app, showWindow);
 
 registerUpdaterIpc(ipcMain);
 
@@ -183,6 +186,8 @@ function createWindow() {
 // ── 启动 ──────────────────────────────────────────────────────────────────────
 
 app.whenReady().then(() => {
+  if (!hasSingleInstanceLock) return;
+
   startLocalServer(app).catch(e => console.error('local server init failed:', e));
   createWindow();
   try {
