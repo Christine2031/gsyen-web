@@ -8,7 +8,7 @@ import { MailExpandContent } from './MailExpandContent';
 import { VaultExpandContent } from './VaultExpandContent';
 import { OrderExpandContent } from './OrderExpandContent';
 import { CanvasExpandContent } from './CanvasExpandContent';
-import { CanvasEditorContent } from './CanvasEditorContent';
+import { openGyenBoxIWriter } from '../utils/openGyenBoxIWriter';
 import { ActionCard } from '../types/chat';
 import { useDisplayCurrency } from '../hooks/useDisplayCurrency';
 import { useCardFocus } from '../hooks/useCardFocus';
@@ -57,7 +57,6 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
   const [vaultScope,    setVaultScope]    = useState<'self' | 'shared'>('self');
   const [orderScope,    setOrderScope]    = useState<'self' | 'shared'>('self');
   const [canvasScope,   setCanvasScope]   = useState<'self' | 'shared'>('self');
-  const [canvasEditing, setCanvasEditing] = useState(false);
 
   const isShared = isCanvas ? canvasScope === 'shared'
     : isOrder  ? orderScope  === 'shared'
@@ -170,10 +169,9 @@ export function ActionCardView({ card, lang }: { card: ActionCard; lang: 'zh' | 
         {isCanvas && (
           <>
             <CanvasExpandContent lang={lang} color={COLOR} docId={card.id}
-              expanded={expanded && !canvasEditing} scope={canvasScope}
+              expanded={expanded} scope={canvasScope}
               onScopeChange={setCanvasScope} onCollapse={() => setExpanded(false)}
-              onOpenEditor={() => setCanvasEditing(true)} />
-            {canvasEditing && <CanvasEditorContent docId={card.id} onClose={() => setCanvasEditing(false)} />}
+              onOpenEditor={() => openGyenBoxIWriter(card.id)} />
           </>
         )}
         {isMail && <MailExpandContent lang={lang} color={COLOR} recipient={focusText}
