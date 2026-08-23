@@ -28,7 +28,7 @@ export function ChatEmptyState({ lang, inputVal, setInputVal, onSend }: ChatEmpt
   const isComposing = () => composingRef.current || Date.now() < compositionGuardUntil.current;
   const dgwmSignal = getPulseSignal(lang, 'DGWM');
   const standbyRows = [
-    { label: zh ? '上下文' : 'CONTEXT', value: zh ? '灵阁 / 创意灵感' : 'Muse / Creative Signal' },
+    { label: zh ? '上下文' : 'CONTEXT', value: zh ? '疆域灵阁' : 'GSYEN Muse' },
     { label: zh ? '今日焦点' : 'FOCUS', value: PULSE_FOCUS_LABEL, tone: 'primary' },
     { label: zh ? '待裁决' : 'UNRESOLVED', value: dgwmSignal.summary, tone: 'warn' },
     { label: zh ? '本地' : 'LOCAL', value: zh ? '资料仅在本机解析' : 'materials parsed locally' },
