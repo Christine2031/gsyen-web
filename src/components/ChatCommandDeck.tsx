@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { ChevronDown, ChevronUp, MessageSquare, PanelLeft, Plus } from 'lucide-react';
+import { ChevronDown, ChevronUp, PanelLeft, Plus } from 'lucide-react';
 import { memo, type MouseEventHandler, type RefObject } from 'react';
 import { MODELS, type ModelId } from '../config/models';
 import { getPulseSignals, type PulseLang, type PulseSignal } from '../config/pulseSignals';
@@ -17,7 +17,6 @@ interface ChatCommandDeckProps {
   modelScrollRef: RefObject<HTMLDivElement>;
   onToggleSidebar: () => void;
   onNewChat: () => void;
-  onOpenCreativeKingdom: () => void;
   onTogglePulse: () => void;
   onTogglePulseDock: () => void;
   onClosePulse: () => void;
@@ -150,7 +149,6 @@ export const ChatCommandDeck = memo(function ChatCommandDeck({
   modelScrollRef,
   onToggleSidebar,
   onNewChat,
-  onOpenCreativeKingdom,
   onTogglePulse,
   onTogglePulseDock,
   onClosePulse,
@@ -172,10 +170,6 @@ export const ChatCommandDeck = memo(function ChatCommandDeck({
           </button>
           <button onClick={onNewChat} className="gsyen-command-button" aria-label={lang === 'zh' ? '新建对话' : 'New chat'}>
             <Plus className="w-3 h-3" /><span>NEW</span>
-          </button>
-          <button onClick={onOpenCreativeKingdom} className="gsyen-command-button" aria-label={lang === 'zh' ? '打开创意灵感' : 'Open muse'}>
-            <MessageSquare className="w-3.5 h-3.5" />
-            <span>{lang === 'zh' ? '创意' : 'Muse'}</span>
           </button>
           <div className="gsyen-pulse-dock-slot" aria-hidden={!pulseDocked}>
             <AnimatePresence initial={false}>

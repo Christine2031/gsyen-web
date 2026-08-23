@@ -17,7 +17,6 @@ import { usePreferredModel } from '../hooks/usePreferredModel';
 import { useTeams } from '../hooks/useTeams';
 import { useTeamPanel } from '../hooks/useTeamPanel';
 import { useFriends } from '../hooks/useFriends';
-import { canvasStore } from '../stores/canvasStore';
 import { ChatMessageBubble } from './ChatMessageBubble';
 import { ChatSidebar } from './ChatSidebar';
 import { ChatEmptyState } from './ChatEmptyState';
@@ -71,14 +70,6 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
   useEffect(() => {
     if (isAtBottom.current) chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading, queuedPrompts.length]);
-
-  const openCreativeKingdom = useCallback(() => {
-    const now = new Date().toISOString();
-    const doc = { id: `canvas-${Date.now()}`, title: '无标题', content: '', type: 'doc' as const,
-      scope: 'self' as const, createdAt: now, updatedAt: now };
-    canvasStore.add(doc);
-    openGyenBoxIWriter(doc.id);
-  }, []);
 
   const handleSendWithCanvasCommand = useCallback(async (text: string, attachments: Array<ChatAttachment | ChatDocumentSource> = []) => {
     if (attachments.length === 0 && isCanvasCodeAsk(text)) {
@@ -180,7 +171,6 @@ export default function ChatModule({ lang, onTeamChange }: ChatModuleProps) {
           modelScrollRef={modelScrollRef}
           onToggleSidebar={handleToggleSidebar}
           onNewChat={handleNewChat}
-          onOpenCreativeKingdom={openCreativeKingdom}
           onTogglePulse={handleTogglePulse}
           onTogglePulseDock={handlePulseDockToggle}
           onClosePulse={handleClosePulse}
