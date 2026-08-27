@@ -34,5 +34,22 @@ export default defineConfig(() => {
         },
       },
     },
+    test: {
+      // Each nested application has its own toolchain and test environment.
+      // In particular, email-worker tests require the Workers pool and must be
+      // run from email-worker rather than imported by the root Vitest process.
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        'email-worker/**',
+        'deploy/aliyun/mail-ingest/**',
+        'gsyen-api/**',
+        'gsyen-android/**',
+        'gsyen-model/**',
+        'halfsphere/**',
+        'sgsyen-api/**',
+        'sgsyen-web/**',
+      ],
+    },
   };
 });

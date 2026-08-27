@@ -19,6 +19,15 @@
 
 ## 当前状态（截至 2026-06-10）
 
+### P0：gsyen.com 邮件体系迁移至阿里云（规划中，2026-08-24）
+
+- `gsyen.com` 是 GSYEN 的核心邮件域和账号体系关键依赖；邮件迁移优先级为 **P0**。
+- 目标是将现有 Google / Google Workspace 相关邮件能力逐步迁移到待确认的阿里云邮件产品。
+- 当前阶段仅允许盘点、方案设计、只读验证和演练；详细计划见
+  [`docs/GSYEN_ALIYUN_MAIL_MIGRATION_P0.md`](docs/GSYEN_ALIYUN_MAIL_MIGRATION_P0.md)。
+- **生产冻结规则**：在负责人明确确认阿里云目标产品、切换时间窗口和可执行回滚方案前，禁止修改生产 MX/SPF/DKIM/DMARC/DNS，禁止停用现有邮件服务，禁止执行不可逆操作。
+- 仓库现有邮件文档还记录了 Cloudflare Email Routing + Resend 架构；迁移盘点必须先核实现网 Google、Cloudflare、Resend 与 GSYEN Mail Worker 的真实职责和流量边界，不得仅按旧文档推断。
+
 ### 已完成
 - gsyen-api 补充了 `package-lock.json`（之前缺失）
 - gsyen-web 和 gsyen-api 都添加了 `.nvmrc`（Node 22 LTS）

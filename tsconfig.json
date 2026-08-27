@@ -22,5 +22,15 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "exclude": [
+    "dist",
+    "email-worker",
+    "gsyen-api",
+    "gsyen-android",
+    "gsyen-model",
+    "halfsphere",
+    "sgsyen-api",
+    "sgsyen-web"
+  ]
 }
