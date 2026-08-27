@@ -17,6 +17,7 @@ export function MermaidBlock({ code, dark }: Props) {
   useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
+      securityLevel: 'strict',
       theme: dark ? 'dark' : 'neutral',
       themeVariables: dark
         ? { background: '#1A1A1A', primaryColor: '#2a2a2a', primaryTextColor: '#CCCCCC', lineColor: '#555', edgeLabelBackground: '#1A1A1A' }

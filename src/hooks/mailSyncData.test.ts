@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MailApiMessage } from '../services/mailApi';
 import { compactMailSyncMessages, mapMailMessages } from './mailSyncData';
+
+vi.mock('../services/mailApi', () => ({
+  listMailMessageChanges: vi.fn(),
+  listMailMessages: vi.fn(),
+}));
 
 function message(id: string, createdAt: string, inReplyTo: string | null = null): MailApiMessage {
   return {

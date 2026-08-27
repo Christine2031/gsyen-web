@@ -4,6 +4,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist';
 import type { FileEntry } from '../hooks/useFileSystem';
 import type { Palette } from './CanvasEditorTypes';
 import { SYS_FONT } from './CanvasEditorTypes';
+import { checkedPdfViewportSize, pdfDocumentOptions } from '../utils/pdfSecurity';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.mjs',
@@ -13,6 +14,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 interface Props { entry: FileEntry; P: Palette; dark: boolean; }
 
 const SCALES = [0.5, 0.75, 1.0, 1.25, 1.5, 2.0];
+const PDF_PAGE_BATCH_SIZE = 20;
 
 function PdfPage({ doc, pageNum, scale }: {
   doc: PDFDocumentProxy; pageNum: number; scale: number;
@@ -27,9 +29,10 @@ function PdfPage({ doc, pageNum, scale }: {
         const page = await doc.getPage(pageNum);
         if (cancelled || !canvasRef.current) return;
         const viewport = page.getViewport({ scale });
+        const canvasSize = checkedPdfViewportSize(viewport);
         const canvas = canvasRef.current;
-        canvas.width  = viewport.width;
-        canvas.height = viewport.height;
+        canvas.width = canvasSize.width;
+        canvas.height = canvasSize.height;
         const ctx = canvas.getContext('2d')!;
         ctx.fillStyle = '#FFFFFF';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -54,11 +57,12 @@ export function PdfViewer({ entry, P, dark }: Props) {
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState('');
   const [scaleIdx, setScaleIdx] = useState(2); // default 1.0×
+  const [pageLimit, setPageLimit] = useState(PDF_PAGE_BATCH_SIZE);
 
   useEffect(() => {
     let loadingTask: PDFDocumentLoadingTask | null = null;
     let cancelled = false;
-    setDoc(null); setError(''); setLoading(true);
+    setDoc(null); setError(''); setLoading(true); setPageLimit(PDF_PAGE_BATCH_SIZE);
     (async () => {
       try {
         const b64: string = await (window as any).electronAPI?.readFileBuffer?.(entry.path) ?? '';
@@ -69,7 +73,7 @@ export function PdfViewer({ entry, P, dark }: Props) {
         const bin = atob(b64);
         const arr = new Uint8Array(bin.length);
         for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-        loadingTask = pdfjsLib.getDocument({ data: arr });
+        loadingTask = pdfjsLib.getDocument(pdfDocumentOptions(arr));
         const loadedDoc = await loadingTask.promise;
         if (cancelled) { void loadingTask.destroy(); return; }
         setDoc(loadedDoc);
@@ -123,9 +127,17 @@ export function PdfViewer({ entry, P, dark }: Props) {
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         padding: '24px 16px',
       }}>
-        {Array.from({ length: doc.numPages }, (_, i) => (
+        {Array.from({ length: Math.min(doc.numPages, pageLimit) }, (_, i) => (
           <PdfPage key={i} doc={doc} pageNum={i + 1} scale={scale} />
         ))}
+        {pageLimit < doc.numPages && (
+          <button
+            style={{ ...iconBtn, width: 'auto', minWidth: 120, padding: '0 12px', marginBottom: 16 }}
+            onClick={() => setPageLimit(limit => Math.min(doc.numPages, limit + PDF_PAGE_BATCH_SIZE))}
+          >
+            加载后续页面
+          </button>
+        )}
       </div>
 
     </div>

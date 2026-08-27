@@ -78,7 +78,7 @@ export function useChatStream(): UseChatStreamReturn {
     try {
       // 1. Local prediction expert
       if (attachments.length === 0) {
-        const localAnswer = await askPredictionExpert(text);
+        const localAnswer = await askPredictionExpert(text, controller.signal);
         if (localAnswer) {
           setIsLoading(false);
           await typewrite(localAnswer, onToken, controller.signal);

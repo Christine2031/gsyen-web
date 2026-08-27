@@ -1,15 +1,16 @@
--- Drop HalfSphere legacy tables (confirmed no references in gsyen-web codebase).
--- These predate the gsyen_ prefix convention; all active tables use gsyen_ prefix.
--- Run in Supabase SQL Editor AFTER migration 000001 (step 2 of 3).
--- Drops in dependency order: child tables before parent tables.
+-- SAFETY QUARANTINE: these are active HalfSphere/shared-control-plane tables.
+--
+-- The original migration used DROP TABLE ... CASCADE after checking only the
+-- gsyen-web source tree. HalfSphere still reads and writes these tables, while
+-- SGSYEN still reads public.subscriptions. A fresh deployment must therefore
+-- preserve them. Keep this migration version as an intentional no-op so that
+-- existing migration ordering remains stable.
+--
+-- No shared table may be retired until both business owners have approved a
+-- table-by-table export, reference audit, restore test, and rollback plan.
 
-DROP TABLE IF EXISTS public.team_members      CASCADE;
-DROP TABLE IF EXISTS public.teams             CASCADE;
-DROP TABLE IF EXISTS public.user_tiers        CASCADE;
-DROP TABLE IF EXISTS public.sanyuanlou_members CASCADE;
-DROP TABLE IF EXISTS public.network_snapshots  CASCADE;
-DROP TABLE IF EXISTS public.usage_snapshots    CASCADE;
-DROP TABLE IF EXISTS public.network_nodes      CASCADE;
-DROP TABLE IF EXISTS public.subscriptions      CASCADE;
-DROP TABLE IF EXISTS public.budgets            CASCADE;
-DROP TABLE IF EXISTS public.providers          CASCADE;
+DO $migration$
+BEGIN
+  RAISE NOTICE '20260616000002 quarantined: preserving HalfSphere/shared tables';
+END
+$migration$;

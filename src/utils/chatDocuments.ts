@@ -2,6 +2,7 @@ import * as mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
 import * as XLSX from 'xlsx';
 import type { ChatDocumentAttachment, ChatDocumentChunk, ChatDocumentKind, ChatDocumentSource } from '../types/chat';
+import { pdfDocumentOptions } from './pdfSecurity';
 
 export const MAX_CHAT_DOCUMENTS = 4;
 const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
@@ -70,16 +71,28 @@ async function extractSpreadsheet(file: File) {
 }
 
 async function extractPdf(file: File) {
-  const task = pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+  const task = pdfjsLib.getDocument(pdfDocumentOptions(new Uint8Array(await file.arrayBuffer())));
   try {
     const pdf = await task.promise;
     const pageCount = pdf.numPages;
     const count = Math.min(pageCount, MAX_PDF_PAGES);
     const sections: DocumentSection[] = [];
-    for (let pageNo = 1; pageNo <= count; pageNo++) {
+    let remainingChars = MAX_EXTRACTED_CHARS;
+    for (let pageNo = 1; pageNo <= count && remainingChars > 0; pageNo++) {
       const page = await pdf.getPage(pageNo);
       const content = await page.getTextContent();
-      const text = content.items.map(item => ('str' in item ? item.str : '')).join(' ');
+      const parts: string[] = [];
+      for (const item of content.items) {
+        if (!('str' in item) || !item.str) continue;
+        const separator = parts.length === 0 ? '' : ' ';
+        const available = remainingChars - separator.length;
+        if (available <= 0) break;
+        const value = item.str.slice(0, available);
+        parts.push(`${separator}${value}`);
+        remainingChars -= separator.length + value.length;
+        if (value.length < item.str.length) break;
+      }
+      const text = parts.join('');
       sections.push({ location: `第 ${pageNo} 页`, text });
     }
     return { sections, pageCount };
