@@ -1,0 +1,10 @@
+{
+  "contractVersion": 2,
+  "bundleMarker": "gsyen-inbound-receipt-v2-compatible",
+  "expandMigration": 21,
+  "contractMigration": 22,
+  "expandSchemaMarker": "gsyen-inbound-receipt-v2-expand-0021",
+  "contractSchemaMarker": "gsyen-inbound-receipt-v2-contract-0022",
+  "rollbackFloor": "receipt-v2-compatible-mirror-disabled",
+  "mirrorEnabledByDefault": false
+}

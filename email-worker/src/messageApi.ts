@@ -1,6 +1,4 @@
-import PostalMime from "postal-mime";
 import { getMessageHtmlPreview } from "./htmlPreview";
-import { readableMessageText } from "./messageText";
 import { writeAudit } from "./audit";
 import { ApiError, corsHeaders, json, readJson } from "./http";
 import { routeMessageChanges } from "./messageChangesApi";
@@ -27,37 +25,11 @@ import type {
   MailEnv,
   MailFolder,
   MailboxRecord,
-  MessageSummary,
 } from "./types";
 import { parseIdempotencyKey, parseSendRequest } from "./validation";
 
 type StateBody = Record<string, unknown>;
 type BatchBody = { ids?: unknown; patch?: unknown };
-
-async function recoverInboundText(
-  env: MailEnv,
-  mailboxId: string,
-  message: MessageSummary,
-): Promise<MessageSummary> {
-  if (message.direction !== "inbound" || message.text_body.trim()) return message;
-  const stored = await env.DB.prepare(
-    "SELECT raw_object_key FROM messages WHERE id = ? AND mailbox_id = ?",
-  ).bind(message.id, mailboxId).first<{ raw_object_key: string | null }>();
-  if (!stored?.raw_object_key) return message;
-  const raw = await env.MAIL_OBJECTS.get(stored.raw_object_key);
-  if (!raw) return message;
-  const parsed = await PostalMime.parse(await raw.arrayBuffer(), {
-    attachmentEncoding: "arraybuffer",
-    maxHeadersSize: 128_000,
-    maxNestingDepth: 20,
-  });
-  const text = readableMessageText(parsed);
-  if (!text) return message;
-  await env.DB.prepare(
-    "UPDATE messages SET text_body = ? WHERE id = ? AND mailbox_id = ?",
-  ).bind(text, message.id, mailboxId).run();
-  return { ...message, text_body: text };
-}
 
 function parseFolder(value: string | null): MailFolder | "all" {
   const folder = value ?? "inbox";
@@ -239,11 +211,10 @@ export async function routeMessageRequest(
       logMessageApiPhase(request, "message_detail_not_found", { messageId: messageMatch[1] });
       throw new ApiError(404, "message_not_found", "Message was not found");
     }
-    let viewed = message.is_read === 1
+    const viewed = message.is_read === 1
       ? message
       : await updateMessageState(env, mailbox.id, message.id, { isRead: true });
     const attachments = await listMessageAttachments(env, mailbox.id, message.id);
-    viewed = await recoverInboundText(env, mailbox.id, viewed);
     logMessageApiPhase(request, "message_detail_complete", {
       hasAttachments: attachments.length > 0,
       hasBody: Boolean(viewed.text_body),
@@ -254,6 +225,7 @@ export async function routeMessageRequest(
         ...item,
         downloadUrl: `/v1/attachments/${item.id}`,
       })),
+      attachmentsComplete: viewed.extraction_status === "complete",
     });
   }
   if (request.method === "PATCH" && messageMatch) {
@@ -279,5 +251,3 @@ export async function routeMessageRequest(
   }
   return null;
 }
-
-

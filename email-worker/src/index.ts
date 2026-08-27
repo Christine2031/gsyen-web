@@ -1,7 +1,7 @@
 import { consumeAuthFailure, } from "./auth";
 import { ApiError, errorResponse } from "./http";
 import { resolveMailRequestId } from "./messageApiDiagnostics";
-import { receiveEmail } from "./inbound";
+import { receiveEmail, recoverInboundIngestReceipts } from "./inbound";
 import { consumeOutbound } from "./outbound";
 import {
   consumeDeadLetters,
@@ -14,7 +14,13 @@ import {
   settleTrashedQueuedMessages,
 } from "./repository";
 import { replayDeliveryReceipts } from "./deliveryReceipts";
-import type { MailEnv, OutboundJob } from "./types";
+import {
+  consumeStalwartMirror,
+  consumeStalwartMirrorDeadLetters,
+  drainStalwartMirrorOutbox,
+  requeueStalwartMirrorDeadLetters,
+} from "./stalwartMirror";
+import type { MailEnv, OutboundJob, StalwartMirrorJob } from "./types";
 
 function buildAuthHint(request: Request): string | null {
   const path = new URL(request.url).pathname;
@@ -53,9 +59,17 @@ export default {
     }
   },
 
-  async email(message, env): Promise<void> {
+  async email(message, env, ctx): Promise<void> {
     try {
       await receiveEmail(message, env);
+      ctx.waitUntil(
+        drainStalwartMirrorOutbox(env, { limit: 1 }).catch((error) => {
+          console.error(JSON.stringify({
+            event: "stalwart_mirror_outbox_background_drain_failed",
+            error: error instanceof Error ? error.message : String(error),
+          }));
+        }),
+      );
     } catch (error) {
       console.error(JSON.stringify({
         event: "mail_receive_failed",
@@ -66,20 +80,37 @@ export default {
   },
 
   async queue(batch, env): Promise<void> {
-    if (batch.queue.includes("outbound-dlq")) {
-      await consumeDeadLetters(batch, env);
+    if (batch.queue.includes("stalwart-mirror-dlq")) {
+      await consumeStalwartMirrorDeadLetters(
+        batch as MessageBatch<StalwartMirrorJob>,
+        env,
+      );
       return;
     }
-    await consumeOutbound(batch, env);
+    if (batch.queue.includes("stalwart-mirror")) {
+      await consumeStalwartMirror(
+        batch as MessageBatch<StalwartMirrorJob>,
+        env,
+      );
+      return;
+    }
+    if (batch.queue.includes("outbound-dlq")) {
+      await consumeDeadLetters(batch as MessageBatch<OutboundJob>, env);
+      return;
+    }
+    await consumeOutbound(batch as MessageBatch<OutboundJob>, env);
   },
 
   async scheduled(_controller, env): Promise<void> {
     const results = await Promise.allSettled([
+      recoverInboundIngestReceipts(env),
       cleanupObjectDeletionJobs(env),
       replayDeliveryReceipts(env),
       requeueStaleOutboundMessages(env),
       settleTrashedQueuedMessages(env),
       refreshOperationalIncidents(env),
+      drainStalwartMirrorOutbox(env),
+      requeueStalwartMirrorDeadLetters(env),
     ]);
     for (const result of results) {
       if (result.status === "rejected") {
@@ -92,7 +123,7 @@ export default {
       }
     }
   },
-} satisfies ExportedHandler<MailEnv, OutboundJob>;
+} satisfies ExportedHandler<MailEnv, OutboundJob | StalwartMirrorJob>;
 
 type ApiDiagnostic = {
   requestId: string;

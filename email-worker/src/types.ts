@@ -2,6 +2,11 @@ export type MailEnv = Env & {
   RESEND_API_KEY: string;
   SUPABASE_ANON_KEY: string;
   MAIL_WORKER_INTERNAL_TOKEN?: string;
+  STALWART_MIRROR_ENABLED?: string;
+  STALWART_MIRROR_URL?: string;
+  STALWART_MIRROR_ALLOWED_HOST?: string;
+  STALWART_MIRROR_TOKEN?: string;
+  STALWART_MIRROR_QUEUE?: Queue<StalwartMirrorJob>;
 };
 
 export type AuthUser = {
@@ -59,6 +64,8 @@ export type MessageSummary = {
   spam_at: string | null;
   trashed_at: string | null;
   attachment_count: number;
+  attachment_total_count: number;
+  extraction_status: InboundExtractionStatus;
   category: "primary" | "social" | "promotions" | "updates";
   to_json: string;
   cc_json: string;
@@ -88,6 +95,35 @@ export type OutboundReconciliationJob = {
 
 export type OutboundJob = OutboundSendJob | OutboundReconciliationJob;
 
+export type StalwartMirrorJob = {
+  kind: "stalwart_mirror";
+  messageId: string;
+  rawObjectKey: string;
+  rawSha256: string;
+  deliveryId: string;
+  envelopeFrom: string;
+  recipient: string;
+};
+
+export type InboundIngestReceiptStatus =
+  | "staging"
+  | "objects_written"
+  | "reconcile_needed"
+  | "committed";
+
+export type InboundExtractionStatus =
+  | "pending"
+  | "leased"
+  | "complete"
+  | "terminal";
+
+export type InboundObjectManifest = {
+  rawKey: string;
+  htmlKey: string | null;
+  attachmentKeys: string[];
+  attachmentSha256: string[];
+};
+
 export type SendRequest = {
   to: string[];
   cc: string[];
@@ -103,6 +139,6 @@ export type AttachmentInput = {
   mimeType: string;
   disposition: "attachment" | "inline";
   sizeBytes: number;
+  sha256: string;
   content: ArrayBuffer | Uint8Array | string;
 };
-

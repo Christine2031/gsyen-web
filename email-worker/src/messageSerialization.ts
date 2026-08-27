@@ -35,6 +35,9 @@ export function serializeMessage(message: MessageSummary) {
     spamAt: message.spam_at,
     trashedAt: message.trashed_at,
     attachmentCount: message.attachment_count,
+    attachmentTotalCount: message.attachment_total_count,
+    attachmentExtractionStatus: message.extraction_status,
+    attachmentsComplete: message.extraction_status === "complete",
     category: message.category,
   };
 }

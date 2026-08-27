@@ -1,4 +1,6 @@
 import type { MailEnv } from "./types";
+import { INBOUND_INGEST_RECONCILE_AFTER_MS } from "./repositories/deletion";
+import { STALWART_MIRROR_ENQUEUED_RECOVERY_MS } from "./stalwartMirror";
 
 type DeadLetterRow = {
   id: string;
@@ -30,6 +32,9 @@ export type OperationsSnapshot = {
   pendingDeadLetters: number;
   failedOutbound24h: number;
   staleOutbound: number;
+  pendingInboundIngest: number;
+  terminalInboundIngest: number;
+  pendingStalwartMirror: number;
   oldestPendingDeadLetterAt: string | null;
   incidents: IncidentRow[];
   deadLetters: DeadLetterRow[];
@@ -52,50 +57,105 @@ export async function getOperationsSnapshot(
   const dayAgo = new Date(now - 24 * 60 * 60_000).toISOString();
   const queuedBefore = new Date(now - 5 * 60_000).toISOString();
   const sendingBefore = new Date(now - 10 * 60_000).toISOString();
-  const [pendingDeadLetters, failedOutbound24h, staleOutbound, oldest, incidents, deadLetters] =
-    await Promise.all([
-      countRow(
-        env,
-        "SELECT COUNT(*) AS count FROM dead_letter_events WHERE status = 'pending'",
-      ),
-      countRow(
-        env,
-        `SELECT COUNT(*) AS count FROM messages
-          WHERE direction = 'outbound' AND status = 'failed'
-            AND created_at >= ? AND COALESCE(error_code, '') <> 'cancelled_trashed'`,
-        dayAgo,
-      ),
-      countRow(
-        env,
-        `SELECT COUNT(*) AS count FROM messages
-          WHERE direction = 'outbound' AND trashed_at IS NULL
-            AND ((status = 'queued' AND created_at < ?)
-              OR (status = 'sending' AND last_attempt_at < ?))`,
-        queuedBefore,
-        sendingBefore,
-      ),
-      env.DB.prepare(
-        `SELECT MIN(first_seen_at) AS oldest
-           FROM dead_letter_events WHERE status = 'pending'`,
-      ).first<{ oldest: string | null }>(),
-      env.DB.prepare(
-        `SELECT kind, severity, status, count, occurrence_count,
-                first_seen_at, last_seen_at, resolved_at
-           FROM mail_operational_incidents
-          ORDER BY status ASC, last_seen_at DESC LIMIT 20`,
-      ).all<IncidentRow>(),
-      env.DB.prepare(
-        `SELECT id, source_queue, job_kind, message_id, attempts, status,
-                replay_count, resolution_code, first_seen_at, last_seen_at,
-                last_replayed_at
-           FROM dead_letter_events ORDER BY last_seen_at DESC LIMIT 50`,
-      ).all<DeadLetterRow>(),
-    ]);
-  return {
-    healthy: pendingDeadLetters === 0 && staleOutbound === 0,
+  const staleMirrorBefore = new Date(
+    now - STALWART_MIRROR_ENQUEUED_RECOVERY_MS,
+  ).toISOString();
+  const staleInboundBefore = new Date(
+    now - INBOUND_INGEST_RECONCILE_AFTER_MS,
+  ).toISOString();
+  const [
     pendingDeadLetters,
     failedOutbound24h,
     staleOutbound,
+    pendingInboundIngest,
+    terminalInboundIngest,
+    pendingStalwartMirror,
+    oldest,
+    incidents,
+    deadLetters,
+  ] = await Promise.all([
+    countRow(
+      env,
+      "SELECT COUNT(*) AS count FROM dead_letter_events WHERE status = 'pending'",
+    ),
+    countRow(
+      env,
+      `SELECT COUNT(*) AS count FROM messages
+          WHERE direction = 'outbound' AND status = 'failed'
+            AND created_at >= ? AND COALESCE(error_code, '') <> 'cancelled_trashed'`,
+      dayAgo,
+    ),
+    countRow(
+      env,
+      `SELECT COUNT(*) AS count FROM messages
+          WHERE direction = 'outbound' AND trashed_at IS NULL
+            AND ((status = 'queued' AND created_at < ?)
+              OR (status = 'sending' AND last_attempt_at < ?))`,
+      queuedBefore,
+      sendingBefore,
+    ),
+    countRow(
+      env,
+      `SELECT COUNT(*) AS count FROM inbound_ingest_receipts
+          WHERE deleted_at IS NULL
+            AND ((extraction_status = 'pending'
+                  AND COALESCE(next_extraction_attempt_at, updated_at) <= ?)
+              OR (extraction_status = 'leased'
+                  AND extraction_lease_expires_at IS NOT NULL
+                  AND extraction_lease_expires_at <= ?))`,
+      staleInboundBefore,
+      staleInboundBefore,
+    ),
+    countRow(
+      env,
+      `SELECT COUNT(*) AS count FROM inbound_ingest_receipts
+          WHERE deleted_at IS NULL AND extraction_status = 'terminal'`,
+    ),
+    countRow(
+      env,
+      `SELECT
+           (SELECT COUNT(*) FROM stalwart_mirror_outbox
+             WHERE status IN ('pending', 'leased', 'dead_letter', 'terminal')
+                OR (status = 'enqueued'
+                  AND (enqueued_at IS NULL OR enqueued_at <= ?)))
+           +
+           (SELECT COUNT(*) FROM stalwart_mirror_dead_letters AS dead_letter
+             WHERE status IN ('pending', 'requeueing')
+               AND NOT EXISTS (
+                 SELECT 1 FROM stalwart_mirror_outbox AS mirror
+                  WHERE mirror.message_id = dead_letter.message_id
+               )) AS count`,
+      staleMirrorBefore,
+    ),
+    env.DB.prepare(
+      `SELECT MIN(first_seen_at) AS oldest
+           FROM dead_letter_events WHERE status = 'pending'`,
+    ).first<{ oldest: string | null }>(),
+    env.DB.prepare(
+      `SELECT kind, severity, status, count, occurrence_count,
+                first_seen_at, last_seen_at, resolved_at
+           FROM mail_operational_incidents
+          ORDER BY status ASC, last_seen_at DESC LIMIT 20`,
+    ).all<IncidentRow>(),
+    env.DB.prepare(
+      `SELECT id, source_queue, job_kind, message_id, attempts, status,
+                replay_count, resolution_code, first_seen_at, last_seen_at,
+                last_replayed_at
+           FROM dead_letter_events ORDER BY last_seen_at DESC LIMIT 50`,
+    ).all<DeadLetterRow>(),
+  ]);
+  return {
+    healthy: pendingDeadLetters === 0
+      && staleOutbound === 0
+      && pendingInboundIngest === 0
+      && terminalInboundIngest === 0
+      && pendingStalwartMirror === 0,
+    pendingDeadLetters,
+    failedOutbound24h,
+    staleOutbound,
+    pendingInboundIngest,
+    terminalInboundIngest,
+    pendingStalwartMirror,
     oldestPendingDeadLetterAt: oldest?.oldest ?? null,
     incidents: incidents.results,
     deadLetters: deadLetters.results,
@@ -141,5 +201,8 @@ export async function refreshOperationalIncidents(env: MailEnv): Promise<void> {
     updateIncident(env, "pending_dead_letters", "critical", snapshot.pendingDeadLetters),
     updateIncident(env, "stale_outbound", "critical", snapshot.staleOutbound),
     updateIncident(env, "failed_outbound_24h", "warning", snapshot.failedOutbound24h),
+    updateIncident(env, "pending_inbound_ingest", "critical", snapshot.pendingInboundIngest),
+    updateIncident(env, "terminal_inbound_ingest", "critical", snapshot.terminalInboundIngest),
+    updateIncident(env, "pending_stalwart_mirror", "warning", snapshot.pendingStalwartMirror),
   ]);
 }

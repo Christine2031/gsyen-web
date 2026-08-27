@@ -9,8 +9,11 @@ const MESSAGE_COLUMNS = `
   m.references_json, m.status, m.error_code, m.created_at, m.received_at,
   m.sent_at, m.is_read, m.is_starred, m.is_important, m.archived_at,
   m.snoozed_until, m.spam_at, m.trashed_at,
-  m.category,
-  (SELECT count(*) FROM attachments a WHERE a.message_id = m.id) AS attachment_count
+  m.category, m.extraction_status, m.attachment_total_count,
+  CASE WHEN m.extraction_status = 'complete'
+    THEN (SELECT count(*) FROM attachments a WHERE a.message_id = m.id)
+    ELSE 0
+  END AS attachment_count
 `;
 
 export type MessageStatePatch = {
@@ -248,9 +251,10 @@ export async function listMessageAttachments(
 ): Promise<Omit<AttachmentRecord, "object_key">[]> {
   const result = await env.DB.prepare(
     `SELECT a.id, a.message_id, a.filename, a.mime_type, a.disposition, a.size_bytes
-       FROM attachments a
+      FROM attachments a
        JOIN messages m ON m.id = a.message_id
       WHERE a.message_id = ? AND m.mailbox_id = ?
+        AND m.extraction_status = 'complete'
       ORDER BY a.rowid`,
   ).bind(messageId, mailboxId).all<Omit<AttachmentRecord, "object_key">>();
   return result.results;
@@ -264,8 +268,9 @@ export async function getAttachment(
   return env.DB.prepare(
     `SELECT a.id, a.message_id, a.filename, a.mime_type, a.disposition,
             a.size_bytes, a.object_key
-       FROM attachments a
+      FROM attachments a
        JOIN messages m ON m.id = a.message_id
-      WHERE a.id = ? AND m.mailbox_id = ?`,
+      WHERE a.id = ? AND m.mailbox_id = ?
+        AND m.extraction_status = 'complete'`,
   ).bind(attachmentId, mailboxId).first<AttachmentRecord>();
 }
