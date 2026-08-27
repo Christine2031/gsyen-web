@@ -1,0 +1,12 @@
+/srv/halfsphere/logs/*.log /srv/halfsphere/logs/*/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su halfsphere halfsphere
+    create 0640 halfsphere halfsphere
+}
+

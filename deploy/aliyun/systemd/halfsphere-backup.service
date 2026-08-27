@@ -1,0 +1,19 @@
+[Unit]
+Description=Encrypted HalfSphere file and export backup
+After=local-fs.target
+
+[Service]
+Type=oneshot
+Slice=halfsphere.slice
+UMask=0077
+ExecStart=/usr/local/libexec/gsyen-aliyun/backup-space.sh halfsphere /etc/gsyen-aliyun/backup/halfsphere.conf --apply
+User=root
+Group=root
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/halfsphere/backups /srv/halfsphere/data
+ReadOnlyPaths=/srv/halfsphere/apps /srv/halfsphere/config
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

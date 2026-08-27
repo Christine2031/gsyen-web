@@ -1,0 +1,48 @@
+[Unit]
+Description=GSYEN Stalwart Mail Server
+After=network-online.target
+Wants=network-online.target
+Conflicts=postfix.service sendmail.service exim4.service
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+WorkingDirectory=/srv/gsyen/apps/stalwart/current
+LimitNOFILE=65536
+KillMode=mixed
+KillSignal=SIGINT
+TimeoutStartSec=60
+TimeoutStopSec=60
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/srv/gsyen/config/stalwart/stalwart.env
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen-stalwart /srv/gsyen/config/stalwart/stalwart.env STALWART_CONFIG_PATH
+ExecStartPre=/usr/bin/test -f ${STALWART_CONFIG_PATH}
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-stalwart-release.py /srv/gsyen/apps/stalwart/current
+ExecStart=/srv/gsyen/apps/stalwart/current/bin/stalwart --config=${STALWART_CONFIG_PATH}
+SyslogIdentifier=stalwart
+User=stalwart
+Group=stalwart
+UMask=0077
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/gsyen/data/stalwart /srv/gsyen/logs/stalwart
+TasksMax=1024
+
+[Install]
+WantedBy=multi-user.target

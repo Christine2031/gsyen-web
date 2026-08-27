@@ -1,0 +1,8 @@
+{
+  "schema": 1,
+  "version": "__REQUIRED_AUDITED_VERSION__",
+  "platform": "x86_64-unknown-linux-gnu",
+  "source_url": "https://__REQUIRED_REVIEWED_SOURCE__/stalwart.tar.gz",
+  "archive_sha256": "__REQUIRED_LOWERCASE_ARCHIVE_SHA256__",
+  "binary_sha256": "__REQUIRED_LOWERCASE_BINARY_SHA256__"
+}

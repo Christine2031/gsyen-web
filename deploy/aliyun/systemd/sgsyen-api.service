@@ -1,0 +1,52 @@
+[Unit]
+Description=SGSYEN Supply Chain API
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+User=gsyen
+Group=gsyen
+UMask=0027
+WorkingDirectory=/srv/gsyen/apps/sgsyen-api/current
+EnvironmentFile=/srv/gsyen/config/sgsyen-api.env
+# ali-oss debug output can expose signed-request or credential metadata.
+UnsetEnvironment=DEBUG
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=18084
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen /srv/gsyen/config/sgsyen-api.env HOST PORT NODE_ENV SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY OBJECT_STORAGE_PROVIDER OBJECT_STORAGE_TEXT_MAX_BYTES OSS_AUTH_MODE OSS_REGION OSS_BUCKET OSS_ENDPOINT OSS_PUBLIC_ENDPOINT OSS_RAM_ROLE
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/sgsyen-api/current/dist/index.js
+ExecStart=/usr/bin/node /srv/gsyen/apps/sgsyen-api/current/dist/index.js
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18084 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+TasksMax=512
+LimitNOFILE=32768
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sgsyen-api
+
+[Install]
+WantedBy=multi-user.target

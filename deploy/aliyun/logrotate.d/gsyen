@@ -1,0 +1,35 @@
+/srv/gsyen/logs/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su gsyen gsyen
+    create 0640 gsyen gsyen
+}
+
+/srv/gsyen/logs/mail-ingest/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su gsyen-mail gsyen-mail
+    create 0640 gsyen-mail gsyen-mail
+}
+
+/srv/gsyen/logs/stalwart/*.log {
+    daily
+    rotate 14
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su stalwart stalwart
+    create 0640 stalwart stalwart
+}

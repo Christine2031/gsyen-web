@@ -1,0 +1,50 @@
+[Unit]
+Description=GSYEN Web Application
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+User=gsyen
+Group=gsyen
+UMask=0027
+WorkingDirectory=/srv/gsyen/apps/gsyen-web/current
+EnvironmentFile=/srv/gsyen/config/gsyen-web.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=18080
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen /srv/gsyen/config/gsyen-web.env HOST PORT NODE_ENV SUPABASE_URL SUPABASE_ANON_KEY MOONSHOT_API_KEY DEEPSEEK_API_KEY OPENAI_API_KEY
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/gsyen-web/current/dist/server.cjs
+ExecStart=/usr/bin/node /srv/gsyen/apps/gsyen-web/current/dist/server.cjs
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18080 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+TasksMax=512
+LimitNOFILE=32768
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gsyen-web
+
+[Install]
+WantedBy=multi-user.target

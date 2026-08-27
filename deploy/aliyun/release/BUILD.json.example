@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "source_commit": "0123456789abcdef0123456789abcdef01234567",
+  "public_origins": [
+    "https://api.example.com"
+  ],
+  "providers": [
+    "aliyun-ecs",
+    "aliyun-oss",
+    "supabase"
+  ],
+  "allowed_google_services": []
+}

@@ -1,0 +1,110 @@
+# Render with render-caddy-fragment.sh. This file is intentionally invalid as a
+# live Caddyfile until every __TOKEN__ has been replaced and validated.
+
+(gsyen_security_headers) {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+__GSYEN_WEB_SITE__ {
+	import gsyen_security_headers
+	encode zstd gzip
+	@gsyen_api_path path /api/auth /api/auth/* /api/model /api/model/*
+	handle @gsyen_api_path {
+		reverse_proxy 127.0.0.1:18081
+	}
+	handle {
+		reverse_proxy 127.0.0.1:18080
+	}
+	log {
+		output stdout
+		format json
+	}
+}
+
+__GSYEN_API_SITE__ {
+	import gsyen_security_headers
+	reverse_proxy 127.0.0.1:18081
+	log {
+		output stdout
+		format json
+	}
+}
+
+__SGSYEN_WEB_SITE__ {
+	import gsyen_security_headers
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:18082
+	log {
+		output stdout
+		format json
+	}
+}
+
+__SGSYEN_API_SITE__ {
+	import gsyen_security_headers
+	reverse_proxy 127.0.0.1:18084
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Dedicated Cloudflare Queue mirror entry point. This does not receive public
+# SMTP, does not replace Email Routing, and does not change the gsyen.com MX.
+# The bearer token is checked by mail-ingest; Caddy only enforces its shape and
+# forwards it. Optional Cloudflare Access service tokens or mTLS may be added in
+# a separately reviewed candidate, but are not silently enabled here.
+__GSYEN_MAIL_INGEST_SITE__ {
+	import gsyen_security_headers
+
+	@mail_mirror {
+		method POST
+		path /internal/mail/mirror
+		header Content-Type message/rfc822
+		header_regexp mirror_auth Authorization ^Bearer\ [A-Za-z0-9_-]{43,128}$
+		header_regexp mirror_id Idempotency-Key ^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$
+		header_regexp raw_hash X-GSYEN-Raw-SHA256 ^[A-Fa-f0-9]{64}$
+		header_regexp delivery_id X-GSYEN-Delivery-ID ^[a-f0-9]{64}$
+		header_regexp recipient X-GSYEN-Envelope-To (?i)^[^@[:space:]<>]{1,200}@gsyen[.]com$
+		# Header presence is mandatory, but its value may be empty for the RFC
+		# null reverse-path used by delivery-status notifications.
+		header X-GSYEN-Envelope-From
+	}
+	@mail_path path /internal/mail/mirror
+
+	handle @mail_mirror {
+		request_body {
+			max_size 5MiB
+		}
+		reverse_proxy 127.0.0.1:18085 {
+			header_up Authorization {http.request.header.Authorization}
+			header_up Idempotency-Key {http.request.header.Idempotency-Key}
+			header_up X-GSYEN-Envelope-From {http.request.header.X-GSYEN-Envelope-From}
+			header_up X-GSYEN-Envelope-To {http.request.header.X-GSYEN-Envelope-To}
+			header_up X-GSYEN-Raw-SHA256 {http.request.header.X-GSYEN-Raw-SHA256}
+			header_up X-GSYEN-Delivery-ID {http.request.header.X-GSYEN-Delivery-ID}
+			transport http {
+				dial_timeout 2s
+				response_header_timeout 65s
+				read_timeout 70s
+				write_timeout 70s
+				max_response_header 16KiB
+			}
+		}
+	}
+	handle @mail_path {
+		respond "invalid mail mirror request" 400
+	}
+	handle {
+		respond 404
+	}
+	log {
+		output stdout
+		format json
+	}
+}

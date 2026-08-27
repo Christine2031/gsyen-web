@@ -1,0 +1,52 @@
+[Unit]
+Description=GSYEN Forecasting Model API
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+User=gsyen
+Group=gsyen
+UMask=0027
+WorkingDirectory=/srv/gsyen/apps/gsyen-model/current
+EnvironmentFile=/srv/gsyen/config/gsyen-model.env
+Environment=WEB_CONCURRENCY=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen /srv/gsyen/config/gsyen-model.env GSYEN_MODEL_DATA_MODE GSYEN_MODEL_DATA_PATH GSYEN_MODEL_MAX_DATA_AGE_DAYS GSYEN_MODEL_DATA_MAX_BYTES GSYEN_MODEL_DATA_SHA256 GSYEN_MODEL_CORS_ORIGINS OMP_NUM_THREADS OPENBLAS_NUM_THREADS MKL_NUM_THREADS NUMEXPR_NUM_THREADS PYTHONUNBUFFERED PYTHONDONTWRITEBYTECODE
+ExecStartPre=/usr/bin/test -x /srv/gsyen/apps/gsyen-model/current/.venv/bin/python
+ExecStart=/srv/gsyen/apps/gsyen-model/current/.venv/bin/python -m uvicorn api:app --host 127.0.0.1 --port 18083 --workers 1
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18083 60 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=75
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadOnlyPaths=/srv/gsyen/data/gsyen-model
+ReadWritePaths=/srv/gsyen/logs/gsyen-model
+TasksMax=512
+LimitNOFILE=16384
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gsyen-model
+
+[Install]
+WantedBy=multi-user.target

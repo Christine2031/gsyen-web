@@ -1,0 +1,48 @@
+[Unit]
+Description=SGSYEN Supply Chain Web
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+User=gsyen
+Group=gsyen
+UMask=0027
+WorkingDirectory=/srv/gsyen/apps/sgsyen-web/current
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=18082
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/sgsyen-web/current/server.mjs
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/sgsyen-web/current/dist/index.html
+ExecStart=/usr/bin/node /srv/gsyen/apps/sgsyen-web/current/server.mjs
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18082 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+TasksMax=512
+LimitNOFILE=16384
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sgsyen-web
+
+[Install]
+WantedBy=multi-user.target

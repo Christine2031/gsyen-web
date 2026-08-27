@@ -1,0 +1,5 @@
+# NAME|URL|EXPECTED_STATUS
+halfsphere-web|http://127.0.0.1:18180/|200
+# Confirm the recovered production API's health contract before enabling this line.
+# halfsphere-api|http://127.0.0.1:18181/health|200
+

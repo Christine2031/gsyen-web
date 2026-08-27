@@ -1,0 +1,13 @@
+[Unit]
+Description=GSYEN resource isolation slice
+Before=slices.target
+
+[Slice]
+# The ECS exposes about 14 GiB usable RAM. Keep at least 2 GiB outside the two
+# application slices for the OS, Caddy and monitoring.
+CPUQuota=450%
+MemoryHigh=7G
+MemoryMax=8G
+TasksMax=2048
+IOWeight=600
+

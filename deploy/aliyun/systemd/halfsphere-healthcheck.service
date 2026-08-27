@@ -1,0 +1,17 @@
+[Unit]
+Description=HalfSphere loopback business health checks
+After=network-online.target
+
+[Service]
+Type=oneshot
+Slice=halfsphere.slice
+ExecStart=/usr/local/libexec/gsyen-aliyun/healthcheck-space.sh halfsphere /etc/gsyen-aliyun/healthchecks/halfsphere.urls
+DynamicUser=true
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX

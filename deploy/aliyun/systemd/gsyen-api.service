@@ -1,0 +1,51 @@
+[Unit]
+Description=GSYEN Core API
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+User=gsyen
+Group=gsyen
+UMask=0027
+WorkingDirectory=/srv/gsyen/apps/gsyen-api/current
+EnvironmentFile=/srv/gsyen/config/gsyen-api.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=18081
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen /srv/gsyen/config/gsyen-api.env HOST PORT NODE_ENV GSYEN_MODEL_ORIGIN MODEL_PROXY_TIMEOUT_MS MODEL_PROXY_MAX_CONCURRENCY MODEL_PROXY_REQUESTS_PER_MINUTE AGENT_SANDBOX_ROOT AGENT_SANDBOX_USER_MAX_BYTES AGENT_SANDBOX_USER_MAX_FILES AGENT_SANDBOX_MAX_DEPTH AGENT_SANDBOX_MAX_FILE_BYTES AGENT_SANDBOX_OPERATION_MAX_NODES AGENT_SANDBOX_OPERATION_MAX_BYTES AGENT_SANDBOX_OPERATION_TIMEOUT_MS AGENT_SANDBOX_MIN_FREE_BYTES SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY MOONSHOT_API_KEY GEMINI_API_KEY TAVILY_API_KEY MAIL_WORKER_INTERNAL_TOKEN MAIL_WORKER_BASE_URL SIGNUP_REQUIRE_CAPTCHA SIGNUP_CAPTCHA_SECRET SIGNUP_REQUIRE_VERIFICATION
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/gsyen-api/current/dist/server.cjs
+ExecStart=/usr/bin/node /srv/gsyen/apps/gsyen-api/current/dist/server.cjs
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18081 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/gsyen/data/gsyen-api/agent-sandboxes
+TasksMax=512
+LimitNOFILE=32768
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gsyen-api
+
+[Install]
+WantedBy=multi-user.target

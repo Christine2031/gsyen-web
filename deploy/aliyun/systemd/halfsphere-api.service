@@ -1,0 +1,52 @@
+[Unit]
+Description=HalfSphere API
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/halfsphere-restore-in-progress
+
+[Service]
+Type=simple
+Slice=halfsphere.slice
+User=halfsphere
+Group=halfsphere
+UMask=0027
+WorkingDirectory=/srv/halfsphere/apps/halfsphere-api/current
+EnvironmentFile=/srv/halfsphere/config/halfsphere-api.env
+Environment=HOST=127.0.0.1
+Environment=PORT=18181
+# The recovered production source must provide this launcher. Do not substitute
+# guessed code for the inaccessible project-827 production revision.
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh halfsphere
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh halfsphere /srv/halfsphere/config/halfsphere-api.env HOST PORT DATABASE_URL SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY ALLOWED_ORIGINS STORAGE_PROVIDER OSS_BUCKET OSS_ENDPOINT OSS_AUTH_MODE OSS_RAM_ROLE
+ExecStartPre=/usr/bin/test -x /srv/halfsphere/apps/halfsphere-api/current/bin/start
+ExecStart=/srv/halfsphere/apps/halfsphere-api/current/bin/start
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18181 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/halfsphere/data /srv/halfsphere/logs
+TasksMax=512
+LimitNOFILE=32768
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=halfsphere-api
+
+[Install]
+WantedBy=multi-user.target

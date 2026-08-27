@@ -1,0 +1,30 @@
+# Render with render-caddy-fragment.sh. HalfSphere has independent sites and
+# loopback upstreams; the shared component is only the Caddy process itself.
+
+(halfsphere_security_headers) {
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+__HALFSPHERE_WEB_SITE__ {
+	import halfsphere_security_headers
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:18180
+	log {
+		output stdout
+		format json
+	}
+}
+
+__HALFSPHERE_API_SITE__ {
+	import halfsphere_security_headers
+	reverse_proxy 127.0.0.1:18181
+	log {
+		output stdout
+		format json
+	}
+}

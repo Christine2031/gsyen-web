@@ -1,0 +1,6 @@
+# The age recipient is public material, but keep the corresponding private
+# identity off this ECS and outside Git.
+AGE_RECIPIENT_FILE=/srv/gsyen/config/backup-age-recipient.txt
+MINIMUM_FREE_BYTES=10737418240
+MAX_RESTORE_TAR_BYTES=32212254720
+MAX_ARCHIVE_MEMBERS=250000

@@ -1,0 +1,14 @@
+# phase	layer	direction	protocol	ports	peer	desired	owner	note
+phase1	dedicated-target-sg	ingress	tcp	80,443	0.0.0.0/0	ALLOW	shared-caddy	Only public HTTP(S) entry; Caddy routes to loopback services.
+phase1	dedicated-target-sg	ingress	tcp	22	__REQUIRED_ADMIN_CIDRS__	ALLOW	system-admin	Replace with reviewed fixed admin/VPN CIDRs; never 0.0.0.0/0.
+phase1	dedicated-target-sg	ingress	tcp	25,465,587,993,995,4190,8080,46477	0.0.0.0/0	ABSENT	gsyen-mail	MX remains Cloudflare; Stalwart is not public in phase 1.
+phase1	dedicated-target-sg	ingress	tcp	18080-18089,18180-18189	0.0.0.0/0	ABSENT	gsyen+halfsphere	Application ports are loopback-only and never security-group ingress.
+phase1	dedicated-target-sg	ingress	tcp	13306,16379,3389,50000,8180,11420,48080,54280	0.0.0.0/0	ABSENT	unclassified	Do not copy broad legacy/shared-SG management rules.
+phase1	dedicated-target-sg	ingress	all	all	::/0	ABSENT	ipv6	No public IPv6/AAAA is approved in phase 1; add symmetric least-privilege rules only in a separate review.
+phase1	ufw	ingress	tcp	80,443	0.0.0.0/0	ALLOW	shared-caddy	Must agree with the dedicated target security group.
+phase1	ufw	ingress	tcp	22	__REQUIRED_ADMIN_CIDRS__	ALLOW	system-admin	Install allowlist before removing the old SSH rule; retain console rollback.
+phase1	ufw	ingress	all	all	0.0.0.0/0	DENY_DEFAULT	system-admin	Record numbered rules before change so rollback is exact.
+phase1	ufw	ingress	all	all	::/0	DENY_DEFAULT	ipv6	Keep IPv6 fail-closed while there is no reviewed AAAA/listener/security-group plan.
+phase1	host-output	egress	tcp	443	__REQUIRED_DOCUMENTED_DESTINATIONS__	OBSERVE_THEN_ALLOW	per-business	Supabase/Resend/model/OSS endpoints need an approved inventory; DNS names are not SG rules.
+phase1	host-output	egress	tcp	80,443	metadata.google.internal,run.app,storage.googleapis.com,pkg.dev	DENY_AFTER_GCP_OFF_PROOF	per-business	Do not enforce until retained Gemini/OAuth traffic and rollback paths are classified.
+phase1	imds	egress	http	80	100.100.100.200/32	DENY_UNAPPROVED_USERS	system-admin	Same-host Unix users cannot isolate two ECS instance RAM roles; separate ECS is the supported target.

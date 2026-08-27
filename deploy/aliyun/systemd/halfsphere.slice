@@ -1,0 +1,11 @@
+[Unit]
+Description=HalfSphere resource isolation slice
+Before=slices.target
+
+[Slice]
+CPUQuota=250%
+MemoryHigh=3G
+MemoryMax=4G
+TasksMax=1024
+IOWeight=300
+

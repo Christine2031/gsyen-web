@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Install an independently reviewed copy as:
+#   /srv/SPACE/config/backup.d/pre-backup
+# This example intentionally fails. Replace the exit only after the hook takes
+# an application-consistent database/object export (or proves none is local).
+
+: "${BACKUP_SPACE:?}"
+: "${BACKUP_SPACE_ROOT:?}"
+: "${BACKUP_STAGING_DIR:?}"
+
+echo "pre-backup hook for ${BACKUP_SPACE} has not been implemented" >&2
+exit 78
+
+# Example contract after implementation (do not commit credentials):
+# install -d -m 0700 "${BACKUP_STAGING_DIR}/exports"
+# pg_dump ... > "${BACKUP_STAGING_DIR}/exports/database.dump"
+# write database counts/hashes into "${BACKUP_STAGING_DIR}/exports/manifest.txt"
+# touch "${BACKUP_STAGING_DIR}/consistency-confirmed"
+

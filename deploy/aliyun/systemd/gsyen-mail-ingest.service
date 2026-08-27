@@ -1,0 +1,50 @@
+[Unit]
+Description=GSYEN Cloudflare to Stalwart Ingest Gateway
+After=network-online.target stalwart.service
+Wants=network-online.target
+Requires=stalwart.service
+ConditionPathExists=!/etc/gsyen-aliyun/locks/gsyen-restore-in-progress
+
+[Service]
+Type=simple
+Slice=gsyen.slice
+WorkingDirectory=/srv/gsyen/apps/mail-ingest/current
+EnvironmentFile=/srv/gsyen/config/mail-ingest.env
+Environment=NODE_ENV=production
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh gsyen
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh gsyen-mail /srv/gsyen/config/mail-ingest.env HOST PORT NODE_ENV MAIL_DOMAIN MAIL_HOSTNAME MAIL_MIRROR_TOKEN MAIL_MIRROR_MAX_BYTES MAIL_MIRROR_MAX_CONCURRENT_DELIVERIES MAIL_MIRROR_RECEIPT_DIR MAIL_MIRROR_MIN_FREE_BYTES MAIL_MIRROR_LEASE_MS MAIL_MIRROR_SMTP_TIMEOUT_MS MAIL_MIRROR_HEALTH_SMTP_TIMEOUT_MS STALWART_DUPLICATE_GUARD_VERIFIED STALWART_SMTP_HOST STALWART_SMTP_PORT
+ExecStartPre=/usr/bin/test -f /srv/gsyen/apps/mail-ingest/current/src/server.mjs
+ExecStart=/usr/bin/node /srv/gsyen/apps/mail-ingest/current/src/server.mjs
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18085 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+KillSignal=SIGTERM
+User=gsyen-mail
+Group=gsyen-mail
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/gsyen/data/mail-mirror /srv/gsyen/logs/mail-ingest
+TasksMax=256
+LimitNOFILE=16384
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gsyen-mail-ingest
+
+[Install]
+WantedBy=multi-user.target

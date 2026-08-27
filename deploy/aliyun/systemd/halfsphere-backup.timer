@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule encrypted HalfSphere backup
+
+[Timer]
+OnCalendar=*-*-* 03:47:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

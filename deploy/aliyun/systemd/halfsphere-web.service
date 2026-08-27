@@ -1,0 +1,51 @@
+[Unit]
+Description=HalfSphere Web Application
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/etc/gsyen-aliyun/locks/halfsphere-restore-in-progress
+
+[Service]
+Type=simple
+Slice=halfsphere.slice
+User=halfsphere
+Group=halfsphere
+UMask=0027
+WorkingDirectory=/srv/halfsphere/apps/halfsphere-web/current
+EnvironmentFile=/srv/halfsphere/config/halfsphere-web.env
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=18180
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-boundary-gate.sh halfsphere
+ExecStartPre=/usr/local/libexec/gsyen-aliyun/validate-env-file.sh halfsphere /srv/halfsphere/config/halfsphere-web.env HOSTNAME PORT NODE_ENV NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY NEXT_PUBLIC_API_URL APP_BASE_URL SUPABASE_SERVICE_ROLE_KEY HALFSPHERE_ENCRYPTION_KEY RESEND_API_KEY CRON_SECRET
+ExecStartPre=/usr/bin/test -f /srv/halfsphere/apps/halfsphere-web/current/server.js
+ExecStart=/usr/bin/node /srv/halfsphere/apps/halfsphere-web/current/server.js
+ExecStartPost=/usr/local/libexec/gsyen-aliyun/assert-loopback-listener.sh 18180 30 $MAINPID
+Restart=always
+RestartSec=3
+TimeoutStartSec=45
+TimeoutStopSec=20
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+ReadWritePaths=/srv/halfsphere/data /srv/halfsphere/logs
+TasksMax=512
+LimitNOFILE=32768
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=halfsphere-web
+
+[Install]
+WantedBy=multi-user.target

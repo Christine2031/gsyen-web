@@ -1,0 +1,11 @@
+[Unit]
+Description=Schedule encrypted GSYEN backup
+
+[Timer]
+OnCalendar=*-*-* 03:17:00
+RandomizedDelaySec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

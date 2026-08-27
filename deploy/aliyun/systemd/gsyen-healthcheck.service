@@ -1,0 +1,17 @@
+[Unit]
+Description=GSYEN loopback business health checks
+After=network-online.target
+
+[Service]
+Type=oneshot
+Slice=gsyen.slice
+ExecStart=/usr/local/libexec/gsyen-aliyun/healthcheck-space.sh gsyen /etc/gsyen-aliyun/healthchecks/gsyen.urls
+DynamicUser=true
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
