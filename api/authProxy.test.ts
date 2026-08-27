@@ -1,5 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from './auth/[...path]';
+
+const originalOrigin = process.env.GSYEN_API_ORIGIN;
 
 function createRes() {
   const headers = new Map<string, unknown>();
@@ -14,8 +16,14 @@ function createRes() {
   };
 }
 
+beforeEach(() => {
+  process.env.GSYEN_API_ORIGIN = 'https://api-shadow.gsyen.example';
+});
+
 afterEach(() => {
   vi.restoreAllMocks();
+  if (originalOrigin === undefined) delete process.env.GSYEN_API_ORIGIN;
+  else process.env.GSYEN_API_ORIGIN = originalOrigin;
 });
 
 describe('same-origin auth proxy', () => {
@@ -39,7 +47,7 @@ describe('same-origin auth proxy', () => {
     } as never, res as never);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      'https://gsyen-api-776196228503.asia-east1.run.app/api/auth/me',
+      'https://api-shadow.gsyen.example/api/auth/me',
       expect.objectContaining({
         method: 'GET',
         headers: expect.objectContaining({ cookie: 'gsyen_rt=old' }),
@@ -59,5 +67,18 @@ describe('same-origin auth proxy', () => {
     } as never, res as never);
     expect(res.statusCode).toBe(404);
     expect(res.body).toEqual({ error: 'auth_route_not_found' });
+  });
+
+  it('fails closed when the upstream origin is not configured', async () => {
+    delete process.env.GSYEN_API_ORIGIN;
+    const fetchMock = vi.spyOn(globalThis, 'fetch');
+    const res = createRes();
+    await handler({
+      method: 'GET',
+      url: '/api/auth/me', query: {}, headers: {}, socket: {},
+    } as never, res as never);
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(502);
+    expect(res.body).toEqual({ error: 'auth_upstream_unavailable' });
   });
 });

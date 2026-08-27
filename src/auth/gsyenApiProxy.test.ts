@@ -8,12 +8,14 @@ describe('gsyen API proxy base', () => {
   });
 
   it('ignores a configured cross-origin API override in web browsers', () => {
-    expect(resolveGsyenApiBase('https://gsyen-api.example.run.app/', 'https:')).toBe('');
-    expect(resolveGsyenApiBase('https://gsyen-api.example.run.app/', 'http:')).toBe('');
+    expect(resolveGsyenApiBase('https://api-shadow.gsyen.example/', 'https:')).toBe('');
+    expect(resolveGsyenApiBase('https://api-shadow.gsyen.example/', 'http:')).toBe('');
   });
 
-  it('keeps the Cloud Run auth bridge for packaged Electron file URLs', () => {
-    expect(resolveGsyenApiBase(undefined, 'file:')).toBe('https://gsyen-api-776196228503.asia-east1.run.app');
+  it('fails closed without an Electron API origin', () => {
+    expect(() => resolveGsyenApiBase(undefined, 'file:')).toThrow(
+      'VITE_GSYEN_API_URL is required',
+    );
   });
 
   it('respects an explicit API override only in packaged Electron', () => {

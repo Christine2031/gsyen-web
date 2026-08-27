@@ -1,4 +1,4 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from './vercelHttpTypes';
 
 const MODEL_ROUTES: Record<string, { envKey: string; testUrl?: string }> = {
   kimi:     { envKey: 'MOONSHOT_API_KEY',  testUrl: 'https://api.moonshot.cn/v1/models' },

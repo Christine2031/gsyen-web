@@ -3,8 +3,6 @@
  * All requests go with credentials: 'include' so the browser
  * sends the HttpOnly gsyen_rt cookie automatically.
  */
-const CLOUD_RUN_BASE = 'https://gsyen-api-776196228503.asia-east1.run.app';
-
 export function resolveGsyenApiBase(
   configured?: string,
   protocol = typeof window !== 'undefined' ? window.location.protocol : '',
@@ -12,7 +10,12 @@ export function resolveGsyenApiBase(
   // Browser auth must stay first-party so gsyen_rt belongs to gsyen.com.
   if (protocol !== 'file:') return '';
   const value = configured?.trim().replace(/\/+$/, '');
-  return value || CLOUD_RUN_BASE;
+  if (!value) throw new Error('VITE_GSYEN_API_URL is required for packaged Electron');
+  const url = new URL(value);
+  if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
+    throw new Error('VITE_GSYEN_API_URL must be a clean HTTPS origin');
+  }
+  return url.origin;
 }
 
 const BASE = resolveGsyenApiBase(import.meta.env.VITE_GSYEN_API_URL as string | undefined);

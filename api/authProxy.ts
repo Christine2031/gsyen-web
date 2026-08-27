@@ -1,6 +1,5 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-const DEFAULT_UPSTREAM = 'https://gsyen-api-776196228503.asia-east1.run.app';
+import type { VercelRequest, VercelResponse } from './vercelHttpTypes';
+import { resolveServerGsyenApiOrigin } from './gsyenApiOrigin';
 const ALLOWED_AUTH_PATHS = new Set([
   '/api/auth/deactivate',
   '/api/auth/login',
@@ -9,10 +8,6 @@ const ALLOWED_AUTH_PATHS = new Set([
   '/api/auth/session',
   '/api/auth/signup',
 ]);
-
-function upstreamBase(): string {
-  return (process.env.GSYEN_API_ORIGIN || DEFAULT_UPSTREAM).replace(/\/+$/, '');
-}
 
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value.join(', ') : value;
@@ -48,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (forwardedFor) headers['x-forwarded-for'] = forwardedFor;
 
   try {
-    const upstream = await fetch(`${upstreamBase()}${path}`, {
+    const upstream = await fetch(`${resolveServerGsyenApiOrigin()}${path}`, {
       method: req.method,
       headers,
       body: requestBody(req),
