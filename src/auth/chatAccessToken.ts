@@ -1,4 +1,3 @@
-import { authProxy } from './gsyenApiProxy';
 import { supabase } from './supabaseClient';
 
 const EXPIRY_SKEW_SECONDS = 30;
@@ -20,14 +19,7 @@ function usableAccessToken(session: {
 }
 
 async function recoverAccessToken(): Promise<string> {
-  const restored = await authProxy.me();
-  if (!restored.ok || !restored.access_token || !restored.refresh_token) return '';
-
-  const { data, error } = await supabase.auth.setSession({
-    access_token: restored.access_token,
-    refresh_token: restored.refresh_token,
-  });
-  if (error) return '';
+  const { data } = await supabase.auth.getSession();
   return usableAccessToken(data.session);
 }
 

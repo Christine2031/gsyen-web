@@ -13,6 +13,20 @@ const USER_TIERS = new Set<UserTier>([
   'owner',
 ]);
 
+function getOAuthRedirectTo(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const origin = window.location.origin;
+  try {
+    const url = new URL(origin);
+    if (url.hostname === 'www.gsyen.com') {
+      return `${url.protocol}//gsyen.com`;
+    }
+    return url.origin;
+  } catch {
+    return origin;
+  }
+}
+
 export interface ResolvedMembership {
   tier: UserTier;
   emailVerified: boolean;
@@ -77,16 +91,14 @@ export async function signInWithEmail(email: string, password: string): Promise<
   console.log(`[Auth] Signing in with email: ${email}`);
 
   const result = await authProxy.login(email, password);
-  if (!result.ok) {
+  if (!result.ok || !result.access_token || !result.refresh_token) {
     return { success: false, error: { message: result.error ?? 'login failed' } };
   }
 
-  // Sync the in-memory Supabase client session so onAuthStateChange fires
   const { data, error } = await supabase.auth.setSession({
-    access_token: result.access_token!,
-    refresh_token: result.refresh_token ?? '',
+    access_token: result.access_token,
+    refresh_token: result.refresh_token,
   });
-
   if (error) {
     return { success: false, error: formatAuthError(error, 'setSession') };
   }
@@ -140,22 +152,37 @@ export async function signInWithOAuth(provider: OAuthProvider): Promise<AuthResu
 
   try {
     console.log(`[Auth] Signing in with ${provider}`);
+    const redirectTo = getOAuthRedirectTo();
+    const oauthOptions = {
+      flowType: 'pkce' as const,
+      redirectTo,
+    };
 
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo: `${window.location.origin}`,
-      },
-    });
+    // Some environments reject www/origin variants in provider allowlists; retry once
+    // with a sanitized origin and then once with no explicit override so dashboard
+    // defaults apply.
+    const attempts: Array<typeof oauthOptions | undefined> = [
+      oauthOptions,
+      { ...oauthOptions, redirectTo: window.location.origin },
+      undefined,
+    ];
 
-    if (error) {
-      return {
-        success: false,
-        error: formatAuthError(error, `signInWithOAuth(${provider})`),
-      };
+    for (const options of attempts) {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: options ?? {},
+      });
+
+      if (!error) return { success: true };
+      if (typeof window === 'undefined') {
+        return { success: false, error: formatAuthError(error, `signInWithOAuth(${provider})`) };
+      }
+      if (options === undefined) {
+        return { success: false, error: formatAuthError(error, `signInWithOAuth(${provider})`) };
+      }
     }
 
-    return { success: true };
+    return { success: false, error: { message: `使用 ${provider} 登录失败` } };
   } catch (err) {
     console.error(`[Auth] Exception in signInWithOAuth(${provider}):`, err);
     return {
@@ -198,13 +225,23 @@ export async function signOut(): Promise<AuthResult> {
 
   console.log('[Auth] Signing out');
 
-  // Clear HttpOnly cookie on gsyen-api first
-  await authProxy.logout();
+  // Cookie 清理只影响服务端代理，不应阻塞用户回到未登录界面。
+  void authProxy.logout();
+  let globalSignOutError: { message: string } | string | undefined;
 
-  // Clear in-memory Supabase session
-  const { error } = await supabase.auth.signOut();
+  // Clear Supabase session first so UI can return to logged-out state immediately
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) {
-    return { success: false, error: formatAuthError(error, 'signOut') };
+    const globalResult = await supabase.auth.signOut();
+    globalSignOutError = globalResult.error?.message;
+    if (globalResult.error) {
+      return { success: false, error: formatAuthError(globalResult.error, 'signOut') };
+    }
+  }
+
+  if (globalSignOutError) {
+    // best effort: local sign-out succeeded, remote revoke may fail temporarily
+    console.warn('[Auth] Remote signOut failed, fallback to local session clear only:', globalSignOutError);
   }
 
   return { success: true };

@@ -3,6 +3,8 @@
  * All requests go with credentials: 'include' so the browser
  * sends the HttpOnly gsyen_rt cookie automatically.
  */
+import { supabase } from './supabaseClient';
+
 export function resolveGsyenApiBase(
   configured?: string,
   protocol = typeof window !== 'undefined' ? window.location.protocol : '',
@@ -21,6 +23,23 @@ export function resolveGsyenApiBase(
 const BASE = resolveGsyenApiBase(import.meta.env.VITE_GSYEN_API_URL as string | undefined);
 
 function authEndpoint(path: string): string { return `${BASE}${path}`; }
+const AUTH_ME_BACKOFF_KEY = 'gsyen_auth_me_backoff_until';
+const AUTH_ME_BACKOFF_MS = 3 * 60 * 1000;
+
+function getAuthMeBackoffUntil(): number {
+  if (typeof localStorage === 'undefined') return 0;
+  return Number(localStorage.getItem(AUTH_ME_BACKOFF_KEY) ?? '0');
+}
+
+function setAuthMeBackoff(until = Date.now() + AUTH_ME_BACKOFF_MS): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.setItem(AUTH_ME_BACKOFF_KEY, String(until));
+}
+
+function clearAuthMeBackoff(): void {
+  if (typeof localStorage === 'undefined') return;
+  localStorage.removeItem(AUTH_ME_BACKOFF_KEY);
+}
 
 export interface AuthProxyResult {
   ok: boolean;
@@ -58,7 +77,13 @@ export const authProxy = {
     try {
       const r = await post('/api/auth/login', { email, password });
       const json = await r.json() as AuthProxyJson;
-      if (!r.ok) return { ok: false, error: String(json.error ?? 'login failed') };
+      if (!r.ok) {
+        return {
+          ok: false,
+          status: r.status,
+          error: String(json.error ?? 'login failed'),
+        };
+      }
       return {
         ok: true,
         user: json.user,
@@ -67,7 +92,7 @@ export const authProxy = {
         expires_at: typeof json.expires_at === 'number' ? json.expires_at : undefined,
       };
     } catch {
-      return { ok: false, error: '网络错误，请检查连接' };
+      return { ok: false, status: 0, error: '网络错误，请检查连接' };
     }
   },
 
@@ -75,7 +100,11 @@ export const authProxy = {
     try {
       const r = await post('/api/auth/signup', { email, password, username });
       const json = await r.json() as AuthProxyJson;
-      if (!r.ok) return { ok: false, error: String(json.error ?? 'signup failed') };
+      if (!r.ok) return {
+        ok: false,
+        status: r.status,
+        error: String(json.error ?? 'signup failed'),
+      };
       return {
         ok: true,
         user: json.user,
@@ -86,7 +115,7 @@ export const authProxy = {
         mailboxAddress: typeof json.mailboxAddress === 'string' ? json.mailboxAddress : null,
       };
     } catch {
-      return { ok: false, error: '网络错误，请检查连接' };
+      return { ok: false, status: 0, error: '网络错误，请检查连接' };
     }
   },
 
@@ -96,8 +125,34 @@ export const authProxy = {
 
   async me(): Promise<AuthProxyResult> {
     try {
+      const { data: localSessionData } = await supabase.auth.getSession();
+      if (localSessionData.session?.access_token) {
+        clearAuthMeBackoff();
+        return {
+          ok: true,
+          status: 200,
+          user: localSessionData.session.user,
+          access_token: localSessionData.session.access_token,
+          refresh_token: localSessionData.session.refresh_token,
+          expires_at: localSessionData.session.expires_at,
+        };
+      }
+    } catch {}
+
+    const skipUntil = getAuthMeBackoffUntil();
+    if (Number.isFinite(skipUntil) && skipUntil > Date.now()) {
+      return { ok: false, status: 0, error: 'auth_me_backoff' };
+    }
+
+    try {
       const r = await fetch(authEndpoint('/api/auth/me'), { credentials: 'include' });
-      if (!r.ok) return { ok: false, status: r.status };
+      if (!r.ok) {
+        if (r.status === 503 || r.status === 0) setAuthMeBackoff();
+        else if (r.status === 401) clearAuthMeBackoff();
+        return { ok: false, status: r.status };
+      }
+
+      clearAuthMeBackoff();
       const json = await r.json() as AuthProxyJson;
       return {
         ok: true, status: 200,
@@ -107,6 +162,7 @@ export const authProxy = {
         expires_at: typeof json.expires_at === 'number' ? json.expires_at : undefined,
       };
     } catch {
+      setAuthMeBackoff();
       return { ok: false, status: 0 }; // 0 = 网络错误
     }
   },

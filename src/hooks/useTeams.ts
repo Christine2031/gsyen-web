@@ -41,18 +41,27 @@ async function _fetch(userId: string) {
   _fetching = true;
   _userId   = userId;
   if (!supabase) { _fetching = false; return; }
-  const { data } = await supabase
-    .from('gsyen_team_members')
-    .select('role, gsyen_teams(*)')
-    .eq('user_id', userId);
-  if (data) {
-    _cache = data
-      .map((r: any) => r.gsyen_teams ? { ...r.gsyen_teams, role: r.role } : null)
-      .filter(Boolean) as TeamItem[];
-    _lsWrite(_cache);
-    _notify();
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token || session.user.id !== userId) {
+      _userId = null;
+      return;
+    }
+
+    const { data } = await supabase
+      .from('gsyen_team_members')
+      .select('role, gsyen_teams(*)')
+      .eq('user_id', userId);
+    if (data) {
+      _cache = data
+        .map((r: any) => r.gsyen_teams ? { ...r.gsyen_teams, role: r.role } : null)
+        .filter(Boolean) as TeamItem[];
+      _lsWrite(_cache);
+      _notify();
+    }
+  } finally {
+    _fetching = false;
   }
-  _fetching = false;
 }
 
 export function _invalidateTeams() {

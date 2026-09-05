@@ -10,12 +10,15 @@ export interface Friend {
 }
 
 export function useFriends() {
-  const { user }  = useAuth();
+  const { user, session } = useAuth();
   const { teams } = useTeams();
   const [friends, setFriends] = useState<Friend[]>([]);
 
   const load = useCallback(async () => {
-    if (!supabase || !user || teams.length === 0) return;
+    if (!supabase || !user || !session?.access_token || session.user.id !== user.id || teams.length === 0) {
+      setFriends([]);
+      return;
+    }
 
     const { data } = await supabase
       .from('gsyen_team_members')
@@ -35,7 +38,7 @@ export function useFriends() {
       result.push({ user_id: row.user_id, role: row.role, teamName: team?.name ?? '' });
     }
     setFriends(result);
-  }, [user, teams]);
+  }, [user, session?.access_token, session?.user.id, teams]);
 
   useEffect(() => { load(); }, [load]);
 

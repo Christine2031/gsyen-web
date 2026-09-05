@@ -24,8 +24,10 @@ function syncErrorCode(error: unknown): string {
 function reportSync(event: Record<string, string | number>) { console.info('[mail-sync]', event); }
 
 export function useMailSync(lang: 'zh' | 'en') {
-  const { user, loading: authLoading } = useAuth();
-  const identityKey = user?.id ?? '';
+  const { user, session, loading: authLoading } = useAuth();
+  // A display snapshot is not authentication. Mail data must never be loaded
+  // or displayed until the authenticated Supabase session is present.
+  const identityKey = session?.access_token && session.user.id === user?.id ? user.id : '';
   const cached = useMemo(() => (
     identityKey ? readMailSyncSnapshot(identityKey, lang) : null
   ), [identityKey, lang]);
@@ -54,7 +56,7 @@ export function useMailSync(lang: 'zh' | 'en') {
   }, [identityKey, dataOwnerId]);
 
   const refreshMessages = useCallback((): Promise<void> => {
-    const userId = user?.id;
+    const userId = identityKey;
     if (!userId) return Promise.reject(new MailApiError(401, 'auth_required', 'Login is required'));
     if (inFlight.current?.userId === userId) return inFlight.current.request;
     const version = ++requestVersion.current;
@@ -122,7 +124,7 @@ export function useMailSync(lang: 'zh' | 'en') {
     });
     inFlight.current = { userId, request };
     return request;
-  }, [lang, user?.id]);
+  }, [identityKey, lang]);
 
   useEffect(() => {
     requestVersion.current += 1;

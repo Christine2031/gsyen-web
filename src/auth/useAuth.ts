@@ -231,6 +231,36 @@ function _boot() {
 
   (async () => {
     try {
+      // The Supabase client consumes OAuth callback URL parameters during
+      // initialization when detectSessionInUrl is enabled. Read that session
+      // through the supported v2 API after initialization completes.
+      const callback = await supabase.auth.getSession();
+      if (callback.data.session) {
+        const user = callback.data.session.user;
+        const cached = readCachedTier(user.id);
+        _currentUid = user.id;
+        _set({
+          user,
+          session: callback.data.session,
+          tier: cached?.tier ?? null,
+          emailVerified: cached?.ev ?? false,
+          loginProvider: (user.user_metadata?.provider ?? null) as LoginProvider | null,
+          loading: false,
+          isPasswordRecovery: false,
+        });
+        const provider = (user.user_metadata?.provider ?? null) as LoginProvider | null;
+        _writeSnap({
+          uid: user.id,
+          email: user.email ?? '',
+          tier: cached?.tier ?? null,
+          ev: cached?.ev ?? false,
+          provider,
+        });
+        if (callback.data.session.refresh_token) authProxy.saveSession(callback.data.session.refresh_token).catch(() => {});
+        _refreshTier(user, provider).catch(() => {});
+        return;
+      }
+
       // Step 1: 本地 Supabase session（无网络，< 50ms）
       const { data: { session: local } } = await supabase.auth.getSession();
 
@@ -249,25 +279,27 @@ function _boot() {
         return;
       }
 
-      // Step 2: 无本地 session → 尝试 HttpOnly cookie
-      // 401 = session 确认失效，立即处理；网络/5xx = 临时故障，最多重试 3 次
+      // Step 2: 从同域 HttpOnly Cookie 恢复会话。阿里云的 gsyen-api
+      // 是唯一生产入口；不成功时必须清除展示快照，避免“看似登录、实际无 token”。
       let me: Awaited<ReturnType<typeof authProxy.me>> = { ok: false };
       for (let i = 0; i < 3; i++) {
         me = await authProxy.me();
-        if (me.ok || me.status === 401) break; // 401 不重试
-        if (i < 2) await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+        if (me.ok || me.status === 401) break;
+        if (i < 2) await new Promise(resolve => setTimeout(resolve, 1_000 * (i + 1)));
       }
-      if (_currentUid) return; // 等待期间已手动登录
-      if (me.ok) {
-        await supabase.auth.setSession({ access_token: me.access_token!, refresh_token: me.refresh_token! });
-        return; // onAuthStateChange 接管
+      if (_currentUid) return;
+      if (me.ok && me.access_token && me.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: me.access_token,
+          refresh_token: me.refresh_token,
+        });
+        return;
       }
       if (me.status === 401) {
-        // session 确认过期：清快照，还原未登录态
         _clearSnap();
+        _currentUid = null;
         _set({ ...DEFAULT_AUTH_STATE, loading: false, justVerified: false });
       } else {
-        // 网络/服务器故障：保留快照，用户维持乐观登录态，下次操作时自然处理
         _set({ loading: false });
       }
     } catch {
@@ -292,7 +324,17 @@ export function useAuth() {
     signInWithEmail:       useCallback((e: string, p: string) => signInWithEmail(e, p), []),
     signUpWithEmail:       useCallback((e: string, p: string) => signUpWithEmail(e, p), []),
     signInWithOAuth:       useCallback((p: OAuthProvider)     => signInWithOAuth(p), []),
-    signOut:               useCallback(()                      => signOut(), []),
+    signOut:               useCallback(async () => {
+      const uid = _currentUid ?? _store.user?.id ?? _snap?.uid ?? null;
+      const result = await signOut();
+      if (result.success) {
+        if (uid) clearTier(uid);
+        _currentUid = null;
+        _clearSnap();
+        _set({ ...DEFAULT_AUTH_STATE, loading: false, justVerified: false });
+      }
+      return result;
+    }, []),
     resetPasswordForEmail: useCallback((e: string)            => resetPasswordForEmail(e), []),
   };
 }

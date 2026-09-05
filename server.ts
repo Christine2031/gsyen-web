@@ -224,8 +224,26 @@ async function startServer() {
     app.use(vite.middlewares);
   } else if (!apiOnly) {
     const dist = path.join(process.cwd(), 'dist');
-    app.use(express.static(dist));
-    app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+    // HTML is the deployment manifest: never let a browser or CDN retain an
+    // old document that references a previous bundle. Vite asset filenames
+    // contain a content hash, so those files can safely be immutable.
+    app.use(express.static(dist, {
+      index: false,
+      setHeaders(res, filePath) {
+        const hashedAsset = /-[A-Za-z0-9_-]{8,}\.(?:js|css|mjs|map)$/
+          .test(path.basename(filePath));
+        res.setHeader(
+          'Cache-Control',
+          hashedAsset
+            ? 'public, max-age=31536000, immutable'
+            : 'no-cache, max-age=0, must-revalidate',
+        );
+      },
+    }));
+    app.get('*', (_req, res) => {
+      res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
+      res.sendFile(path.join(dist, 'index.html'));
+    });
   }
 
   const server = app.listen(PORT, '127.0.0.1', () => {
